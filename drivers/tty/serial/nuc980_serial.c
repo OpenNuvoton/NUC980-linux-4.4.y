@@ -148,7 +148,7 @@ static void nuc980_Rx_dma_callback(void *arg)
 	else
 		copied_count = tty_insert_flip_string(tty_port, ((unsigned char *)p->dest_mem_p.vir_addr+(p->dest_mem_p.size/2)), count);
 
-	if(copied_count != count){
+	if(copied_count != count) {
 		printk("\n Rx overrun: dropping %zu bytes \n", (count - copied_count));
 	}
 
@@ -158,7 +158,7 @@ static void nuc980_Rx_dma_callback(void *arg)
 
 	spin_unlock(&p->port.lock);
 
-	if(done->timeout==1){
+	if(done->timeout==1) {
 		nuc980_prepare_RX_dma(p);
 		//Trigger Rx dma again
 		serial_out(p, UART_REG_IER, (serial_in(p, UART_REG_IER)|RXPDMAEN));
@@ -185,8 +185,7 @@ static void nuc980_Tx_dma_callback(void *arg)
 		nuc980_prepare_TX_dma(p);
 		// Trigger Tx dma again
 		serial_out(p, UART_REG_IER, (serial_in(p, UART_REG_IER)| TXPDMAEN));
-	}
-	else {
+	} else {
 		p->Tx_pdma_busy_flag = 0;
 	}
 
@@ -345,9 +344,9 @@ static void nuc980_prepare_TX_dma(struct uart_nuc980_port *p)
 	}
 
 	p->tx_dma_len = uart_circ_chars_pending(xmit);
-	if (xmit->tail < xmit->head){
+	if (xmit->tail < xmit->head) {
 		memcpy((unsigned char *)p->src_mem_p.vir_addr, &xmit->buf[xmit->tail], p->tx_dma_len);
-	}else {
+	} else {
 		size_t first = UART_XMIT_SIZE - xmit->tail;
 		size_t second = xmit->head;
 		memcpy((unsigned char *)p->src_mem_p.vir_addr, &xmit->buf[xmit->tail], first);
@@ -805,7 +804,7 @@ static int nuc980serial_startup(struct uart_port *port)
 	else
 #endif
 		serial_out(up, UART_REG_IER, RTO_IEN | RDA_IEN | TIME_OUT_EN | BUFERR_IEN);
-		//serial_out(up, UART_REG_IER, RTO_IEN | RDA_IEN | TIME_OUT_EN);
+	//serial_out(up, UART_REG_IER, RTO_IEN | RDA_IEN | TIME_OUT_EN);
 
 	/* 12MHz reference clock input, 115200 */
 	serial_out(up, UART_REG_BAUD, 0x30000066);
@@ -835,9 +834,9 @@ static void nuc980serial_shutdown(struct uart_port *port)
 		dma_release_channel(pdma_rx->chan_rx);
 		dma_release_channel(pdma_tx->chan_tx);
 
-		#ifdef USING_SRAM
+#ifdef USING_SRAM
 		sram_free((void *)up->dest_mem_p.vir_addr, up->dest_mem_p.size);
-		#endif
+#endif
 
 		if(up->src_mem_p.vir_addr != 0)
 			dma_free_writecombine(NULL, up->src_mem_p.size, (void *)up->src_mem_p.vir_addr, up->src_mem_p.phy_addr);
@@ -1432,210 +1431,210 @@ void nuc980serial_set_clock(struct uart_nuc980_port *up)
 	struct clk *upll_clk;
 
 	if(up->port.line == 0) {
-	clk = clk_get(NULL, "uart0");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart0");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart0_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart0_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
 	}
 
 #ifdef CONFIG_NUC980_UART1
 	if(up->port.line == 1) {
-	clk = clk_get(NULL, "uart1");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart1");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart1_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart1_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clkmux = clk_get(NULL, "uart1_eclk_mux");
-	upll_clk = clk_get(NULL, "upll");
-	clk_set_parent(clkmux, upll_clk);
+		clkmux = clk_get(NULL, "uart1_eclk_mux");
+		upll_clk = clk_get(NULL, "upll");
+		clk_set_parent(clkmux, upll_clk);
 
-	clk = clk_get(NULL, "uart1_eclk_div");
+		clk = clk_get(NULL, "uart1_eclk_div");
 
-	//clk_set_rate(clk, 100000000);
-	clk_set_rate(clk, 150000000);
-	up->port.uartclk = clk_get_rate(clk);
+		//clk_set_rate(clk, 100000000);
+		clk_set_rate(clk, 150000000);
+		up->port.uartclk = clk_get_rate(clk);
 	}
 #endif
 
 #ifdef CONFIG_NUC980_UART2
 	if(up->port.line == 2) {
-	clk = clk_get(NULL, "uart2");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart2");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart2_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart2_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clkmux = clk_get(NULL, "uart2_eclk_mux");
-	upll_clk = clk_get(NULL, "upll");
-	clk_set_parent(clkmux, upll_clk);
+		clkmux = clk_get(NULL, "uart2_eclk_mux");
+		upll_clk = clk_get(NULL, "upll");
+		clk_set_parent(clkmux, upll_clk);
 
-	clk = clk_get(NULL, "uart2_eclk_div");
+		clk = clk_get(NULL, "uart2_eclk_div");
 
-	//clk_set_rate(clk, 100000000);
-	clk_set_rate(clk, 150000000);
-	up->port.uartclk = clk_get_rate(clk);
+		//clk_set_rate(clk, 100000000);
+		clk_set_rate(clk, 150000000);
+		up->port.uartclk = clk_get_rate(clk);
 	}
 #endif
 
 #ifdef CONFIG_NUC980_UART3
 	if(up->port.line == 3) {
-	clk = clk_get(NULL, "uart3");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart3");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart3_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart3_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clkmux = clk_get(NULL, "uart3_eclk_mux");
-	upll_clk = clk_get(NULL, "upll");
-	clk_set_parent(clkmux, upll_clk);
+		clkmux = clk_get(NULL, "uart3_eclk_mux");
+		upll_clk = clk_get(NULL, "upll");
+		clk_set_parent(clkmux, upll_clk);
 
-	clk = clk_get(NULL, "uart3_eclk_div");
+		clk = clk_get(NULL, "uart3_eclk_div");
 
-	//clk_set_rate(clk, 100000000);
-	clk_set_rate(clk, 150000000);
-	up->port.uartclk = clk_get_rate(clk);
+		//clk_set_rate(clk, 100000000);
+		clk_set_rate(clk, 150000000);
+		up->port.uartclk = clk_get_rate(clk);
 	}
 #endif
 
 #ifdef CONFIG_NUC980_UART4
 	if(up->port.line == 4) {
-	clk = clk_get(NULL, "uart4");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart4");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart4_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart4_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clkmux = clk_get(NULL, "uart4_eclk_mux");
-	upll_clk = clk_get(NULL, "upll");
-	clk_set_parent(clkmux, upll_clk);
+		clkmux = clk_get(NULL, "uart4_eclk_mux");
+		upll_clk = clk_get(NULL, "upll");
+		clk_set_parent(clkmux, upll_clk);
 
-	clk = clk_get(NULL, "uart4_eclk_div");
+		clk = clk_get(NULL, "uart4_eclk_div");
 
-	//clk_set_rate(clk, 100000000);
-	clk_set_rate(clk, 150000000);
-	up->port.uartclk = clk_get_rate(clk);
+		//clk_set_rate(clk, 100000000);
+		clk_set_rate(clk, 150000000);
+		up->port.uartclk = clk_get_rate(clk);
 	}
 #endif
 
 #ifdef CONFIG_NUC980_UART5
 	if(up->port.line == 5) {
-	clk = clk_get(NULL, "uart5");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart5");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart5_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart5_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clkmux = clk_get(NULL, "uart5_eclk_mux");
-	upll_clk = clk_get(NULL, "upll");
-	clk_set_parent(clkmux, upll_clk);
+		clkmux = clk_get(NULL, "uart5_eclk_mux");
+		upll_clk = clk_get(NULL, "upll");
+		clk_set_parent(clkmux, upll_clk);
 
-	clk = clk_get(NULL, "uart5_eclk_div");
+		clk = clk_get(NULL, "uart5_eclk_div");
 
-	//clk_set_rate(clk, 100000000);
-	clk_set_rate(clk, 150000000);
-	up->port.uartclk = clk_get_rate(clk);
+		//clk_set_rate(clk, 100000000);
+		clk_set_rate(clk, 150000000);
+		up->port.uartclk = clk_get_rate(clk);
 	}
 #endif
 
 #ifdef CONFIG_NUC980_UART6
 	if(up->port.line == 6) {
-	clk = clk_get(NULL, "uart6");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart6");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart6_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart6_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clkmux = clk_get(NULL, "uart6_eclk_mux");
-	upll_clk = clk_get(NULL, "upll");
-	clk_set_parent(clkmux, upll_clk);
+		clkmux = clk_get(NULL, "uart6_eclk_mux");
+		upll_clk = clk_get(NULL, "upll");
+		clk_set_parent(clkmux, upll_clk);
 
-	clk = clk_get(NULL, "uart6_eclk_div");
+		clk = clk_get(NULL, "uart6_eclk_div");
 
-	//clk_set_rate(clk, 100000000);
-	clk_set_rate(clk, 150000000);
-	up->port.uartclk = clk_get_rate(clk);
+		//clk_set_rate(clk, 100000000);
+		clk_set_rate(clk, 150000000);
+		up->port.uartclk = clk_get_rate(clk);
 	}
 #endif
 
 #ifdef CONFIG_NUC980_UART7
 	if(up->port.line == 7) {
-	clk = clk_get(NULL, "uart7");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart7");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart7_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart7_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clkmux = clk_get(NULL, "uart7_eclk_mux");
-	upll_clk = clk_get(NULL, "upll");
-	clk_set_parent(clkmux, upll_clk);
+		clkmux = clk_get(NULL, "uart7_eclk_mux");
+		upll_clk = clk_get(NULL, "upll");
+		clk_set_parent(clkmux, upll_clk);
 
-	clk = clk_get(NULL, "uart7_eclk_div");
+		clk = clk_get(NULL, "uart7_eclk_div");
 
-	//clk_set_rate(clk, 100000000);
-	clk_set_rate(clk, 150000000);
-	up->port.uartclk = clk_get_rate(clk);
+		//clk_set_rate(clk, 100000000);
+		clk_set_rate(clk, 150000000);
+		up->port.uartclk = clk_get_rate(clk);
 	}
 #endif
 
 #ifdef CONFIG_NUC980_UART8
 	if(up->port.line == 8) {
-	clk = clk_get(NULL, "uart8");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart8");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart8_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart8_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clkmux = clk_get(NULL, "uart8_eclk_mux");
-	upll_clk = clk_get(NULL, "upll");
-	clk_set_parent(clkmux, upll_clk);
+		clkmux = clk_get(NULL, "uart8_eclk_mux");
+		upll_clk = clk_get(NULL, "upll");
+		clk_set_parent(clkmux, upll_clk);
 
-	clk = clk_get(NULL, "uart8_eclk_div");
+		clk = clk_get(NULL, "uart8_eclk_div");
 
-	//clk_set_rate(clk, 100000000);
-	clk_set_rate(clk, 150000000);
-	up->port.uartclk = clk_get_rate(clk);
+		//clk_set_rate(clk, 100000000);
+		clk_set_rate(clk, 150000000);
+		up->port.uartclk = clk_get_rate(clk);
 	}
 #endif
 
 #ifdef CONFIG_NUC980_UART9
 	if(up->port.line == 9) {
-	clk = clk_get(NULL, "uart9");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart9");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart9_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart9_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clkmux = clk_get(NULL, "uart9_eclk_mux");
-	upll_clk = clk_get(NULL, "upll");
-	clk_set_parent(clkmux, upll_clk);
+		clkmux = clk_get(NULL, "uart9_eclk_mux");
+		upll_clk = clk_get(NULL, "upll");
+		clk_set_parent(clkmux, upll_clk);
 
-	clk = clk_get(NULL, "uart9_eclk_div");
+		clk = clk_get(NULL, "uart9_eclk_div");
 
-	//clk_set_rate(clk, 100000000);
-	clk_set_rate(clk, 150000000);
-	up->port.uartclk = clk_get_rate(clk);
+		//clk_set_rate(clk, 100000000);
+		clk_set_rate(clk, 150000000);
+		up->port.uartclk = clk_get_rate(clk);
 	}
 #endif
 
@@ -1700,7 +1699,7 @@ static int nuc980serial_probe(struct platform_device *pdev)
 	nuc980serial_set_clock(up);
 
 #if defined(CONFIG_ENABLE_UART_PDMA) || defined(CONFIG_USE_OF)
-	#if defined(CONFIG_USE_OF)
+#if defined(CONFIG_USE_OF)
 	if (of_property_read_u32_array(pdev->dev.of_node, "pdma-enable", val32, 1) != 0) {
 		printk("%s - can not get map-addr!\n", __func__);
 		return -EINVAL;
@@ -1708,9 +1707,9 @@ static int nuc980serial_probe(struct platform_device *pdev)
 
 	if(val32[0] == 1) set_pdma_flag(up, i);
 
-	#else
+#else
 	set_pdma_flag(up, i);
-	#endif
+#endif
 #endif
 
 #if defined(CONFIG_USE_OF)

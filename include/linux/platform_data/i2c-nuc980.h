@@ -10,10 +10,12 @@
  */
 #ifndef __ASM_ARCH_NUC980_I2C_H
 #define __ASM_ARCH_NUC980_I2C_H
-
 extern void nuc980_mfp_set_port_g(u32 pin, u32 func);
 
-
 struct nuc980_platform_i2c {
+	int bus_num;
+	unsigned long bus_freq;
+};
+ 
+#endif	/* __ASM_ARCH_NUC980_I2C_H */
 
-int bus_num;

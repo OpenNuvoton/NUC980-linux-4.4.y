@@ -1,0 +1,67 @@
+config VIDEO0_NUC980
+	tristate "Nuvoton NUC980 Video-In0 Support"
+	depends on I2C && VIDEO_DEV
+	select VIDEO_BUF
+	select VIDEOBUF_DMA_CONTIG
+	---help---
+	Support for built-in video-in interface for NUC980.
+config VIN0_MAX_FRAME_BUFFER
+	int "Max frame buffer"
+	depends on VIDEO0_NUC980
+	default "3"
+config VIDEO0_FREQ
+	int "Video frequency"
+	depends on VIDEO0_NUC980
+	default "24000000"
+if !OF
+choice
+	prompt "Nuvoton NUC980 Image Sensor Selection"
+	depends on VIDEO0_NUC980
+	default SENSOR0_NT99141
+config SENSOR0_OV7725
+	bool "OV7725"
+config SENSOR0_OV5640
+	bool "OV5640"
+config SENSOR0_NT99141
+	bool "NT99141"
+config SENSOR0_NT99050
+	bool "NT99050"
+config SENSOR0_TW9912
+	bool "TW9912"
+endchoice
+endif
+
+
+config VIDEO1_NUC980
+        tristate "Nuvoton NUC980 Video-In1 Support"
+        depends on I2C && VIDEO_DEV
+        select VIDEO_BUF
+        select VIDEOBUF_DMA_CONTIG
+        ---help---
+        Support for built-in video-in interface for NUC980.
+config VIN1_MAX_FRAME_BUFFER
+        int "Max frame buffer"
+        depends on VIDEO1_NUC980
+        default "3"
+config VIDEO1_FREQ
+        int "Video frequency"
+        depends on VIDEO1_NUC980
+	default "24000000"
+if !OF
+choice
+        prompt "Nuvoton NUC980 Image Sensor Selection"
+        depends on VIDEO1_NUC980
+        default SENSOR1_NT99141
+config SENSOR1_OV7725
+        bool "OV7725"
+config SENSOR1_OV5640
+        bool "OV5640"
+config SENSOR1_NT99141
+        bool "NT99141"
+config SENSOR1_NT99050
+        bool "NT99050"
+config SENSOR1_TW9912
+        bool "TW9912"
+endchoice
+
+endif

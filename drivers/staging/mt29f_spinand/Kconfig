@@ -14,3 +14,13 @@ config MTD_SPINAND_ONDIEECC
 	help
 	  Internal ECC.
 	  Enables Hardware ECC support for Micron SPI NAND.
+
+config MTD_SPINAND_GIGADEVICE
+	tristate "SPINAND Devcie Support for Gigadevice "
+	depends on MTD_SPINAND_MT29F
+	help
+	  This enables support for accessing Gigadevice SPI NAND flash
+	  devices.
+	  If you have Gigadevice SPI NAND chip say yes.
+
+	  If unsure, say no here.

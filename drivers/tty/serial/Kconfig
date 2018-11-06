@@ -18,6 +18,431 @@ source "drivers/tty/serial/8250/Kconfig"
 
 comment "Non-8250 serial port support"
 
+config SERIAL_NUC980
+		bool "NUC980 serial support"
+		depends on ARCH_NUC980
+		select SERIAL_CORE
+		---help---
+			This selects NUC980 serial driver.
+
+config SERIAL_NUC980_CONSOLE
+		bool "Console on NUC980 serial port"
+		depends on SERIAL_NUC980=y
+		select SERIAL_CORE_CONSOLE
+		---help---
+		If you say Y here, it will be possible to use a serial port as the
+			system console.
+
+config ENABLE_UART_PDMA
+	bool "ENABLE UART PDMA"
+	depends on ENABLE_UART1_PDMA || ENABLE_UART2_PDMA || ENABLE_UART3_PDMA || ENABLE_UART4_PDMA || ENABLE_UART5_PDMA || ENABLE_UART6_PDMA || ENABLE_UART7_PDMA || ENABLE_UART8_PDMA || ENABLE_UART9_PDMA
+
+
+config NUC980_UART1
+	bool "NUC980 UART1 support"
+	depends on SERIAL_NUC980=y
+	help
+	  This selects NUC980 uart1 driver
+
+config ENABLE_UART1_CTS_WAKEUP
+	bool "Enable UART1 CTS wake-up function"
+	depends on NUC980_UART1
+	help
+	  This selects NUC980 uart1 CTS wake-up function
+
+config ENABLE_UART1_PDMA
+	bool "Enable UART1 PDMA function"
+	select ENABLE_UART_PDMA
+	depends on NUC980_UART1
+	help
+	  This selects NUC980 uart1 PDMA function
+
+choice
+	prompt "NUC980 UART1 pin selection"
+	default NUC980_UART1_PA
+	depends on NUC980_UART1
+	depends on !USE_OF
+	help
+	  Select UART1 multi-function pin.
+
+	config NUC980_UART1_PA
+		bool "Rx:PA0, Tx:PA1"
+	config NUC980_UART1_PC
+		bool "Rx:PC6, Tx:PC5"
+	config NUC980_UART1_PF
+		bool "Rx:PF9, Tx:PF10"
+	config NUC980_UART1_FC_PC
+		bool "Rx:PC6, Tx:PC5, RTS:PC7, CTS:PC8"
+	config NUC980_UART1_FC_PF
+		bool "Rx:PF9, Tx:PF10, RTS:PF8, CTS:PF7"
+endchoice
+
+
+config NUC980_UART2
+	bool "NUC980 UART2 support"
+	depends on SERIAL_NUC980=y
+	help
+	  This selects NUC980 uart2 driver
+
+config ENABLE_UART2_CTS_WAKEUP
+	bool "Enable UART2 CTS wake-up function"
+	depends on NUC980_UART2
+	help
+	  This selects NUC980 uart2 CTS wake-up function
+
+config ENABLE_UART2_PDMA
+	bool "Enable UART2 PDMA function"
+	select ENABLE_UART_PDMA
+	depends on NUC980_UART2
+	help
+	  This selects NUC980 uart2 PDMA function
+
+choice
+	prompt "NUC980 UART2 pin selection"
+	default NUC980_UART2_PA
+	depends on NUC980_UART2
+	depends on !USE_OF
+	help
+	  Select UART2 multi-function pin.
+
+	config NUC980_UART2_PA
+		bool "Rx:PA9, Tx:PA10"
+	config NUC980_UART1_PG
+		bool "Rx:PG0, Tx:PG1"
+	config NUC980_UART2_PD
+		bool "Rx:PD7, Tx:PD6"
+	config NUC980_UART2_FC_PA
+		bool "Rx:PA9, Tx:PA10, RTS:PA8, CTS:PA7"
+	config NUC980_UART2_FC_PG
+		bool "Rx:PG0, Tx:PG1, RTS:PG3, CTS:PG2"
+	config NUC980_UART2_FC_PA_PB
+		bool "Rx:PA9, Tx:PA10, RTS:PA8, CTS:PB0"
+endchoice
+
+config NUC980_UART3
+	bool "NUC980 UART3 support"
+	depends on SERIAL_NUC980=y
+	help
+	  This selects NUC980 uart3 driver
+
+config ENABLE_UART3_CTS_WAKEUP
+	bool "Enable UART3 CTS wake-up function"
+	depends on NUC980_UART3
+	help
+	  This selects NUC980 uart3 CTS wake-up function
+
+config ENABLE_UART3_PDMA
+	bool "Enable UART3 PDMA function"
+	select ENABLE_UART_PDMA
+	depends on NUC980_UART3
+	help
+	  This selects NUC980 uart3 PDMA function
+
+choice
+	prompt "NUC980 UART3 pin selection"
+	default NUC980_UART3_PC
+	depends on NUC980_UART3
+	depends on !USE_OF
+	help
+	  Select UART3 multi-function pin.
+
+	config NUC980_UART3_PC
+		bool "Rx:PC4, Tx:PC3"
+	config NUC980_UART3_PB
+		bool "Rx:PB10, Tx:PB9"
+	config NUC980_UART3_PD
+		bool "Rx:PD3, Tx:PD2"
+	config NUC980_UART3_PB_PF
+		bool "Rx:PF6, Tx:PB13"
+	config NUC980_UART3_PF
+		bool "Rx:PF6, Tx:PF7"
+	config NUC980_UART3_FC_PB
+		bool "Rx:PB10, Tx:PB9, RTS:PB11, CTS:PB12"
+	config NUC980_UART3_FC_PD
+		bool "Rx:PD3, Tx:PD2, RTS:PD4, CTS:PD5"
+	config NUC980_UART3_FC_PF
+		bool "Rx:PF6, Tx:PF7, RTS:PF5, CTS:PF4"
+endchoice
+
+config NUC980_UART4
+	bool "NUC980 UART4 support"
+	depends on SERIAL_NUC980=y
+	help
+	  This selects NUC980 uart4 driver
+
+config ENABLE_UART4_CTS_WAKEUP
+	bool "Enable UART4 CTS wake-up function"
+	depends on NUC980_UART4
+	help
+	  This selects NUC980 uart4 CTS wake-up function
+
+config ENABLE_UART4_PDMA
+	bool "Enable UART4 PDMA function"
+	select ENABLE_UART_PDMA
+	depends on NUC980_UART4
+	help
+	  This selects NUC980 uart4 PDMA function
+
+choice
+	prompt "NUC980 UART4 pin selection"
+	default NUC980_UART4_PC
+	depends on NUC980_UART4
+	depends on !USE_OF
+	help
+	  Select UART4 multi-function pin.
+
+	config NUC980_UART4_PC
+		bool "Rx:PC10, Tx:PC9"
+	config NUC980_UART4_PD
+		bool "Rx:PD13, Tx:PD12"
+	config NUC980_UART4_PE
+		bool "Rx:PE2, Tx:PE3"
+	config NUC980_UART4_FC_PD
+		bool "Rx:PD13, Tx:PD12, RTS:PD14, CTS:PD15"
+	config NUC980_UART4_FC_PE
+		bool "Rx:PE2, Tx:PE3, RTS:PE1, CTS:PE0"
+endchoice
+
+
+config NUC980_UART5
+	bool "NUC980 UART5 support"
+	depends on SERIAL_NUC980=y
+	help
+	  This selects NUC980 uart5 driver
+
+config ENABLE_UART5_CTS_WAKEUP
+	bool "Enable UART5 CTS wake-up function"
+	depends on NUC980_UART5
+	help
+	  This selects NUC980 uart5 CTS wake-up function
+
+config ENABLE_UART5_PDMA
+	bool "Enable UART5 PDMA function"
+	select ENABLE_UART_PDMA
+	depends on NUC980_UART5
+	help
+	  This selects NUC980 uart5 PDMA function
+
+choice
+	prompt "NUC980 UART5 pin selection"
+	default NUC980_UART5_PG_0
+	depends on NUC980_UART5
+	depends on !USE_OF
+	help
+	  Select UART5 multi-function pin.
+
+	config NUC980_UART5_PG_0
+		bool "Rx:PG6, Tx:PG7"
+	config NUC980_UART5_PD
+		bool "Rx:PD1, Tx:PD0"
+	config NUC980_UART5_PG_1
+		bool "Rx:PG13, Tx:PG14"
+	config NUC980_UART5_FC_PG_0
+		bool "Rx:PG6, Tx:PG7, RTS:PG5, CTS:PG4"
+	config NUC980_UART5_FC_PG_1
+		bool "Rx:PG13, Tx:PG14, RTS:PG12, CTS:PG11"
+endchoice
+
+config NUC980_UART6
+	bool "NUC980 UART6 support"
+	depends on SERIAL_NUC980=y
+	help
+	  This selects NUC980 uart6 driver
+
+config ENABLE_UART6_CTS_WAKEUP
+	bool "Enable UART6 CTS wake-up function"
+	depends on NUC980_UART6
+	help
+	  This selects NUC980 uart6 CTS wake-up function
+
+config ENABLE_UART6_PDMA
+	bool "Enable UART6 PDMA function"
+	select ENABLE_UART_PDMA
+	depends on NUC980_UART6
+	help
+	  This selects NUC980 uart6 PDMA function
+
+choice
+	prompt "NUC980 UART6 pin selection"
+	default NUC980_UART6_PA
+	depends on NUC980_UART6
+	depends on !USE_OF
+	help
+	  Select UART6 multi-function pin.
+
+	config NUC980_UART6_PA
+		bool "Rx:PA4, Tx:PA5"
+	config NUC980_UART6_PD
+		bool "Rx:PD11, Tx:PD10"
+	config NUC980_UART6_PE
+		bool "Rx:PE8, Tx:PE9"
+	config NUC980_UART6_FC_PA
+		bool "Rx:PA4, Tx:PA5, RTS:PA3, CTS:PA2"
+	config NUC980_UART6_FC_PD
+		bool "Rx:PD11, Tx:PD10, RTS:PD9, CTS:PD8"
+endchoice
+
+config NUC980_UART7
+	bool "NUC980 UART7 support"
+	depends on SERIAL_NUC980=y
+	help
+	  This selects NUC980 uart7 driver
+
+config ENABLE_UART7_CTS_WAKEUP
+	bool "Enable UART7 CTS wake-up function"
+	depends on NUC980_UART7
+	help
+	  This selects NUC980 uart7 CTS wake-up function
+
+config ENABLE_UART7_PDMA
+	bool "Enable UART7 PDMA function"
+	select ENABLE_UART_PDMA
+	depends on NUC980_UART7
+	help
+	  This selects NUC980 uart7 PDMA function
+
+choice
+	prompt "NUC980 UART7 pin selection"
+	default NUC980_UART7_PA
+	depends on NUC980_UART7
+	depends on !USE_OF
+	help
+	  Select UART7 multi-function pin.
+
+	config NUC980_UART7_PA
+		bool "Rx:PA14, Tx:PA13"
+	config NUC980_UART7_PB
+		bool "Rx:PB4, Tx:PB6"
+	config NUC980_UART7_PC
+		bool "Rx:PC2, Tx:PC1"
+	config NUC980_UART7_PF
+		bool "Rx:PF2, Tx:PF3"
+	config NUC980_UART7_FC_PB
+		bool "Rx:PB4, Tx:PB6, RTS:PB5, CTS:PB7"
+	config NUC980_UART7_FC_PF
+		bool "Rx:PF2, Tx:PF3, RTS:PF1, CTS:PF0"
+endchoice
+
+config NUC980_UART8
+	bool "NUC970 UART8 support"
+	depends on SERIAL_NUC980=y
+	help
+	  This selects NUC980 uart8 driver
+
+config ENABLE_UART8_CTS_WAKEUP
+	bool "Enable UART8 CTS wake-up function"
+	depends on NUC980_UART8
+	help
+	  This selects NUC980 uart8 CTS wake-up function
+
+config ENABLE_UART8_PDMA
+	bool "Enable UART8 PDMA function"
+	select ENABLE_UART_PDMA
+	depends on NUC980_UART8
+	help
+	  This selects NUC980 uart8 PDMA function
+
+choice
+	prompt "NUC980 UART8 pin selection"
+	default NUC980_UART8_PA
+	depends on NUC980_UART8
+	depends on !USE_OF
+	help
+	  Select UART8 multi-function pin.
+
+	config NUC980_UART8_PA
+		bool "Rx:PA11, Tx:PA12"
+	config NUC980_UART8_PB
+		bool "Rx:PC0, Tx:PB8"
+	config NUC980_UART8_PC
+		bool "Rx:PC13, Tx:PC12"
+	config NUC980_UART8_FC_PA_PG
+		bool "Rx:PA11, Tx:PA12, RTS:PG8, CTS:PG9"
+	config NUC980_UART8_FC_PC
+		bool "Rx:PC13, Tx:PC12, RTS:PC14, CTS:PC15"
+endchoice
+
+config NUC980_UART9
+	bool "NUC980 UART9 support"
+	depends on SERIAL_NUC980=y
+	help
+	  This selects NUC980 uart9 driver
+
+config ENABLE_UART9_CTS_WAKEUP
+	bool "Enable UART9 CTS wake-up function"
+	depends on NUC980_UART9
+	help
+	  This selects NUC980 uart9 CTS wake-up function
+
+config ENABLE_UART9_PDMA
+	bool "Enable UART9 PDMA function"
+	select ENABLE_UART_PDMA
+	depends on NUC980_UART9
+	help
+	  This selects NUC980 uart9 PDMA function
+
+choice
+	prompt "NUC980 UART9 pin selection"
+	default NUC980_UART9_PB
+	depends on NUC980_UART9
+	depends on !USE_OF
+	help
+	  Select UART9 multi-function pin.
+
+	config NUC980_UART9_PB
+		bool "Rx:PB3, Tx:PB1"
+	config NUC980_UART9_PE_0
+		bool "Rx:PE6, Tx:PE7"
+	config NUC980_UART9_PE_1
+		bool "Rx:PE10, Tx:PE12"
+	config NUC980_UART9_FC_PE
+		bool "Rx:PE6, Tx:PE7, RTS:PE5, CTS:PE4"
+endchoice
+
+config SCUART_NUC980
+		bool "NUC980 Smartcard UART Mode support"
+		depends on ARCH_NUC980
+		select SERIAL_CORE
+		---help---
+		This selects NUC980 smartcard uart mode driver.
+
+config NUC980_SCUART0
+	bool "NUC980 SCUART0 support"
+	depends on ARCH_NUC980
+	depends on SCUART_NUC980=y && !USE_OF
+	help
+	  This selects NUC980 scuart0 driver
+choice
+	prompt "NUC980 SCUART0 pin selection"
+	default NUC980_SCUART0_PA
+	depends on NUC980_SCUART0
+	help
+	  Select SCUART0 multi-function pin.
+
+	config NUC980_SCUART0_PA
+		bool "Tx:PA5, Rx:PA4"
+	config NUC980_SCUART0_PC
+		bool "Tx:PC12, Rx:PC13"
+endchoice
+
+config NUC980_SCUART1
+	bool "NUC980 SCUART1 support"
+	depends on SCUART_NUC980=y && !USE_OF
+	help
+	  This selects NUC980 scuart1 driver
+choice
+	prompt "NUC980 SCUART1 pin selection"
+	default NUC980_SCUART1_PC
+	depends on NUC980_SCUART1
+	help
+	  Select SCUART1 multi-function pin.
+
+	config NUC980_SCUART1_PC
+		bool "Tx:PC7, Rx:PC8"
+	config NUC980_SCUART1_PF
+		bool "Tx:PF1, Rx:PF2"
+endchoice
+
 config SERIAL_AMBA_PL010
 	tristate "ARM AMBA PL010 serial port support"
 	depends on ARM_AMBA

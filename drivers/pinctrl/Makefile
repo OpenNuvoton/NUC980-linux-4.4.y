@@ -39,7 +39,11 @@ obj-$(CONFIG_PINCTRL_LPC18XX)	+= pinctrl-lpc18xx.o
 obj-$(CONFIG_PINCTRL_TB10X)	+= pinctrl-tb10x.o
 obj-$(CONFIG_PINCTRL_ST) 	+= pinctrl-st.o
 obj-$(CONFIG_PINCTRL_ZYNQ)	+= pinctrl-zynq.o
-
+ifeq ($(CONFIG_USE_OF),y)
+obj-$(CONFIG_PINCTRL_NUC980)    += pinctrl-nuc980-dt.o
+else
+obj-$(CONFIG_PINCTRL_NUC980)    += pinctrl-nuc980.o
+endif
 obj-$(CONFIG_ARCH_BCM)		+= bcm/
 obj-$(CONFIG_ARCH_BERLIN)	+= berlin/
 obj-y				+= freescale/

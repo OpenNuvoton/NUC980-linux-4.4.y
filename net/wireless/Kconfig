@@ -1,3 +1,11 @@
+config NVT_EXT_WIFI
+	tristate "Nuvoton external WiFi driver support"
+	depends on ARCH_NUC980
+	select WIRELESS_EXT
+	select WEXT_PRIV
+	---help---
+	  Enable this option to support USB or SDIO WiFi on NUC980 platfrom
+
 config WIRELESS_EXT
 	bool
 

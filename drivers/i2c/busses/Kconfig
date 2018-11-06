@@ -690,6 +690,114 @@ config I2C_NOMADIK
 	  I2C interface from ST-Ericsson's Nomadik and Ux500 architectures,
 	  as well as the STA2X11 PCIe I/O HUB.
 
+config I2C_BUS_NUC980_P0
+	tristate "NUC980 I2C Driver for Port 0"
+	depends on ARCH_NUC980
+	help
+	  Say Y here to include support for I2C controller in the
+	  Nuvoton NUC980 based System-on-Chip devices.
+
+config ENABLE_I2C_P0_SLAVE_MODE
+	tristate "Enable NUC980 I2C Port 0 Slave Mode"
+	depends on I2C_BUS_NUC980_P0 && I2C_SLAVE
+	help
+	  Enable NUC980 I2C Port 0 Slave Mode.
+
+choice
+		prompt "NUC980 I2C0 pin selection"
+		default NUC980_I2C0_PA
+		depends on I2C_BUS_NUC980_P0
+		help
+		  Select I2C0 multi-function pin.
+
+		config NUC980_I2C0_PA
+			bool "SDA:PA_0  SCL:PA_1"
+		config NUC980_I2C0_PA_PG
+			bool "SDA:PA_15  SCL:PG_10"
+		config NUC980_I2C0_PE
+			bool "SDA:PE_10  SCL:PE_12"
+endchoice
+
+config I2C_BUS_NUC980_P1
+	tristate "NUC980 I2C Driver for Port 1"
+	depends on ARCH_NUC980
+	help
+	  Say Y here to include support for I2C controller in the
+	  Nuvoton NUC980 based System-on-Chip devices.
+
+config ENABLE_I2C_P1_SLAVE_MODE
+	tristate "Enable NUC980 I2C Port 1 Slave Mode"
+	depends on I2C_BUS_NUC980_P1 && I2C_SLAVE
+	help
+	  Enable NUC980 I2C Port 1 Slave Mode.
+
+choice
+		prompt "NUC980 I2C1 pin selection"
+		default NUC980_I2C1_PA
+		depends on I2C_BUS_NUC980_P1
+		help
+		  Select I2C1 multi-function pin.
+
+		config NUC980_I2C1_PA
+			bool "SDA:PA_13  SCL:PA_14"
+		config NUC980_I2C1_PB
+			bool "SDA:PB_6  SCL:PB_4"
+		config NUC980_I2C1_PC
+			bool "SDA:PC_4  SCL:PC_3"
+endchoice
+
+config I2C_BUS_NUC980_P2
+	tristate "NUC980 I2C Driver for Port 2"
+	depends on ARCH_NUC980
+	help
+	  Say Y here to include support for I2C controller in the
+	  Nuvoton NUC980 based System-on-Chip devices.
+
+config ENABLE_I2C_P2_SLAVE_MODE
+	tristate "Enable NUC980 I2C Port 2 Slave Mode"
+	depends on I2C_BUS_NUC980_P2 && I2C_SLAVE
+	help
+	  Enable NUC980 I2C Port 2 Slave Mode.
+
+choice
+		prompt "NUC980 I2C2 pin selection"
+		default NUC980_I2C2_PB
+		depends on I2C_BUS_NUC980_P2
+		help
+		  Select I2C2 multi-function pin.
+
+		config NUC980_I2C2_PB
+			bool "SDA:PB_7  SCL:PB_5"
+		config NUC980_I2C2_PB_PC
+			bool "SDA:PC_0  SCL:PB_8"
+endchoice
+
+config I2C_BUS_NUC980_P3
+	tristate "NUC980 I2C Driver for Port 3"
+	depends on ARCH_NUC980
+	help
+	  Say Y here to include support for I2C controller in the
+	  Nuvoton NUC980 based System-on-Chip devices.
+
+config ENABLE_I2C_P3_SLAVE_MODE
+	tristate "Enable NUC980 I2C Port 3 Slave Mode"
+	depends on I2C_BUS_NUC980_P3 && I2C_SLAVE
+	help
+	  Enable NUC980 I2C Port 3 Slave Mode.
+
+choice
+		prompt "NUC980 I2C3 pin selection"
+		default NUC980_I2C3_PB
+		depends on I2C_BUS_NUC980_P3
+		help
+		  Select I2C3 multi-function pin.
+
+		config NUC980_I2C3_PB
+			bool "SDA:PB_1  SCL:PB_3"
+		config NUC980_I2C3_PD
+			bool "SDA:PD_15  SCL:PD_14"
+endchoice
+
 config I2C_OCORES
 	tristate "OpenCores I2C Controller"
 	help

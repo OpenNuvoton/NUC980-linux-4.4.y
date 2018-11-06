@@ -261,4 +261,10 @@
 /* STM32 USART */
 #define PORT_STM32	113
 
+/* NUC970 UART */
+#define PORT_NUC970	114
+
+/* NUC980 UART */
+#define PORT_NUC980	115
+
 #endif /* _UAPILINUX_SERIAL_CORE_H */

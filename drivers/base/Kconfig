@@ -327,4 +327,29 @@ config CMA_ALIGNMENT
 
 endif
 
+config FMI_NUC980
+	tristate "Nuvoton NUC980 FMI function selection"
+	depends on ARCH_NUC980
+	help
+	  Switch FMI function to support SD0 or MTD NAND function.
+
+choice
+	prompt "Select FMI device to support"
+	default NUC980_FMI_MTD_NAND
+	depends on FMI_NUC980
+	help
+	  Select FMI device to support, such as SD card or NAND Flash device.
+
+	config NUC980_FMI_MTD_NAND
+		bool "Support MTD NAND Flash"
+        select MTD
+        select MTD_NAND
+        select MTD_NAND_NUC980
+
+	config NUC980_FMI_SD0
+		bool "Support SD0 Device"
+        select MMC
+        select MMC_NUC980_FMI
+endchoice
+
 endmenu

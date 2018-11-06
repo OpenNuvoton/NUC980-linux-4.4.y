@@ -1,0 +1,278 @@
+/*
+ * arch/arm/mach-nuc980/include/mach/map.h
+ *
+ * Copyright (c) 2017 Nuvoton technology corporation.
+ *
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ */
+
+#ifndef __ASM_ARCH_MAP_H
+#define __ASM_ARCH_MAP_H
+
+#ifndef __ASSEMBLY__
+#define NUC980_ADDR(x)		((void __iomem *)(0xF0000000 + (x)))
+#else
+#define NUC980_ADDR(x)		(0xF0000000 + (x))
+#endif
+
+/*
+ * interrupt controller is the first thing we put in, to make
+ * the assembly code for the irq detection easier
+ */
+#define NUC980_VA_IRQ		NUC980_ADDR(0x00000000)
+#define NUC980_PA_IRQ		(0xB0042000)
+#define NUC980_SZ_IRQ		SZ_4K
+
+/* GCR, Clock management */
+#define NUC980_VA_GCR_CLK	NUC980_ADDR(0x08002000)
+#define NUC980_PA_GCR_CLK	(0xB0000000)
+#define NUC980_SZ_GCR_CLK	SZ_4K
+
+#define NUC980_VA_GCR		(NUC980_VA_GCR_CLK)
+#define NUC980_PA_GCR		(0xB0000000)
+#define NUC980_SZ_GCR		SZ_512
+
+/* Clock management */
+#define NUC980_VA_CLK		(NUC980_VA_GCR+0x200)
+#define NUC980_PA_CLK		(0xB0000200)
+#define NUC980_SZ_CLK		SZ_512
+
+/* SDIC management */
+#define NUC980_VA_SDIC		NUC980_ADDR(0x00002000)
+#define NUC980_PA_SDIC		(0xB0002000)
+#define NUC980_SZ_SDIC		SZ_4K
+
+/* EBI management */
+#define NUC980_VA_EBI		NUC980_ADDR(0x00010000)
+#define NUC980_PA_EBI		(0xB0010000)
+#define NUC980_SZ_EBI		SZ_4K
+
+/* GPIO management */
+#define NUC980_VA_GPIO		NUC980_ADDR(0x00004000)
+#define NUC980_PA_GPIO		(0xB0004000)
+#define NUC980_SZ_GPIO		SZ_4K
+
+/* External MAC0 control*/
+#define NUC980_VA_EMAC0		NUC980_ADDR(0x00012000)
+#define NUC980_PA_EMAC0		(0xB0012000)
+#define NUC980_SZ_EMAC0		SZ_4K
+
+/* External MAC1 control*/
+#define NUC980_VA_EMAC1		NUC980_ADDR(0x00022000)
+#define NUC980_PA_EMAC1		(0xB0022000)
+#define NUC980_SZ_EMAC1		SZ_4K
+
+/* PDMA0 */
+#define NUC980_VA_PDMA0		NUC980_ADDR(0x00008000)
+#define NUC980_PA_PDMA0		(0xB0008000)
+#define NUC980_SZ_PDMA0		SZ_4K
+
+/* PDMA1 */
+#define NUC980_VA_PDMA1		NUC980_ADDR(0x00009000)
+#define NUC980_PA_PDMA1		(0xB0009000)
+#define NUC980_SZ_PDMA1		SZ_4K
+
+/* USB host controller*/
+#define NUC980_VA_EHCI		NUC980_ADDR(0x00015000)
+#define NUC980_PA_EHCI		(0xB0015000)
+#define NUC980_SZ_EHCI		SZ_4K
+
+#define NUC980_VA_OHCI		NUC980_ADDR(0x00017000)
+#define NUC980_PA_OHCI		(0xB0017000)
+#define NUC980_SZ_OHCI		SZ_4K
+
+/* USB Device port */
+#define NUC980_VA_USBDEV	NUC980_ADDR(0x00016000)
+#define NUC980_PA_USBDEV	(0xB0016000)
+#define NUC980_SZ_USBDEV	SZ_4K
+
+/* I2S */
+#define NUC980_VA_I2S		NUC980_ADDR(0x00020000)
+#define NUC980_PA_I2S		(0xB0020000)
+#define NUC980_SZ_I2S		SZ_4K
+
+/* SDH Controller */
+#define NUC980_VA_SDH		NUC980_ADDR(0x00018000)
+#define NUC980_PA_SDH		(0xB0018000)
+#define NUC980_SZ_SDH		SZ_4K
+
+/* FMI Controller */
+#define NUC980_VA_FMI		NUC980_ADDR(0x00019000)
+#define NUC980_PA_FMI		(0xB0019000)
+#define NUC980_SZ_FMI		SZ_4K
+
+/* VCAP Interface */
+#define NUC980_VA_CAP0		NUC980_ADDR(0x00024000)
+#define NUC980_PA_CAP0		(0xB0024000)
+#define NUC980_SZ_CAP0		SZ_4K
+
+#define NUC980_VA_CAP1		NUC980_ADDR(0x00014000)
+#define NUC980_PA_CAP1		(0xB0014000)
+#define NUC980_SZ_CAP1		SZ_4K
+
+
+/* Crypto Engine */
+#define NUC980_VA_CRYPTO	NUC980_ADDR(0x0001C000)
+#define NUC980_PA_CRYPTO	(0xB001C000)
+#define NUC980_SZ_CRYPTO	SZ_16K	// use 12K only
+
+/* Watchdog Timer (WDT) & Window Watchdog Timer (WWDT)  */
+#define NUC980_VA_WDT_WWDT	NUC980_ADDR(0x00040000)
+#define NUC980_PA_WDT_WWDT	(0xB0040000)
+#define NUC980_SZ_WDT_WWDT	SZ_4K
+
+/* Watchdog Timer (WDT) */
+#define NUC980_VA_WDT		NUC980_ADDR(0x00040000)
+#define NUC980_PA_WDT		(0xB0040000)
+#define NUC980_SZ_WDT		SZ_256
+
+/* Window Watchdog Timer (WWDT) */
+#define NUC980_VA_WWDT		NUC980_ADDR(0x00040100)
+#define NUC980_PA_WWDT		(0xB0040100)
+#define NUC980_SZ_WWDT		SZ_256
+
+/* RTC */
+#define NUC980_VA_RTC		NUC980_ADDR(0x00041000)
+#define NUC980_PA_RTC		(0xB0041000)
+#define NUC980_SZ_RTC		SZ_4K
+
+/* Smart card host*/
+#define NUC980_VA_SC0		NUC980_ADDR(0x00090000)
+#define NUC980_PA_SC0		(0xB0090000)
+#define NUC980_SZ_SC0		SZ_4K
+
+#define NUC980_VA_SC1		NUC980_ADDR(0x00091000)
+#define NUC980_PA_SC1		(0xB0091000)
+#define NUC980_SZ_SC1		SZ_4K
+
+/* I2C hardware controller */
+#define NUC980_VA_I2C0		NUC980_ADDR(0x00080000)
+#define NUC980_PA_I2C0		(0xB0080000)
+#define NUC980_SZ_I2C0		SZ_4K
+
+#define NUC980_VA_I2C1		NUC980_ADDR(0x00081000)
+#define NUC980_PA_I2C1		(0xB0081000)
+#define NUC980_SZ_I2C1		SZ_4K
+
+#define NUC980_VA_I2C2		NUC980_ADDR(0x00082000)
+#define NUC980_PA_I2C2		(0xB0082000)
+#define NUC980_SZ_I2C2		SZ_4K
+
+#define NUC980_VA_I2C3		NUC980_ADDR(0x00083000)
+#define NUC980_PA_I2C3		(0xB0083000)
+#define NUC980_SZ_I2C3		SZ_4K
+
+/* UART */
+#define NUC980_VA_UART0		NUC980_ADDR(0x00070000)
+#define NUC980_PA_UART0		(0xB0070000)
+#define NUC980_SZ_UART0		SZ_4K
+
+#define NUC980_VA_UART1		NUC980_ADDR(0x00071000)
+#define NUC980_PA_UART1		(0xB0071000)
+#define NUC980_SZ_UART1		SZ_4K
+
+#define NUC980_VA_UART2		NUC980_ADDR(0x00072000)
+#define NUC980_PA_UART2		(0xB0072000)
+#define NUC980_SZ_UART2		SZ_4K
+
+#define NUC980_VA_UART3		NUC980_ADDR(0x00073000)
+#define NUC980_PA_UART3		(0xB0073000)
+#define NUC980_SZ_UART3		SZ_4K
+
+#define NUC980_VA_UART4		NUC980_ADDR(0x00074000)
+#define NUC980_PA_UART4		(0xB0074000)
+#define NUC980_SZ_UART4		SZ_4K
+
+#define NUC980_VA_UART5		NUC980_ADDR(0x00075000)
+#define NUC980_PA_UART5		(0xB0075000)
+#define NUC980_SZ_UART5		SZ_4K
+
+#define NUC980_VA_UART6		NUC980_ADDR(0x00076000)
+#define NUC980_PA_UART6		(0xB0076000)
+#define NUC980_SZ_UART6		SZ_4K
+
+#define NUC980_VA_UART7		NUC980_ADDR(0x00077000)
+#define NUC980_PA_UART7		(0xB0077000)
+#define NUC980_SZ_UART7		SZ_4K
+
+#define NUC980_VA_UART8		NUC980_ADDR(0x00078000)
+#define NUC980_PA_UART8		(0xB0078000)
+#define NUC980_SZ_UART8		SZ_4K
+
+#define NUC980_VA_UART9		NUC980_ADDR(0x00079000)
+#define NUC980_PA_UART9		(0xB0079000)
+#define NUC980_SZ_UART9		SZ_4K
+
+/* SPI Controller */
+#define NUC980_VA_SPI0 		NUC980_ADDR(0x00060000)
+#define NUC980_PA_SPI0 		(0xB0060000)
+#define NUC980_SZ_SPI0		SZ_4K
+
+#define NUC980_VA_SPI1		NUC980_ADDR(0x00061000)
+#define NUC980_PA_SPI1		(0xB0061000)
+#define NUC980_SZ_SPI1		SZ_4K
+
+#define NUC980_VA_SPI2		NUC980_ADDR(0x00062000)
+#define NUC980_PA_SPI2		(0xB0062000)
+#define NUC980_SZ_SPI2		SZ_4K
+
+/* TIMER Controller */
+#define NUC980_VA_TIMER01	NUC980_ADDR(0x00050000)
+#define NUC980_PA_TIMER01	(0xB0050000)
+#define NUC980_SZ_TIMER01	SZ_4K
+
+#define NUC980_VA_TIMER23	NUC980_ADDR(0x00051000)
+#define NUC980_PA_TIMER23	(0xB0051000)
+#define NUC980_SZ_TIMER23	SZ_4K
+
+#define NUC980_VA_TIMER45	NUC980_ADDR(0x00052000)
+#define NUC980_PA_TIMER45	(0xB0052000)
+#define NUC980_SZ_TIMER45	SZ_4K
+
+/* Pulse Width Modulation(PWM) Registers */
+#define NUC980_VA_PWM0		NUC980_ADDR(0x00058000)
+#define NUC980_PA_PWM0		(0xB0058000)
+#define NUC980_SZ_PWM0		SZ_4K
+
+#define NUC980_VA_PWM1		NUC980_ADDR(0x00059000)
+#define NUC980_PA_PWM1		(0xB0059000)
+#define NUC980_SZ_PWM1		SZ_4K
+
+/* ADC */
+#define NUC980_VA_ADC		NUC980_ADDR(0x00043000)
+#define NUC980_PA_ADC		(0xB0043000)
+#define NUC980_SZ_ADC		SZ_4K
+
+/* CAN Controller */
+#define NUC980_VA_CAN0		NUC980_ADDR(0x000A0000)
+#define NUC980_PA_CAN0		(0xB00A0000)
+#define NUC980_SZ_CAN0		SZ_4K
+
+#define NUC980_VA_CAN1		NUC980_ADDR(0x000A1000)
+#define NUC980_PA_CAN1		(0xB00A1000)
+#define NUC980_SZ_CAN1		SZ_4K
+
+#define NUC980_VA_CAN2		NUC980_ADDR(0x000A2000)
+#define NUC980_PA_CAN2		(0xB00A2000)
+#define NUC980_SZ_CAN2		SZ_4K
+
+#define NUC980_VA_CAN3		NUC980_ADDR(0x000A3000)
+#define NUC980_PA_CAN3		(0xB00A3000)
+#define NUC980_SZ_CAN3		SZ_4K
+
+
+/* SRAM */
+#define NUC980_VA_SRAM		NUC980_ADDR(0x0C000000)
+#define NUC980_PA_SRAM		(0xBC000000)
+#define NUC980_SZ_SRAM		SZ_16K
+
+#endif /* __ASM_ARCH_MAP_H */

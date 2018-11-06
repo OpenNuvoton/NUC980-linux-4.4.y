@@ -93,3 +93,6 @@ obj-$(CONFIG_SPI_XILINX)		+= spi-xilinx.o
 obj-$(CONFIG_SPI_XLP)			+= spi-xlp.o
 obj-$(CONFIG_SPI_XTENSA_XTFPGA)		+= spi-xtensa-xtfpga.o
 obj-$(CONFIG_SPI_ZYNQMP_GQSPI)		+= spi-zynqmp-gqspi.o
+obj-$(CONFIG_SPI_NUC980_QSPI0)          += spi-nuc980-qspi0.o
+obj-$(CONFIG_SPI_NUC980_SPI0)           += spi-nuc980-spi0.o
+obj-$(CONFIG_SPI_NUC980_SPI1)           += spi-nuc980-spi1.o

@@ -406,4 +406,77 @@ config XILINX_XADC
 	  The driver can also be build as a module. If so, the module will be called
 	  xilinx-xadc.
 
+config IIO_NUC980ADC
+	tristate "Nuvoton NUC980 Normal ADC driver"
+	depends on ARCH_NUC980
+	select IIO_BUFFER
+	select IIO_TRIGGERED_BUFFER
+	select NUC980_ADC
+	help
+	  Say yes here to build support for NUC980 normal ADC.
+choice
+	prompt "Reference voltage selection"
+	default NUC980ADC_I33V
+	depends on IIO_NUC980ADC
+	help
+	  Select reference voltage source
+
+config NUC980ADC_I33V
+	bool "Internal AVDD, 3.3V"
+config NUC980ADC_VREF
+	bool "VREF input"
+endchoice
+
+config NUC980ADC_BANDGAP
+	bool "Enable internal bandgap"
+        depends on IIO_NUC980ADC
+
+config IIO_NUC980ADC_Ch0
+	tristate "Select external channel 0"
+	depends on IIO_NUC980ADC
+	help
+	Select external channel 0
+
+config IIO_NUC980ADC_Ch1
+	tristate "Select external channel 1"
+	depends on IIO_NUC980ADC
+	help
+	Select external channel 1
+
+config IIO_NUC980ADC_Ch2
+	tristate "Select external channel 2"
+	depends on IIO_NUC980ADC
+	help
+	Select external channel 2
+
+config IIO_NUC980ADC_Ch3
+	tristate "Select external channel 3"
+	depends on IIO_NUC980ADC
+	help
+	Select external channel 3
+
+config IIO_NUC980ADC_Ch4
+	tristate "Select external channel 4"
+	depends on IIO_NUC980ADC
+	help
+	Select external channel 4
+
+config IIO_NUC980ADC_Ch5
+	tristate "Select external channel 5"
+	depends on IIO_NUC980ADC
+	help
+	Select external channel 5
+
+config IIO_NUC980ADC_Ch6
+	tristate "Select external channel 6"
+	depends on IIO_NUC980ADC
+	help
+	Select external channel 6
+
+config IIO_NUC980ADC_Ch7
+	tristate "Select external channel 7"
+	depends on IIO_NUC980ADC
+	help
+	Select external channel 7
+
 endmenu

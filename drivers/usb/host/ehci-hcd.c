@@ -1251,6 +1251,11 @@ MODULE_DESCRIPTION(DRIVER_DESC);
 MODULE_AUTHOR (DRIVER_AUTHOR);
 MODULE_LICENSE ("GPL");
 
+#ifdef CONFIG_USB_NUC980_EHCI
+#include "ehci-nuc980.c"
+#define PLATFORM_DRIVER         ehci_hcd_nuc980_driver
+#endif
+
 #ifdef CONFIG_USB_EHCI_SH
 #include "ehci-sh.c"
 #define PLATFORM_DRIVER		ehci_hcd_sh_driver

@@ -151,6 +151,36 @@ config USB_EHCI_FSL
 	---help---
 	  Variation of ARC USB block used in some Freescale chips.
 
+config USB_NUC980_EHCI
+	tristate "Support for NUC980 EHCI (USB 2.0)"
+	depends on ARCH_NUC980
+	---help---
+	  Enables support for NUC980 USB EHCI controller.
+
+choice
+    prompt "NUC980 USB Host power pin select"
+    default NUC980_USBH_PWREN_OVC_ON
+	depends on !USE_OF
+    depends on USB_NUC980_EHCI
+
+    config NUC980_USBH_PWREN_OVC_ON
+	bool "Use PE.12 for USBH_PWREN and PE.10 for USB_OVC"
+    config NUC980_USBH_PWREN_ON
+	bool "Use PE.12 for USBH_PWREN"
+    config NUC980_USBH_OVC_ON
+	bool "Use PE.10 for USB_OVC"
+    config NUC980_USBH_PWREN_OVC_OFF
+	bool "No USBH_PWREN and USB_OVC"
+endchoice
+
+config USB_NUC980_PM_VBUS_OFF
+	bool "NUC980 turn off USB Host VBUS power while power down"
+	depends on !USE_OF
+	depends on USB_NUC980_EHCI && (NUC980_USBH_PWREN_OVC_ON || NUC980_USBH_PWREN_ON)
+	---help---
+		While kernel in power down mode, turn off USB Host port VBUS power supply.
+		After kernel resumed, all connected USB devices will be re-enumerated.
+
 config USB_EHCI_MXC
 	tristate "Support for Freescale i.MX on-chip EHCI USB controller"
 	depends on ARCH_MXC
@@ -386,6 +416,159 @@ config USB_OHCI_HCD
 	  module will be called ohci-hcd.
 
 if USB_OHCI_HCD
+
+config USB_NUC980_OHCI
+	tristate "Support for NUC980 OHCI (USB 1.1)"
+	depends on ARCH_NUC980
+	---help---
+	  Enables support for NUC980 USB OHCI controller.
+
+choice
+    prompt "NUC980 USB Host power pin select"
+    default NUC980_USBH_PWREN_OVC_ON_
+    depends on (!USE_OF && USB_NUC980_OHCI && !USB_NUC980_EHCI)
+
+    config NUC980_USBH_PWREN_OVC_ON_
+	bool "Use PE.12 for USBH_PWREN and PE.10 for USB_OVC"
+    config NUC980_USBH_PWREN_ON_
+	bool "Use PE.12 for USBH_PWREN"
+    config NUC980_USBH_OVC_ON_
+	bool "Use PE.10 for USB_OVC"
+    config NUC980_USBH_PWREN_OVC_OFF_
+	bool "No USBH_PWREN and USB_OVC"
+endchoice
+
+
+if USB_NUC980_OHCI
+
+config USB_NUC980_USBH_LITE0
+	bool "NUC980 USBH Lite0 (OHCI port3) support"
+	depends on USB_OHCI_HCD && ARCH_NUC980 && !USE_OF
+	default n
+	---help---
+		Enables support for NUC980 USBH Lite0
+
+choice
+    prompt "Select USBH Lite0 D+/D- pin"
+    default LITE0_PB4_PB6
+    depends on USB_NUC980_USBH_LITE0
+
+    config LITE0_PB4_PB6
+	bool "D+/D- is PB.4/PB.6"
+    config LITE0_PB5_PB7
+	bool "D+/D- is PB.5/PB.7"
+    config LITE0_PB10_PB9
+	bool "D+/D- is PB.10/PB.9"
+    config LITE0_PD15_PD14
+	bool "D+/D- is PD.15/PD.14"
+endchoice
+
+config USB_NUC980_USBH_LITE1
+	bool "NUC980 USBH Lite1 (OHCI port4) support"
+	depends on USB_OHCI_HCD && ARCH_NUC980 && !USE_OF
+	default n
+	---help---
+		Enables support for NUC980 USBH Lite1
+
+choice
+    prompt "Select USBH Lite1 D+/D- pin"
+    default LITE1_PE1_PE0
+    depends on USB_NUC980_USBH_LITE1
+
+    config LITE1_PE1_PE0
+	bool "D+/D- is PE.1/PE.0"
+    config LITE1_PF1_PF0
+	bool "D+/D- is PF.1/PF.0"
+endchoice
+
+config USB_NUC980_USBH_LITE2
+	bool "NUC980 USBH Lite2 (OHCI port5) support"
+	depends on USB_OHCI_HCD && ARCH_NUC980 && !USE_OF
+	default n
+	---help---
+		Enables support for NUC980 USBH Lite2
+
+choice
+    prompt "Select USBH Lite2 D+/D- pin"
+    default LITE2_PE3_PE2
+    depends on USB_NUC980_USBH_LITE2
+
+    config LITE2_PE3_PE2
+	bool "D+/D- is PE.3/PE.2"
+    config LITE2_PF3_PF2
+	bool "D+/D- is PF.3/PF.2"
+endchoice
+
+config USB_NUC980_USBH_LITE3
+	bool "NUC980 USBH Lite3 (OHCI port6) support"
+	depends on USB_OHCI_HCD && ARCH_NUC980 && !USE_OF
+	default n
+	---help---
+		Enables support for NUC980 USBH Lite3
+
+choice
+    prompt "Select USBH Lite3 D+/D- pin"
+    default LITE3_PE5_PE4
+    depends on USB_NUC980_USBH_LITE3
+
+    config LITE3_PE5_PE4
+	bool "D+/D- is PE.5/PE.4"
+    config LITE3_PF5_PF4
+	bool "D+/D- is PF.5/PF.4"
+endchoice
+
+config USB_NUC980_USBH_LITE4
+	bool "NUC980 USBH Lite4 (OHCI port7) support"
+	depends on USB_OHCI_HCD && ARCH_NUC980 && !USE_OF
+	default n
+	---help---
+		Enables support for NUC980 USBH Lite4
+
+choice
+    prompt "Select USBH Lite4 D+/D- pin"
+    default LITE4_PE7_PE6
+    depends on USB_NUC980_USBH_LITE4
+
+    config LITE4_PE7_PE6
+	bool "D+/D- is PE.7/PE.6"
+    config LITE4_PF7_PF6
+	bool "D+/D- is PF.7/PF.6"
+    config LITE4_PG10_PA15
+	bool "D+/D- is PG.10/PA.15"
+endchoice
+
+config USB_NUC980_USBH_LITE5
+	bool "NUC980 USBH Lite5 (OHCI port8) support"
+	depends on USB_OHCI_HCD && ARCH_NUC980 && !USE_OF
+	default n
+	---help---
+		Enables support for NUC980 USBH Lite5
+
+choice
+    prompt "Select USBH Lite5 D+/D- pin"
+    default LITE5_PE9_PE8
+    depends on USB_NUC980_USBH_LITE5
+
+    config LITE5_PE9_PE8
+	bool "D+/D- is PE.9/PE.8"
+    config LITE5_PF9_PF8
+	bool "D+/D- is PF.9/PF.8"
+    config LITE5_PA14_PA13
+	bool "D+/D- is PA.14/PA.13"
+    config LITE5_PB12_PB11
+	bool "D+/D- is PB.12/PB.11"
+endchoice
+
+config USB_NUC980_PM_VBUS_OFF_
+	bool "NUC980 turn off USB Host VBUS power while power down"
+	depends on !USE_OF
+	depends on USB_NUC980_OHCI && !USB_NUC980_EHCI && (NUC980_USBH_PWREN_OVC_ON_ || NUC980_USBH_PWREN_ON_)
+	---help---
+		While kernel in power down mode, turn off USB Host port VBUS power supply.
+		After kernel resumed, all connected USB devices will be re-enumerated.
+
+endif # USB_NUC980_OHCI
+
 
 config USB_OHCI_HCD_OMAP1
 	tristate "OHCI support for OMAP1/2 chips"

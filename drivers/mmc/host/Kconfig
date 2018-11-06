@@ -212,6 +212,10 @@ config MMC_SDHCI_TEGRA
 
 	  If unsure, say N.
 
+config MMC_NUC980_FMI
+	tristate "Nuvoton NUC980 FMI-SD support"
+	depends on MACH_NUC980 && NUC980_FMI_SD0
+
 config MMC_SDHCI_S3C
 	tristate "SDHCI support on Samsung S3C SoC"
 	depends on MMC_SDHCI && PLAT_SAMSUNG
@@ -493,6 +497,14 @@ config MMC_SPI
 	  controllers.
 
 	  If unsure, or if your system has no SPI master driver, say N.
+
+config MMC_NUC980_SD
+        tristate "Nuvoton NUC980 SD Card support"
+        depends on ARCH_NUC980
+
+config MMC_NUC980_FMI
+	tristate "Nuvoton NUC980 FMI-SD support"
+	depends on MACH_NUC980 && NUC980_FMI_SD0
 
 config MMC_S3C
 	tristate "Samsung S3C SD/MMC Card Interface support"

@@ -1,0 +1,36 @@
+if ARCH_NUC980
+
+config CPU_NUC980
+	bool
+	select HAVE_CLK_PREPARE
+	select HAVE_MACH_CLKDEV
+	select COMMON_CLK
+	default y
+	help
+	  Support of Nuvoton NUC980 MPU
+
+menu "NUC980 Machines"
+
+config MACH_NUC980
+	bool "Nuvoton NUC980 Evaluation Board"
+	default y
+	select CPU_NUC980
+	help
+	   Say Y here if you are using the Nuvoton NUC980
+endmenu
+
+choice
+	prompt "Nuvoton NUC980 Series Development Board"
+
+config BOARD_NUC980
+	depends on !USE_OF
+	bool "NUC980 Development Board"
+endchoice
+
+config NUC980_FIQ
+	bool "Nuvoton NUC980 FIQ support"
+	select FIQ
+	help
+	   Support FIQ in NUC980. For more information, please refer to NUC980 BSP user's manual.
+
+endif

@@ -97,6 +97,20 @@ config GPIO_MAX730X
 
 menu "Memory mapped GPIO drivers"
 
+config GPIO_NUC980
+        tristate "NUC980 GPIO support"
+        depends on GPIOLIB
+        depends on ARCH_NUC980
+        select NEED_MACH_GPIO_H
+        help
+          Say yes here to support GPIO functionality of NUC980 chip
+config GPIO_NUC980_EINT_WKUP
+        tristate "NUC980 external I/O wake-up support"
+        depends on GPIO_NUC980
+        default no
+        help
+          Say yes here to support GPIO wakeup functionality of NUC980 chip
+
 config GPIO_74XX_MMIO
 	tristate "GPIO driver for 74xx-ICs with MMIO access"
 	depends on OF_GPIO

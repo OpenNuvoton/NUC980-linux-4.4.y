@@ -47,6 +47,10 @@ $(obj)/xipImage: FORCE
 $(obj)/Image: vmlinux FORCE
 	$(call if_changed,objcopy)
 	@$(kecho) '  Kernel: $@ is ready'
+ifeq ($(CONFIG_ARCH_NUC980),y)
+	cp $@   ../image/980image
+endif
+
 
 $(obj)/compressed/vmlinux: $(obj)/Image FORCE
 	$(Q)$(MAKE) $(build)=$(obj)/compressed $@
@@ -79,6 +83,9 @@ $(obj)/uImage:	$(obj)/zImage FORCE
 	@$(check_for_multiple_loadaddr)
 	$(call if_changed,uimage)
 	@$(kecho) '  Image $@ is ready'
+ifeq ($(CONFIG_ARCH_NUC980),y)
+	cp $@   ../image/980uimage
+endif
 
 $(obj)/bootp/bootp: $(obj)/zImage initrd FORCE
 	$(Q)$(MAKE) $(build)=$(obj)/bootp $@

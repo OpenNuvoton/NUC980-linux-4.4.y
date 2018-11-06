@@ -247,6 +247,14 @@ config PINCTRL_ZYNQ
 	help
 	  This selectes the pinctrl driver for Xilinx Zynq.
 
+config PINCTRL_NUC980
+	bool "NUC980 pinctrl driver"
+	depends on ARCH_NUC980
+	select PINMUX
+	select PINCONF
+	help
+	  Say Y here to enable NUC980 pinctrl driver
+
 source "drivers/pinctrl/bcm/Kconfig"
 source "drivers/pinctrl/berlin/Kconfig"
 source "drivers/pinctrl/freescale/Kconfig"

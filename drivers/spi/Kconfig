@@ -346,6 +346,177 @@ config SPI_MT65XX
 	  say Y or M here.If you are not sure, say N.
 	  SPI drivers for Mediatek MT65XX and MT81XX series ARM SoCs.
 
+config SPI_NUC980_QSPI0
+	tristate "Nuvoton NUC980 Series QSPI Port 0"
+	depends on ARCH_NUC980
+	select SPI_BITBANG
+	help
+	  SPI driver for Nuvoton NUC980 Series ARM SoCs
+
+choice
+	prompt "QSPI0 pin selection by transfer mode"
+	default SPI_NUC970_QSPI0_NORMAL
+	depends on SPI_NUC980_QSPI0
+	help
+	  Select QSPI0 multi-function pin.
+	  Can be PD2 ~ PD5 or additional PD6 and PD7 for quad mode.
+
+config SPI_NUC980_QSPI0_NORMAL
+	bool "Normal mode"
+config SPI_NUC980_QSPI0_QUAD
+	bool "Quad mode"
+endchoice
+
+choice
+	prompt "QSPI0 TX/RX by PDMA or not"
+	default SPI_NUC980_QSPI0_PDMA
+	depends on SPI_NUC980_QSPI0
+	help
+	  Select QSPI0 enable or disable PDMA.
+
+config SPI_NUC980_QSPI0_PDMA
+	bool "Use PDMA"
+config SPI_NUC980_QSPI0_NO_PDMA
+	bool "No PDMA"
+endchoice
+
+config SPI_NUC980_QSPI0_SS1
+	tristate "QSPI0 enable pin for the second chip select"
+	depends on SPI_NUC980_QSPI0
+	help
+	  Enable the second chip select pin for QSPI0.
+
+choice
+	prompt "Pin selection"
+	default SPI_NUC980_QSPI0_SS1_PD0
+	depends on SPI_NUC980_QSPI0_SS1
+	help
+	  Select QSPI0 second chip select pin . Can be PD0 or PA0.
+
+config SPI_NUC980_QSPI0_SS1_PD0
+	bool "Use SS1 (PD0)"
+config SPI_NUC980_QSPI0_SS1_PA0
+	bool "Use SS1 (PA0)"
+
+endchoice
+
+config SPI_NUC980_SPI0
+	tristate "Nuvoton NUC980 Series SPI Port 0"
+	depends on ARCH_NUC980
+	select SPI_BITBANG
+	help
+	  SPI driver for Nuvoton NUC980 Series ARM SoCs
+
+choice
+	prompt "SPI0 IO port selection"
+	default SPI_NUC980_SPI0_PD
+	depends on SPI_NUC980_SPI0
+
+config SPI_NUC980_SPI0_PD
+	bool "Port D"
+config SPI_NUC980_SPI0_PC
+	bool "Port C"
+endchoice
+
+choice
+	prompt "SPI0 TX/RX by PDMA or not"
+	default SPI_NUC980_SPI0_PDMA
+	depends on SPI_NUC980_SPI0
+	help
+	  Select SPI0 enable or disable PDMA.
+
+config SPI_NUC980_SPI0_PDMA
+	bool "Use PDMA"
+config SPI_NUC980_SPI0_NO_PDMA
+	bool "No PDMA"
+endchoice
+
+config SPI_NUC980_SPI0_SS1
+	tristate "SPI0 enable pin for the second chip select"
+	depends on SPI_NUC980_SPI0
+	help
+	  Enable the second chip select pin for SPI0.
+
+choice
+	prompt "Pin selection"
+	default SPI_NUC980_SPI0_SS1_PD1
+	depends on SPI_NUC980_SPI0_SS1 && SPI_NUC980_SPI0_PD
+	help
+	  Select SPI0 second chip select pin . Can be PD1 or PG15.
+
+config SPI_NUC980_SPI0_SS1_PD1
+	bool "Use SS1 (PD1)"
+config SPI_NUC980_SPI0_SS1_PG15
+	bool "Use SS1 (PG15)"
+
+endchoice
+
+choice
+	prompt "Pin selection"
+	default SPI_NUC980_SPI0_SS1_PC0
+	depends on SPI_NUC980_SPI0_SS1 && SPI_NUC980_SPI0_PC
+	help
+	  Select SPI0 second chip select pin . Can be PD1 or PG15.
+
+config SPI_NUC980_SPI0_SS1_PC0
+	bool "Use SS1 (PC0)"
+
+endchoice
+
+config SPI_NUC980_SPI1
+	tristate "Nuvoton NUC980 Series SPI Port 1"
+	depends on ARCH_NUC980
+	select SPI_BITBANG
+	help
+	  SPI driver for Nuvoton NUC980 Series ARM SoCs
+
+choice
+	prompt "SPI1 IO port selection"
+	default SPI_NUC980_SPI1_PB
+	depends on SPI_NUC980_SPI1
+
+config SPI_NUC980_SPI1_PB9_12
+	bool "Port B9 ~ B12"
+config SPI_NUC980_SPI1_PB4_7
+	bool "Port B4 ~ B7"
+config SPI_NUC980_SPI1_PG
+	bool "Port G"
+endchoice
+
+choice
+	prompt "SPI1 TX/RX by PDMA or not"
+	default SPI_NUC980_SPI1_PDMA
+	depends on SPI_NUC980_SPI1
+	help
+	  SPI1 enable or disable PDMA.
+
+config SPI_NUC980_SPI1_PDMA
+	bool "Use PDMA"
+config SPI_NUC980_SPI1_NO_PDMA
+	bool "No PDMA"
+endchoice
+
+config SPI_NUC980_SPI1_SS1
+	tristate "SPI1 enable pin for the second chip select"
+	depends on SPI_NUC980_SPI1
+	help
+	  Enable the second chip select pin for SPI1.
+
+choice
+	prompt "Pin selection"
+	default SPI_NUC980_SPI1_SS1_PB1
+	depends on SPI_NUC980_SPI1_SS1
+	help
+	  Select SPI1 second chip select pin . Can be PB1 or PG15.
+
+config SPI_NUC980_SPI1_SS1_PB1
+	bool "Use SS1 (PB1)"
+config SPI_NUC980_SPI1_SS1_PG15
+	bool "Use SS1 (PG15)"
+
+endchoice
+
+
 config SPI_OC_TINY
 	tristate "OpenCores tiny SPI"
 	depends on GPIOLIB || COMPILE_TEST

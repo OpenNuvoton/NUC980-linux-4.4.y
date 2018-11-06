@@ -1,0 +1,43 @@
+##
+## NUC980 series I2S API
+##
+config SND_SOC_NUC980
+	tristate "SoC Audio for NUC980 series"
+	depends on ARCH_NUC980
+	help
+	  This option enables support for I2S on the NUC980 SoC.
+
+##
+## Boards
+##
+config SND_SOC_NUC980EVB
+	tristate "NUC980 I2S support for demo board"
+	depends on SND_SOC_NUC980
+	select SND_SOC_NAU8822
+	help
+	  Select this option to enable audio (I2S) on the
+	  NUC980 demoboard.
+
+choice
+	prompt "I2S Mode Selection"
+	depends on SND_SOC_NUC980EVB
+	default SLAVE_MODE
+
+config NUC980_I2S_MASTER_MODE
+	bool "Master Mode"
+
+config NUC980_I2S_SLAVE_MODE
+	bool "Slave Mode"
+
+endchoice
+
+choice
+	prompt "NUC980 I2S pin selection"
+	default NUC980_I2S_PA
+	depends on SND_SOC_NUC980EVB
+
+config NUC980_I2S_PA
+	bool "Port A"
+config NUC980_I2S_PB
+	bool "Port B"
+endchoice

@@ -516,6 +516,364 @@ config SRAM
 	  the genalloc API. It is supposed to be used for small on-chip SRAM
 	  areas found on many SoCs.
 
+config NUC980_EBI
+        bool "NUC980 EBI driver"
+        depends on ARCH_NUC980
+        select GENERIC_ALLOCATOR
+        help
+        Driver for NUC980 EBI controller.
+        Used to configure the EBI (external bus interface) when the device-
+        tree is used. This bus supports external ethernet controller,
+        SRAMs etc.
+
+config NUC980_ETIMER
+        tristate "NUC980 Enhance Timer (ETIMER) support"
+        depends on ARCH_NUC980
+        help
+          Enhance timer dirver Nuvoton NUC980 Series processor. This timer also supports capture function.
+
+          To compile this driver as a module, choose M here: the module
+          will be called nuc980-etimer.
+
+config NUC980_TIMER_WKUP
+	tristate "NUC980 Enhance Timer (ETIMER) wake-up support"
+        depends on NUC980_TIMER
+
+choice
+	prompt "NUC980 ETIMER channel 0 event count pin"
+	default NUC980_TIMER0_ECNT_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 0 event count pin.
+
+	config NUC980_TIMER0_ECNT_NONE
+		bool "No output"
+	config NUC980_TIMER0_ECNT_PA0
+		bool "Output to PA0"
+	config NUC980_TIMER0_ECNT_PD6
+		bool "Output to PD6"
+	config NUC980_TIMER0_ECNT_PF0
+		bool "Output to PF0"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 0 toggle output pin"
+	default NUC980_TIMER0_TGL_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 0 toggle output pin.
+
+	config NUC980_TIMER0_TGL_NONE
+		bool "No output"
+	config NUC980_TIMER0_TGL_PB3
+		bool "Output to PB3"
+	config NUC980_TIMER0_TGL_PC0
+		bool "Output to PC0"
+	config NUC980_TIMER0_TGL_PB9
+		bool "Output to PB9"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 0 capture input pin"
+	default NUC980_TIMER0_CAP_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 0 capture input pin.
+
+	config NUC980_TIMER0_CAP_NONE
+		bool "No input"
+	config NUC980_TIMER0_CAP_PB1
+		bool "Input from PB1"
+	config NUC980_TIMER0_CAP_PB8
+		bool "Input from PB8"
+	config NUC980_TIMER0_CAP_PB10
+		bool "Input from PB10"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 1 event count pin"
+	default NUC980_TIMER1_ECNT_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 1 event count pin.
+
+	config NUC980_TIMER1_ECNT_NONE
+		bool "No output"
+	config NUC980_TIMER1_ECNT_PA1
+		bool "Output to PA1"
+	config NUC980_TIMER1_ECNT_PD7
+		bool "Output to PD7"
+	config NUC980_TIMER1_ECNT_PF1
+		bool "Output to PF1"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 1 toggle output pin"
+	default NUC980_TIMER1_TGL_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 1 toggle output pin.
+
+	config NUC980_TIMER1_TGL_NONE
+		bool "No output"
+	config NUC980_TIMER1_TGL_PA14
+		bool "Output to PA14"
+	config NUC980_TIMER1_TGL_PD0
+		bool "Output to PD0"
+	config NUC980_TIMER1_TGL_PG11
+		bool "Output to PG11"
+	config NUC980_TIMER1_TGL_PF8
+		bool "Output to PF8"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 1 capture input pin"
+	default NUC980_TIMER1_CAP_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 1 capture input pin.
+
+	config NUC980_TIMER1_CAP_NONE
+		bool "No input"
+	config NUC980_TIMER1_CAP_PA13
+		bool "Input from PA13"
+	config NUC980_TIMER1_CAP_PD1
+		bool "Input from PD1"
+	config NUC980_TIMER1_CAP_PG12
+		bool "Input from PG12"
+	config NUC980_TIMER1_CAP_PF9
+		bool "Input from PF9"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 2 event count pin"
+	default NUC980_TIMER2_ECNT_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 2 event count pin.
+
+	config NUC980_TIMER2_ECNT_NONE
+		bool "No output"
+	config NUC980_TIMER2_ECNT_PA2
+		bool "Output to PA2"
+	config NUC980_TIMER2_ECNT_PD8
+		bool "Output to PD8"
+	config NUC980_TIMER2_ECNT_PF2
+		bool "Output to PF2"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 2 toggle output pin"
+	default NUC980_TIMER2_TGL_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 2 toggle output pin.
+
+	config NUC980_TIMER2_TGL_NONE
+		bool "No output"
+	config NUC980_TIMER2_TGL_PA10
+		bool "Output to PA10"
+	config NUC980_TIMER2_TGL_PB12
+		bool "Output to PB12"
+	config NUC980_TIMER2_TGL_PD12
+		bool "Output to PD12"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 2 capture input pin"
+	default NUC980_TIMER2_CAP_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 2 capture input pin.
+
+	config NUC980_TIMER2_CAP_NONE
+		bool "No input"
+	config NUC980_TIMER2_CAP_PA9
+		bool "Input from PA9"
+	config NUC980_TIMER2_CAP_PB11
+		bool "Input from PB11"
+	config NUC980_TIMER2_CAP_PD13
+		bool "Input from PD13"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 3 event count pin"
+	default NUC980_TIMER3_ECNT_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 3 event count pin.
+
+	config NUC980_TIMER3_ECNT_NONE
+		bool "No output"
+	config NUC980_TIMER3_ECNT_PA3
+		bool "Output to PA3"
+	config NUC980_TIMER3_ECNT_PD9
+		bool "Output to PD9"
+	config NUC980_TIMER3_ECNT_PF3
+		bool "Output to PF3"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 3 toggle output pin"
+	default NUC980_TIMER3_TGL_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 3 toggle output pin.
+
+	config NUC980_TIMER3_TGL_NONE
+		bool "No output"
+	config NUC980_TIMER3_TGL_PA8
+		bool "Output to PA8"
+	config NUC980_TIMER3_TGL_PD14
+		bool "Output to PD14"
+endchoice
+
+choice
+	prompt "NUC980 ETIMER channel 3 capture input pin"
+	default NUC980_TIMER3_CAP_NONE
+	depends on NUC980_TIMER
+	help
+	  Select ETIMER channel 3 capture input pin.
+
+	config NUC980_TIMER3_CAP_NONE
+		bool "No input"
+	config NUC980_TIMER3_CAP_PA7
+		bool "Input from PA7"
+	config NUC980_TIMER3_CAP_PD15
+		bool "Input from PD15"
+endchoice
+
+config NUC980_QSPI0_SLAVE
+        tristate "NUC980 QSPI0 slave mode support"
+        depends on ARCH_NUC980
+        help
+          QSPI0 slave mode for NUC980.
+
+          To compile this driver as a module, choose M here: the module
+          will be called nuc980-qspi0-slave.
+
+choice
+        prompt "QSPI0 pin selection by transfer mode"
+        default SPI_NUC970_QSPI0_NORMAL
+        depends on NUC980_QSPI0_SLAVE
+        help
+          Select QSPI0 multi-function pin.
+          Can be PD2 ~ PD5 or additional PD6 and PD7 for quad mode.
+
+        config SPI_NUC980_QSPI0_SLAVE_NORMAL
+                bool "Normal mode"
+        config SPI_NUC980_QSPI0_SLAVE_QUAD
+                bool "Quad mode"
+endchoice
+
+config NUC980_SPI0_SLAVE
+        tristate "NUC980 SPI0 slave mode support"
+        depends on ARCH_NUC980
+        help
+          SPI0 slave mode for NUC980.
+
+          To compile this driver as a module, choose M here: the module
+          will be called nuc980-spi0-slave.
+
+config NUC980_SPI1_SLAVE
+        tristate "NUC980 SPI1 slave mode support"
+        depends on ARCH_NUC980
+        help
+          SPI1 slave mode for NUC980.
+
+          To compile this driver as a module, choose M here: the module
+          will be called nuc980-spi1-slave.
+
+
+
+config NUC980_SC
+	tristate "NUC970 Smartcard Interface support"
+	depends on ARCH_NUC980
+	help
+	 Smartcard card interface support for NUC980 series processor.
+	 This driver comply with EMV2000 and supports T0 and T1 transfer.
+
+config EMV_CHECK
+	bool "Perform EMV check"
+	depends on NUC980_SC
+
+config	NUC980_SC0
+	bool "NUC980 SC0 support"
+	depends on NUC980_SC && !USE_OF
+
+choice
+	prompt "NUC980 SC0 pin selection"
+	default NUC980_SC0_PA
+	depends on NUC980_SC0
+	help
+	  Select SC0 multi function pin.
+
+	config NUC980_SC0_PG
+		bool "Use port A"
+	config NUC980_SC0_PC
+		bool "Use port C"
+endchoice
+
+
+choice
+	prompt "NUC980 SC0 CD pin config"
+	default NUC980_SC0_CDLV_H
+	depends on NUC980_SC0
+	help
+	  Select SC0 card detect level.
+
+	config NUC980_SC0_CDLV_H
+		bool "CD high as card insert"
+	config NUC980_SC0_CDLV_L
+		bool "CD low as card insert"
+	config NUC980_SC0_CD_IGNORE
+		bool "Ignore CD signal"
+endchoice
+
+config	NUC980_SC0_PWRINV
+	bool "Inverse SC0 power pin level"
+	depends on NUC980_SC0
+
+
+config	NUC980_SC1
+	bool "NUC980 SC1 support"
+	depends on NUC980_SC && !USE_OF
+	help
+	 Enabe this option will configure SC1 MFP
+
+choice
+	prompt "NUC980 SC1 pin selection"
+	default NUC980_SC1_PC
+	depends on NUC980_SC1
+	help
+	  Select SC1 multi function pin.
+
+	config NUC980_SC1_PC
+		bool "Use port C"
+	config NUC980_SC1_PF
+		bool "Use port F"
+endchoice
+
+choice
+	prompt "NUC980 SC1 CD pin config"
+	default NUC980_SC1_CDLV_H
+	depends on NUC980_SC1
+	help
+	  Select SC1 card detect level.
+
+	config NUC980_SC1_CDLV_H
+		bool "CD high as card insert"
+	config NUC980_SC1_CDLV_L
+		bool "CD low as card insert"
+	config NUC980_SC1_CD_IGNORE
+		bool "Ignore CD signal"
+endchoice
+
+config	NUC980_SC1_PWRINV
+	bool "Inverse SC1 power pin level"
+	depends on NUC980_SC1
+
+
 config VEXPRESS_SYSCFG
 	bool "Versatile Express System Configuration driver"
 	depends on VEXPRESS_CONFIG
@@ -524,6 +882,39 @@ config VEXPRESS_SYSCFG
 	  ARM Ltd. Versatile Express uses specialised platform configuration
 	  bus. System Configuration interface is one of the possible means
 	  of generating transactions on this bus.
+
+config NUC980_EBI
+	bool "NUC980 EBI driver"
+	depends on ARCH_NUC980
+	select GENERIC_ALLOCATOR
+	help
+	  Driver for NUC980 EBI controller.
+	  Used to configure the EBI (external bus interface) when the device-
+	  tree is used. This bus supports external ethernet controller,
+	  SRAMs etc.
+
+choice
+	prompt "NUC980 EBI Timing Setting"
+	default NUC980_EBI_TIMING_SLOWEST
+	depends on NUC980_EBI
+	help
+	  Select EBI Timing configuration.
+
+	config NUC980_EBI_TIMING_FASTEST
+		bool "Timing Fastest"
+	config NUC980_EBI_TIMING_VERYFAST
+		bool "Timing Veryfast"
+	config NUC980_EBI_TIMING_FAST
+		bool "Timing Fast"
+	config NUC980_EBI_TIMING_NORMAL
+		bool "Timing Normal"
+	config NUC980_EBI_TIMING_SLOW
+		bool "Timing Slow"
+	config NUC980_EBI_TIMING_VERYSLOW
+		bool "Timing Very slow"
+	config NUC980_EBI_TIMING_SLOWEST
+		bool "Timing Slowest"
+endchoice
 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"

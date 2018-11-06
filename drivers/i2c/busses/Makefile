@@ -96,6 +96,10 @@ obj-$(CONFIG_I2C_XILINX)	+= i2c-xiic.o
 obj-$(CONFIG_I2C_XLR)		+= i2c-xlr.o
 obj-$(CONFIG_I2C_XLP9XX)	+= i2c-xlp9xx.o
 obj-$(CONFIG_I2C_RCAR)		+= i2c-rcar.o
+obj-$(CONFIG_I2C_BUS_NUC980_P0)	+= i2c-nuc980-p0.o
+obj-$(CONFIG_I2C_BUS_NUC980_P1)	+= i2c-nuc980-p1.o
+obj-$(CONFIG_I2C_BUS_NUC980_P2)	+= i2c-nuc980-p2.o
+obj-$(CONFIG_I2C_BUS_NUC980_P3)	+= i2c-nuc980-p3.o
 
 # External I2C/SMBus adapter drivers
 obj-$(CONFIG_I2C_DIOLAN_U2C)	+= i2c-diolan-u2c.o

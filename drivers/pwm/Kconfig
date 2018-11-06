@@ -270,6 +270,218 @@ config PWM_MXS
 	  To compile this driver as a module, choose M here: the module
 	  will be called pwm-mxs.
 
+config PWM_NUC980_PWM0
+        tristate "NUC980 PWM0 support"
+        depends on ARCH_NUC980
+        help
+          Generic PWM framework driver for Nuvoton NUC980 Series MCU.
+
+          To compile this driver as a module, choose M here: the module
+          will be called pwm-nuc970-pwm0.
+
+choice
+        prompt "NUC980 PWM0 channel 0 output pin"
+        default NUC980_PWM0_CH0_NONE
+        depends on PWM_NUC980_PWM0
+        help
+          Select PWM0 channel 0 output pin.
+
+        config NUC980_PWM0_CH0_NONE
+                bool "No output"
+
+        config NUC980_PWM0_CH0_PF5
+                bool "Output from PF5"
+
+        config NUC980_PWM0_CH0_PG0
+                bool "Output from PG0"
+
+        config NUC980_PWM0_CH0_PD12
+                bool "Output from PD12"
+
+        config NUC980_PWM0_CH0_PG10
+                bool "Output from PG10"
+
+endchoice
+
+choice
+        prompt "NUC980 PWM0 channel 1 output pin"
+        default NUC980_PWM0_CH1_NONE
+        depends on PWM_NUC980_PWM0
+        help
+          Select PWM0 channel 1 output pin.
+
+        config NUC980_PWM0_CH1_NONE
+                bool "No output"
+
+        config NUC980_PWM0_CH1_PF6
+                bool "Output from PF6"
+
+        config NUC980_PWM0_CH1_PG1
+                bool "Output from PG1"
+
+        config NUC980_PWM0_CH1_PD13
+                bool "Output from PD13"
+
+        config NUC980_PWM0_CH1_PA15
+                bool "Output from PA15"
+endchoice
+
+choice
+        prompt "NUC980 PWM0 channel 2 output pin"
+        default NUC980_PWM0_CH2_NONE
+        depends on PWM_NUC980_PWM0
+        help
+          Select PWM0 channel 2 output pin.
+
+        config NUC980_PWM0_CH2_NONE
+                bool "No output"
+
+        config NUC980_PWM0_CH2_PF7
+                bool "Output from PF7"
+
+        config NUC980_PWM0_CH2_PG2
+                bool "Output from PG2"
+
+        config NUC980_PWM0_CH2_PD14
+                bool "Output from PD14"
+
+        config NUC980_PWM0_CH2_PA14
+                bool "Output from PA14"
+
+        config NUC980_PWM0_CH2_PB13
+                bool "Output from PB13"
+
+endchoice
+
+choice
+        prompt "NUC980 PWM0 channel 3 output pin"
+        default NUC980_PWM0_CH3_NONE
+        depends on PWM_NUC980_PWM0
+        help
+          Select PWM0 channel 3 output pin.
+
+        config NUC980_PWM0_CH3_NONE
+                bool "No output"
+
+        config NUC980_PWM0_CH3_PF8
+                bool "Output from PF8"
+
+        config NUC980_PWM0_CH3_PG3
+                bool "Output from PG3"
+
+        config NUC980_PWM0_CH3_PD15
+                bool "Output from PD15"
+
+        config NUC980_PWM0_CH3_PA13
+                bool "Output from PA13"
+
+endchoice
+
+config PWM_NUC980_PWM1
+        tristate "NUC980 PWM1 support"
+        depends on ARCH_NUC980
+        help
+          Generic PWM framework driver for Nuvoton NUC980 Series MCU.
+
+          To compile this driver as a module, choose M here: the module
+          will be called pwm-nuc970-pwm1.
+
+choice
+        prompt "NUC980 PWM1 channel 0 output pin"
+        default NUC970_PWM1_CH0_NONE
+        depends on PWM_NUC980_PWM1
+        help
+          Select PWM1 channel 0 output pin.
+
+        config NUC980_PWM1_CH0_NONE
+                bool "No output"
+
+        config NUC980_PWM1_CH0_PB12
+                bool "Output from PB12"
+
+        config NUC980_PWM1_CH0_PG6
+                bool "Output from PG6"
+
+        config NUC980_PWM1_CH0_PG11
+                bool "Output from PG11"
+
+        config NUC980_PWM1_CH0_PF9
+                bool "Output from PF9"
+
+endchoice
+
+choice
+        prompt "NUC980 PWM1 channel 1 output pin"
+        default NUC980_PWM1_CH1_NONE
+        depends on PWM_NUC980_PWM1
+        help
+          Select PWM1 channel 1 output pin.
+
+        config NUC980_PWM1_CH1_NONE
+                bool "No output"
+
+        config NUC980_PWM1_CH1_PB11
+                bool "Output from PB11"
+
+        config NUC980_PWM1_CH1_PG7
+                bool "Output from PG7"
+
+        config NUC980_PWM1_CH1_PG12
+                bool "Output from PG12"
+
+        config NUC980_PWM1_CH1_PF10
+                bool "Output from PF10"
+endchoice
+
+choice
+        prompt "NUC980 PWM1 channel 2 output pin"
+        default NUC980_PWM1_CH2_NONE
+        depends on PWM_NUC980_PWM1
+        help
+          Select PWM1 channel 2 output pin.
+
+        config NUC980_PWM1_CH2_NONE
+                bool "No output"
+
+        config NUC980_PWM1_CH2_PB10
+                bool "Output from PB10"
+
+        config NUC980_PWM1_CH2_PG8
+                bool "Output from PG8"
+
+        config NUC980_PWM1_CH2_PG13
+                bool "Output from PG13"
+
+        config NUC980_PWM1_CH2_PE10
+                bool "Output from PE10"
+
+endchoice
+
+choice
+        prompt "NUC980 PWM1 channel 3 output pin"
+        default NUC980_PWM1_CH3_NONE
+        depends on PWM_NUC980_PWM1
+        help
+          Select PWM1 channel 3 output pin.
+
+        config NUC980_PWM1_CH3_NONE
+                bool "No output"
+
+        config NUC980_PWM1_CH3_PB9
+                bool "Output from PB9"
+
+        config NUC980_PWM1_CH3_PG9
+                bool "Output from PG9"
+
+        config NUC980_PWM1_CH3_PG14
+                bool "Output from PG14"
+
+        config NUC980_PWM1_CH3_PE12
+                bool "Output from PE12"
+
+endchoice
+
+
 config PWM_PCA9685
 	tristate "NXP PCA9685 PWM driver"
 	depends on I2C

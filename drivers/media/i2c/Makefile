@@ -6,6 +6,8 @@ obj-$(CONFIG_VIDEO_CX25840) += cx25840/
 obj-$(CONFIG_VIDEO_M5MOLS)	+= m5mols/
 obj-y				+= soc_camera/
 
+obj-$(CONFIG_VIDEO0_NUC980)      += nuvoton/
+obj-$(CONFIG_VIDEO1_NUC980)      += nuvoton/
 obj-$(CONFIG_VIDEO_APTINA_PLL) += aptina-pll.o
 obj-$(CONFIG_VIDEO_TVAUDIO) += tvaudio.o
 obj-$(CONFIG_VIDEO_TDA7432) += tda7432.o

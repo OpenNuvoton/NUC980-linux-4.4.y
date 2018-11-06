@@ -804,8 +804,13 @@ static int td_done(struct ohci_hcd *ohci, struct urb *urb, struct td *td)
 		if (cc == TD_DATAUNDERRUN
 				&& !(urb->transfer_flags & URB_SHORT_NOT_OK))
 			cc = TD_CC_NOERROR;
+
 		if (cc != TD_CC_NOERROR && cc < 0x0E)
+		{
+            if (cc != 9)	// 9: DATAUNDERRUN: The endpoint returned less than MaximumPacketSize and that amount was not sufficient to fill the specified buffer */
+                printk("ERROR ohci-q.c  0x%x! %x 0x%x\n", cc, td->hwCBP, tdBE);
 			status = cc_to_error[cc];
+	    }
 
 		/* count all non-empty packets except control SETUP packet */
 		if ((type != PIPE_CONTROL || td->index != 0) && tdBE != 0) {

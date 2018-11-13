@@ -22,19 +22,19 @@
 
 #define arch_decomp_wdog()
 
-#define TX_DONE	(UART_LSR_TEMT | UART_LSR_THRE)
+#define UART_FIFOSTS	6
+#define TX_DONE		(0x10400000)
 static volatile u32 *uart_base = (u32 *) UART0_PA;
 
 static void putc(int ch)
 {
 	/* Check THRE and TEMT bits before we transmit the character.
 	 */
-	while ((uart_base[UART_LSR] & TX_DONE) != TX_DONE)
+	while ((uart_base[UART_FIFOSTS] & TX_DONE) != TX_DONE)
 		barrier();
 
 	*uart_base = ch;
 }
-
 static inline void flush(void)
 {
 }

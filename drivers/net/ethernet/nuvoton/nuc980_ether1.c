@@ -477,7 +477,7 @@ static void nuc980_set_global_maccmd(struct net_device *dev)
 	val = __raw_readl( REG_MCMDR);
 	val |= MCMDR_SPCRC | MCMDR_ACP;
 	__raw_writel(val,  REG_MCMDR);
-	__raw_writel(1514,  REG_DMARFC);
+	__raw_writel(1518,  REG_DMARFC);
 }
 
 static void nuc980_enable_cam(struct net_device *dev)

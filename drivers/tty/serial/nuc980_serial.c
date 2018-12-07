@@ -1023,7 +1023,7 @@ static const char *nuc980serial_type(struct uart_port *port)
 }
 
 /* Enable or disable the rs485 support */
-void nuc980serial_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
+static int nuc980serial_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
 {
 	struct uart_nuc980_port *p = to_nuc980_uart_port(port);
 
@@ -1052,24 +1052,13 @@ void nuc980serial_config_rs485(struct uart_port *port, struct serial_rs485 *rs48
 	}
 
 	spin_unlock(&port->lock);
+
+	return 0;
 }
 
-static int nuc980serial_rs485_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
+static int nuc980serial_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
 {
-	struct serial_rs485 rs485conf;
-
 	switch (cmd) {
-	case TIOCSRS485:
-		if (copy_from_user(&rs485conf, (struct serial_rs485 *) arg, sizeof(rs485conf)))
-			return -EFAULT;
-
-		nuc980serial_config_rs485(port, &rs485conf);
-		break;
-
-	case TIOCGRS485:
-		if (copy_to_user((struct serial_rs485 *) arg, &(to_nuc980_uart_port(port)->rs485), sizeof(rs485conf)))
-			return -EFAULT;
-		break;
 
 	default:
 		return -ENOIOCTLCMD;
@@ -1096,7 +1085,7 @@ static struct uart_ops nuc980serial_ops = {
 	.request_port= nuc980serial_request_port,
 	.config_port = nuc980serial_config_port,
 	.verify_port = nuc980serial_verify_port,
-	.ioctl       = nuc980serial_rs485_ioctl,
+	.ioctl       = nuc980serial_ioctl,
 };
 
 static void __init nuc980serial_init_ports(void)
@@ -1746,6 +1735,8 @@ static int nuc980serial_probe(struct platform_device *pdev)
 		up->port.serial_out = p->serial_out;
 
 #endif
+
+	up->port.rs485_config = nuc980serial_config_rs485;
 
 	ret = uart_add_one_port(&nuc980serial_reg, &up->port);
 	return 0;

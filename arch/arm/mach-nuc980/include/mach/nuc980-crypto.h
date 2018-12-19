@@ -86,7 +86,7 @@ enum
 #define ECC_IOC_SET_PRI_KEY     _IOW(CRYPTO_IOC_MAGIC, 52, unsigned char *)
 #define ECC_IOC_SET_PUB_K1      _IOW(CRYPTO_IOC_MAGIC, 53, unsigned char *)
 #define ECC_IOC_SET_PUB_K2      _IOW(CRYPTO_IOC_MAGIC, 54, unsigned char *)
-#define ECC_IOC_SET_RANDOM_K    _IOW(CRYPTO_IOC_MAGIC, 55, unsigned char *)
+#define ECC_IOC_SET_SCALAR_K    _IOW(CRYPTO_IOC_MAGIC, 55, unsigned char *)
 #define ECC_IOC_SET_MSG         _IOW(CRYPTO_IOC_MAGIC, 56, unsigned char *)
 #define ECC_IOC_SET_SIG_R       _IOW(CRYPTO_IOC_MAGIC, 57, unsigned char *)
 #define ECC_IOC_SET_SIG_S       _IOW(CRYPTO_IOC_MAGIC, 58, unsigned char *)
@@ -97,5 +97,18 @@ enum
 #define ECC_IOC_GEN_PUB_KEY     _IOW(CRYPTO_IOC_MAGIC, 71, unsigned long)
 #define ECC_IOC_ECDSA_SIGN      _IOW(CRYPTO_IOC_MAGIC, 72, unsigned long)
 #define ECC_IOC_ECDSA_VERIFY    _IOW(CRYPTO_IOC_MAGIC, 73, unsigned long)
+#define ECC_IOC_POINT_MUL       _IOW(CRYPTO_IOC_MAGIC, 81, unsigned long)
+
+#define RSA_IOC_SET_BIT_LEN     _IOW(CRYPTO_IOC_MAGIC, 90, unsigned long)
+#define RSA_IOC_SET_N           _IOW(CRYPTO_IOC_MAGIC, 91, unsigned char *)
+#define RSA_IOC_SET_D           _IOW(CRYPTO_IOC_MAGIC, 92, unsigned char *)
+#define RSA_IOC_SET_E           _IOW(CRYPTO_IOC_MAGIC, 93, unsigned char *)
+#define RSA_IOC_SET_C           _IOW(CRYPTO_IOC_MAGIC, 94, unsigned char *)
+#define RSA_IOC_SET_MSG         _IOW(CRYPTO_IOC_MAGIC, 95, unsigned char *)
+#define RSA_IOC_GET_MSG         _IOW(CRYPTO_IOC_MAGIC, 96, unsigned char *)
+#define RSA_IOC_GET_SIG         _IOW(CRYPTO_IOC_MAGIC, 97, unsigned char *)
+#define RSA_IOC_SET_SIG         _IOW(CRYPTO_IOC_MAGIC, 98, unsigned char *)
+#define RSA_IOC_DO_SIGN         _IOW(CRYPTO_IOC_MAGIC, 101, unsigned long)
+#define RSA_IOC_DO_VERIFY       _IOW(CRYPTO_IOC_MAGIC, 102, unsigned long)
 
 #endif

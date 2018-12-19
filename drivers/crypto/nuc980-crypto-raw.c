@@ -932,6 +932,46 @@ static int run_ecc_codec(uint32_t mode)
 	return 0;
 }
 
+//int32_t  ECC_Mutiply(CRPT_T *crpt, E_ECC_CURVE ecc_curve, char x1[], char y1[], char *k, char x2[], char y2[])
+static int ECC_Mutiply(void)
+{
+	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
+	volatile int32_t  i, t0;
+
+	if (ecc_init_curve(_curve_used) != 0)
+		return -1;
+
+	for (i = 0; i < 18; i++)
+	{
+		crpt_regs->ECC_X1[i] = 0UL;
+		crpt_regs->ECC_Y1[i] = 0UL;
+		crpt_regs->ECC_K[i] = 0UL;
+	}
+	Hex2Reg(ecc_x1, crpt_regs->ECC_X1);
+	Hex2Reg(ecc_y1, crpt_regs->ECC_Y1);
+	Hex2Reg(ecc_k, crpt_regs->ECC_K);
+
+	/* set FSEL (Field selection) */
+	if (pCurve->GF == (int)CURVE_GF_2M)
+		crpt_regs->ECC_CTL = 0UL;
+	else
+		crpt_regs->ECC_CTL = CRPT_ECC_CTL_FSEL_Mask;  /*  CURVE_GF_P */
+
+	crpt_regs->ECC_CTL |= ((u32)pCurve->key_len << CRPT_ECC_CTL_CURVE_M_Pos) |
+					 ECCOP_POINT_MUL | CRPT_ECC_CTL_START_Mask;
+
+	t0 = jiffies;
+	while (crpt_regs->ECC_STS & CRPT_ECC_STS_BUSY_Mask) {
+		if (jiffies - t0 >= 100) {
+			printk("ECC mul time-out!\n");
+			return -1;
+		}
+	}
+	Reg2Hex(pCurve->Echar, crpt_regs->ECC_X1, ecc_x1);
+	Reg2Hex(pCurve->Echar, crpt_regs->ECC_Y1, ecc_y1);
+	return 0;
+}
+
 //int32_t  ECC_GeneratePublicKey(CRPT_T *crpt, E_ECC_CURVE ecc_curve, char *private_k, char public_k1[], char public_k2[])
 static int  ECC_GeneratePublicKey(void)
 {
@@ -1456,6 +1496,7 @@ static long nvt_ecc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		_curve_used = arg;
 		if (ecc_init_curve(_curve_used) != 0)
 			return -1;
+		//printk("Select curve 0x%x\n", pCurve->curve_id);
 		break;
 
 	case ECC_IOC_SET_PRI_KEY:
@@ -1473,7 +1514,7 @@ static long nvt_ecc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		copy_from_user(ecc_y1, (char *)arg, pCurve->Echar);
 		break;
 
-	case ECC_IOC_SET_RANDOM_K:
+	case ECC_IOC_SET_SCALAR_K:
 		memset(ecc_k, 0, sizeof(ecc_k));
 		copy_from_user(ecc_k, (char *)arg, pCurve->Echar);
 		break;
@@ -1517,7 +1558,9 @@ static long nvt_ecc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 
 	case ECC_IOC_ECDSA_VERIFY:
 		return ECC_VerifySignature();
-		break;
+		
+	case ECC_IOC_POINT_MUL:
+		return ECC_Mutiply();
 
 	default:
 		return -ENOTTY;
@@ -1536,11 +1579,180 @@ static struct miscdevice nvt_ecc_dev = {
 	.fops		= &nvt_ecc_fops,
 };
 
+
+/*-----------------------------------------------------------------------------------------------*/
+/*                                                                                               */
+/*    RSA                                                                                        */
+/*                                                                                               */
+/*-----------------------------------------------------------------------------------------------*/
+
+#define RSA_MAX_KLEN      (2048)
+#define RSA_KBUF_HLEN     (RSA_MAX_KLEN/4 + 8)
+#define RSA_KBUF_BLEN     (RSA_MAX_KLEN + 32)
+
+static int   g_rsa_len = RSA_MAX_KLEN;
+static char  g_rsa_N[RSA_KBUF_HLEN];
+static char  g_rsa_E[RSA_KBUF_HLEN];
+static char  g_rsa_d[RSA_KBUF_HLEN];
+static char  g_rsa_C[RSA_KBUF_HLEN];
+static char  g_rsa_Msg[RSA_KBUF_HLEN];
+static char  g_rsa_Sig[RSA_KBUF_HLEN];
+
+/**
+  * @brief  RSA digital signature generation.
+  * @param[in]  rsa_len     RSA key length
+  * @param[in]  n           The modulus for both the public and private keys
+  * @param[in]  d           (n,d) is the private key
+  * @param[in]  C           The constant value of Montgomery domain.
+  * @param[in]  msg         The message to be signed.
+  * @param[out] sign        The output signature.
+  * @return  0     Success.
+  * @return  -1    Error
+  */
+int  RSA_GenerateSignature(int rsa_len, char *n, char *d, char *C, char *msg, char *sig)
+{
+	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
+	int  i;
+	
+	for (i = 0; i < 128; i++)
+	{
+		crpt_regs->RSA_N[i] = 0;
+		crpt_regs->RSA_E[i] = 0;
+		crpt_regs->RSA_M[i] = 0;
+	}
+	
+	Hex2Reg(n, (uint32_t *)&crpt_regs->RSA_N[0]);
+	Hex2Reg(d, (uint32_t *)&crpt_regs->RSA_E[0]);
+	Hex2Reg(msg, (uint32_t *)&crpt_regs->RSA_M[0]);
+	Hex2Reg(C, (uint32_t *)&crpt_regs->RSA_C[0]);
+	
+	crpt_regs->RSA_CTL = (rsa_len << CRPT_RSA_CTL_KEYLEN_Pos) | CRPT_RSA_CTL_START_Msk;
+	while (crpt_regs->RSA_STS & CRPT_RSA_STS_BUSY_Msk) ;
+
+	Reg2Hex(rsa_len/4, (uint32_t *)crpt_regs->RSA_M, sig);
+	return 0;
+}
+
+/**
+  * @brief  RSA digital signature generation.
+  * @param[in]  rsa_len     RSA key length
+  * @param[in]  n           The modulus for both the public and private keys
+  * @param[in]  e           (n,e) is the public key
+  * @param[in]  C           The constant value of Montgomery domain.
+  * @param[in]  sign        The signature to be verified.
+  * @param[out] msg         The message to be compared.
+  * @return  0     Success.
+  * @return  -1    Verify failed
+  */
+int RSA_VerifySignature(int rsa_len, char *n, char *e, char *C, char *sig, char *msg)
+{
+	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
+	char output[RSA_KBUF_HLEN];
+	int  i;
+	
+	for (i = 0; i < 128; i++)
+	{
+		crpt_regs->RSA_N[i] = 0;
+		crpt_regs->RSA_E[i] = 0;
+		crpt_regs->RSA_M[i] = 0;
+	}
+	
+	Hex2Reg(n, (uint32_t *)&crpt_regs->RSA_N[0]);
+	Hex2Reg(e, (uint32_t *)&crpt_regs->RSA_E[0]);
+	Hex2Reg(sig, (uint32_t *)&crpt_regs->RSA_M[0]);
+	Hex2Reg(C, (uint32_t *)&crpt_regs->RSA_C[0]);
+	
+	crpt_regs->RSA_CTL = (rsa_len << CRPT_RSA_CTL_KEYLEN_Pos) | CRPT_RSA_CTL_START_Msk;
+	while (crpt_regs->RSA_STS & CRPT_RSA_STS_BUSY_Msk) ;
+
+	Reg2Hex(rsa_len/4, (uint32_t *)crpt_regs->RSA_M, output);
+	
+	printk("RSA verify: %s\n", output);
+	
+	if (ecc_strcmp(output, msg) != 0)
+	{
+		printk("RSA verify output [%s] is not matched with expected [%s]!\n", output, msg);
+		return -1;
+	}
+	return 0;
+}
+
+static long nvt_rsa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	switch(cmd) {
+	case RSA_IOC_SET_BIT_LEN:
+		if (arg & 0xf) return -1;
+		if ((arg < 1024) || (arg > 2048)) return -1;
+		g_rsa_len = arg;
+		break;
+
+	case RSA_IOC_SET_N:
+		memset(g_rsa_N, 0, sizeof(g_rsa_N));
+		copy_from_user(g_rsa_N, (char *)arg, g_rsa_len/4);
+		break;
+
+	case RSA_IOC_SET_E:
+		memset(g_rsa_E, 0, sizeof(g_rsa_E));
+		copy_from_user(g_rsa_E, (char *)arg, g_rsa_len/4);
+		break;
+
+	case RSA_IOC_SET_D:
+		memset(g_rsa_d, 0, sizeof(g_rsa_d));
+		copy_from_user(g_rsa_d, (char *)arg, g_rsa_len/4);
+		break;
+
+	case RSA_IOC_SET_C:
+		memset(g_rsa_C, 0, sizeof(g_rsa_C));
+		copy_from_user(g_rsa_C, (char *)arg, g_rsa_len/4);
+		break;
+
+	case RSA_IOC_SET_MSG:
+		memset(g_rsa_Msg, 0, sizeof(g_rsa_Msg));
+		copy_from_user(g_rsa_Msg, (char *)arg, g_rsa_len/4);
+		break;
+
+	case RSA_IOC_SET_SIG:
+		memset(g_rsa_Sig, 0, sizeof(g_rsa_Sig));
+		copy_from_user(g_rsa_Sig, (char *)arg, g_rsa_len/4);
+		break;
+
+	case RSA_IOC_GET_MSG:
+		copy_to_user((char *)arg, g_rsa_Msg, g_rsa_len/4);
+		break;
+
+	case RSA_IOC_GET_SIG:
+		copy_to_user((char *)arg, g_rsa_Sig, g_rsa_len/4);
+		break;
+		
+	case RSA_IOC_DO_SIGN:
+		return RSA_GenerateSignature(g_rsa_len, g_rsa_N, g_rsa_d, g_rsa_C, g_rsa_Msg, g_rsa_Sig);
+
+	case RSA_IOC_DO_VERIFY:
+		return RSA_VerifySignature(g_rsa_len, g_rsa_N, g_rsa_E, g_rsa_C, g_rsa_Sig, g_rsa_Msg);
+
+	default:
+		return -ENOTTY;
+	}
+	return 0;
+}
+
+struct file_operations nvt_rsa_fops = {
+	.owner		= THIS_MODULE,
+	.unlocked_ioctl	= nvt_rsa_ioctl,
+};
+
+static struct miscdevice nvt_rsa_dev = {
+	.minor		= MISC_DYNAMIC_MINOR,
+	.name		= "nuvoton-rsa",
+	.fops		= &nvt_rsa_fops,
+};
+
 static int nuc980_crypto_raw_probe(struct platform_device *pdev)
 {
 	misc_register(&nvt_aes_dev);
 	misc_register(&nvt_sha_dev);
 	misc_register(&nvt_ecc_dev);
+	misc_register(&nvt_rsa_dev);
 	return 0;
 }
 
@@ -1548,6 +1760,8 @@ static int nuc980_crypto_raw_remove(struct platform_device *pdev)
 {
 	misc_deregister(&nvt_aes_dev);
 	misc_deregister(&nvt_sha_dev);
+	misc_deregister(&nvt_ecc_dev);
+	misc_deregister(&nvt_rsa_dev);
 	return 0;
 }
 

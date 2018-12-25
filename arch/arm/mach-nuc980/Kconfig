@@ -25,6 +25,10 @@ choice
 config BOARD_NUC980
 	depends on !USE_OF
 	bool "NUC980 Development Board"
+
+config BOARD_ETH2UART
+	depends on !USE_OF
+	bool "NUC980 ETHERNET To UART Board"
 endchoice
 
 config NUC980_FIQ

@@ -797,6 +797,13 @@ struct platform_device nuc980_device_i2c3 = {
 /* spi device, spi flash info */
 #ifdef CONFIG_MTD_M25P80
 static struct mtd_partition nuc980_qspi0_flash_partitions[] = {
+#ifdef CONFIG_BOARD_ETH2UART
+	{
+		.name = "lighttpd",
+		.size = 0x0200000,
+		.offset = 0x0C00000,
+	},
+#else
 	{
 		.name = "kernel",
 		.size = 0x0400000,
@@ -807,6 +814,7 @@ static struct mtd_partition nuc980_qspi0_flash_partitions[] = {
 		.size = 0x0400000,
 		.offset = 0x0400000,
 	},
+#endif
 };
 
 static struct flash_platform_data nuc980_qspi0_flash_data = {

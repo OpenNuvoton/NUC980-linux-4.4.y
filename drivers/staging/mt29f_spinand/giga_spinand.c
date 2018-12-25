@@ -156,6 +156,14 @@ int xtx_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 	return 0;
 }
 
+int mk_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
+{
+	if (nand_id[1] != NAND_MFR_MK)
+		return -EINVAL;
+
+	return 0;
+}
+
 int winbond_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 {
 	if (nand_id[1] != NAND_MFR_WINBOND)

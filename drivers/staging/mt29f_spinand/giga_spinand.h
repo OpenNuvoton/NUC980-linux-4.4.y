@@ -48,6 +48,8 @@ int macronix_verify_ecc(u8 status);
 
 int xtx_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id);
 
+int mk_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id);
+
 void winbond_read_data(struct spinand_cmd *cmd, u16 column, u32 page_id);
 
 void winbond_write_data(struct spinand_cmd *cmd, u16 column, u32 page_id);

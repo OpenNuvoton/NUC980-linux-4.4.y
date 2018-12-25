@@ -739,6 +739,7 @@ struct nand_chip {
 #define NAND_MFR_WINBOND	0xef
 #define NAND_MFR_GIGA           0xc8
 #define NAND_MFR_XTX            0x0b
+#define NAND_MFR_MK             0xd5
 
 /* The maximum expected count of bytes in the NAND ID sequence */
 #define NAND_MAX_ID_LEN 8

@@ -46,6 +46,14 @@ struct nand_flash_dev nand_flash_ids[] = {
 		{ .id = {0x0b, 0xe2} }, SZ_2K, 256, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
 	},
 	{
+		"MKSV1GCW-BE 1G 3.3V",
+		{ .id = {0xd5, 0x11} }, SZ_2K, 128, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
+	},
+	{
+		"MKSV1GCL-DE 1G 3.3V",
+		{ .id = {0xd5, 0x1c} }, SZ_2K, 128, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
+	},
+	{
 		"TC58NVG0S3E 1G 3.3V 8-bit",
 		{ .id = {0x98, 0xd1, 0x90, 0x15, 0x76, 0x14, 0x01, 0x00} },
 		SZ_2K, SZ_128, SZ_128K, 0, 8, 64, NAND_ECC_INFO(1, SZ_512),
@@ -213,6 +221,7 @@ struct nand_manufacturers nand_manuf_ids[] = {
 	{NAND_MFR_ATO, "ATO"},
 	{NAND_MFR_WINBOND, "Winbond"},
 	{NAND_MFR_XTX, "XTX"},
+	{NAND_MFR_MK, "MK"},
 	{0x0, "Unknown"}
 };
 

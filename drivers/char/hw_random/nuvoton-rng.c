@@ -71,9 +71,9 @@ static int nuvoton_rng_read(struct hwrng *rng, u32 *data)
 		return 0;       // no data
 	}
 
-	//printk("RNG: 0x%x\n", regs->CRPT_PRNG_KEY0);
+	//printk("RNG: 0x%x\n", regs->CRPT_PRNG_KEY[0]);
 
-	*data = regs->CRPT_PRNG_KEY0;    /* retrieve 32-bits data */
+	*data = regs->CRPT_PRNG_KEY[0];    /* retrieve 32-bits data */
 	rng_data_cnt ++;
 
 	return 4;
@@ -89,7 +89,7 @@ static struct hwrng nuvoton_rng = {
 static int nuvoton_rng_probe(struct platform_device *pdev)
 {
 	int ret;
-
+	
 	regs = (volatile struct nuc980_crypto_regs *)NUC980_VA_CRYPTO;
 
 	ret = hwrng_register(&nuvoton_rng);

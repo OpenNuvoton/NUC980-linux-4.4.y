@@ -1911,21 +1911,19 @@
 		};
 
 		crypto@b001c000{
-			compatible = "nuvoton,nuvoton-rng";
+			compatible = "nuvoton,nuc980-crypto";
 			reg = <0xb001c000 0x1000>;
 			interrupts = <35 4 1>;
 			status = "okay";
 		};
 
-		crypto_prng@b001c000{
-			compatible = "nuvoton,nuc980-crypto";
-			reg = <0xb001c000 0x1000>;
+		crypto_raw {                                 /* Important note! Must also enable crypto@b001c000 */
+			compatible = "nuvoton,nuc980-crypto-raw";
 			status = "okay";
 		};
 
-		crypto_prng@b001c000{
-			compatible = "nuvoton,nuc980-crypto-raw";
-			reg = <0xb001c000 0x1000>;
+		crypto_prng {                                /* Important note! Must also enable crypto@b001c000 */
+			compatible = "nuvoton,nuvoton-rng";
 			status = "okay";
 		};
 

@@ -147,7 +147,6 @@ static long nvt_aes_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 				return -EFAULT;
 			}
 		}
-		//printk("GY2: 0x%x 0x%x 0x%x 0x%x\n", nuc980_crdev.aes_outbuf[0], nuc980_crdev.aes_outbuf[1], nuc980_crdev.aes_outbuf[2], nuc980_crdev.aes_outbuf[3]);
 		break;
 
 	case AES_IOC_C_START:
@@ -1474,7 +1473,7 @@ int  ECC_VerifySignature(void)
 
 	/*  (27) Read X1 registers to get x1\A1\A6 (mod n) */
 	Reg2Hex(pCurve->Echar, crpt_regs->ECC_X1, temp_hex_str);
-	printk("5-(27) x1' (mod n) = %s\n", temp_hex_str);
+	//printk("5-(27) x1' (mod n) = %s\n", temp_hex_str);
 
 	/* 6. The signature is valid if x1\A1\A6 = r, otherwise it is invalid */
 
@@ -1667,7 +1666,7 @@ int RSA_VerifySignature(int rsa_len, char *n, char *e, char *C, char *sig, char 
 
 	Reg2Hex(rsa_len/4, (uint32_t *)crpt_regs->RSA_M, output);
 	
-	printk("RSA verify: %s\n", output);
+	//printk("RSA verify: %s\n", output);
 	
 	if (ecc_strcmp(output, msg) != 0)
 	{

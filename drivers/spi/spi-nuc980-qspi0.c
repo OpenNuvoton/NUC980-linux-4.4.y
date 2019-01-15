@@ -70,11 +70,21 @@
 #define PDMA_SPIx_RX PDMA_SPI0_RX
 
 #if defined(CONFIG_SPI_NUC980_QSPI0_PDMA)
+static char dummy_buf[4096];
 static volatile int qspi0_slave_done_state=0;
 static DECLARE_WAIT_QUEUE_HEAD(qspi0_slave_done);
 
-static struct nuc980_ip_rx_dma dma_rx;
-static struct nuc980_ip_tx_dma dma_tx;
+struct nuc980_ip_dma {
+	struct dma_chan                 *chan_rx;
+	struct dma_chan         *chan_tx;
+	struct scatterlist              sgrx;
+	struct scatterlist              sgtx;
+	struct dma_async_tx_descriptor  *rxdesc;
+	struct dma_async_tx_descriptor  *txdesc;
+	struct dma_slave_config slave_config;
+};
+
+static struct nuc980_ip_dma dma;
 struct nuc980_mem_alloc qspi0_src_mem_p;
 struct nuc980_mem_alloc qspi0_dest_mem_p;
 
@@ -217,72 +227,58 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 {
 	struct nuc980_spi *hw = (struct nuc980_spi *)to_hw(spi);
 #if defined(CONFIG_SPI_NUC980_QSPI0_PDMA)
-	struct nuc980_ip_rx_dma *pdma_rx=&dma_rx;
-	struct nuc980_ip_tx_dma *pdma_tx=&dma_tx;
+	struct nuc980_ip_dma *pdma=&dma;
 	struct nuc980_dma_config dma_crx,dma_ctx;
 	dma_cookie_t            cookie;
 #elif defined(CONFIG_SPI_NUC980_QSPI0_NO_PDMA)
 	unsigned int	i;
-#endif
 
 	hw->tx = t->tx_buf;
 	hw->rx = t->rx_buf;
-	hw->len = t->len;
-	hw->count = 0;
+#endif
 
 	__raw_writel(__raw_readl(hw->regs + REG_FIFOCTL) | 0x3, hw->regs + REG_FIFOCTL); //CWWeng : RXRST & TXRST
 	while (__raw_readl(hw->regs + REG_STATUS) & (1<<23)); //TXRXRST
-
 #if defined(CONFIG_SPI_NUC980_QSPI0_PDMA)
-	qspi0_src_mem_p.size = t->len;
-	qspi0_src_mem_p.vir_addr = (unsigned int)dma_alloc_writecombine(NULL,
-	                           PAGE_ALIGN(qspi0_src_mem_p.size),
-	                           &qspi0_src_mem_p.phy_addr,
-	                           GFP_KERNEL);
-
-	if (t->tx_buf)
-		memcpy((void *)qspi0_src_mem_p.vir_addr, (const void *)t->tx_buf, t->len);
-
-	qspi0_dest_mem_p.size = t->len;
-	qspi0_dest_mem_p.vir_addr = (unsigned int)dma_alloc_writecombine(NULL,
-	                            PAGE_ALIGN(qspi0_dest_mem_p.size),
-	                            &qspi0_dest_mem_p.phy_addr,
-	                            GFP_KERNEL);
-
-
 	__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x1<<0), hw->regs + REG_PDMACTL); //Disable SPIx TX PDMA
 	__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x1<<1), hw->regs + REG_PDMACTL); //Disable SPIx RX PDMA
 
 	if (t->rx_buf) {
 		/* prepare the RX dma transfer */
-		pdma_rx->slave_config.src_addr = SPIx_RX;
-		pdma_rx->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-		pdma_rx->slave_config.src_maxburst = 1;
-		pdma_rx->slave_config.direction = DMA_DEV_TO_MEM;
-		pdma_rx->slave_config.device_fc = false;
-		dmaengine_slave_config(pdma_rx->chan_rx,&(pdma_rx->slave_config));
+		sg_init_table(&pdma->sgrx, 1);
+		pdma->slave_config.src_addr = SPIx_RX;
+		pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+		pdma->sgrx.length=t->len;
+		pdma->slave_config.src_maxburst = 1;
+		pdma->slave_config.direction = DMA_DEV_TO_MEM;
+		pdma->slave_config.device_fc = false;
+		dmaengine_slave_config(pdma->chan_rx,&(pdma->slave_config));
 
-		sg_init_table(pdma_rx->sgrx, 1);
-		pdma_rx->sgrx[0].dma_address = qspi0_dest_mem_p.phy_addr;
-		pdma_rx->sgrx[0].length = qspi0_dest_mem_p.size;
+		pdma->sgrx.dma_address = dma_map_single(hw->dev,
+		                                        (void *)t->rx_buf,
+		                                        t->len, DMA_FROM_DEVICE);
+		if (dma_mapping_error(hw->dev, pdma->sgrx.dma_address)) {
+			dev_err(hw->dev, "tx dma map error\n");
+		}
+
 		dma_crx.reqsel = PDMA_SPIx_RX;
 		dma_crx.timeout_counter = 0;
 		dma_crx.timeout_prescaler = 0;
 		dma_crx.en_sc = 0;
-		pdma_rx->rxdesc = pdma_rx->chan_rx->device->device_prep_slave_sg(pdma_rx->chan_rx,
-		                  pdma_rx->sgrx,
-		                  1,
-		                  DMA_FROM_DEVICE,
-		                  DMA_PREP_INTERRUPT | DMA_CTRL_ACK,
-		                  (void *)&dma_crx); //PDMA Request Source Select
-		if (!pdma_rx->rxdesc) {
-			printk("pdma_rx->rxdesc=NULL\n");
+		pdma->rxdesc=pdma->chan_rx->device->device_prep_slave_sg(pdma->chan_rx,
+		                &pdma->sgrx,
+		                1,
+		                DMA_FROM_DEVICE,
+		                DMA_PREP_INTERRUPT | DMA_CTRL_ACK,
+		                (void *)&dma_crx); //PDMA Request Source Select
+		if (!pdma->rxdesc) {
+			printk("pdma->rxdesc=NULL\n");
 			while(1);
 		}
 		qspi0_dma_slave_done.done = false;
-		pdma_rx->rxdesc->callback = qspi0_nuc980_slave_dma_callback;
-		pdma_rx->rxdesc->callback_param = &qspi0_dma_slave_done;
-		cookie = pdma_rx->rxdesc->tx_submit(pdma_rx->rxdesc);
+		pdma->rxdesc->callback = qspi0_nuc980_slave_dma_callback;
+		pdma->rxdesc->callback_param = &qspi0_dma_slave_done;
+		cookie = pdma->rxdesc->tx_submit(pdma->rxdesc);
 		if (dma_submit_error(cookie)) {
 			printk("rx cookie=%d\n",cookie);
 			while(1);
@@ -290,38 +286,48 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 	}
 
 	/* prepare the TX dma transfer */
-	pdma_tx->slave_config.dst_addr = SPIx_TX;
-	pdma_tx->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-	pdma_tx->slave_config.dst_maxburst = 1;
-	pdma_tx->slave_config.direction = DMA_MEM_TO_DEV;
-	dmaengine_slave_config(pdma_tx->chan_tx,&(pdma_tx->slave_config));
-	sg_init_table(pdma_tx->sgtx, 1);
-	pdma_tx->sgtx[0].dma_address = qspi0_src_mem_p.phy_addr;
-	pdma_tx->sgtx[0].length = qspi0_src_mem_p.size;
+	sg_init_table(&pdma->sgtx, 1);
+	pdma->slave_config.dst_addr = SPIx_TX;
+	pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+	pdma->sgtx.length=t->len;
+	pdma->slave_config.dst_maxburst = 1;
+	pdma->slave_config.direction = DMA_MEM_TO_DEV;
+	dmaengine_slave_config(pdma->chan_tx,&(pdma->slave_config));
+	if (t->tx_buf) {
+		pdma->sgtx.dma_address = dma_map_single(hw->dev,
+		                                        (void *)t->tx_buf,
+		                                        t->len, DMA_TO_DEVICE);
+		if (dma_mapping_error(hw->dev, pdma->sgtx.dma_address)) {
+			dev_err(hw->dev, "tx dma map error\n");
+		}
+	} else {
+		pdma->sgtx.dma_address=virt_to_phys(dummy_buf);
+	}
+
 	dma_ctx.reqsel = PDMA_SPIx_TX;
 	dma_ctx.timeout_counter = 0;
 	dma_ctx.timeout_prescaler = 0;
 	dma_ctx.en_sc = 0;
-	pdma_tx->txdesc = pdma_tx->chan_tx->device->device_prep_slave_sg(pdma_tx->chan_tx,
-	                  pdma_tx->sgtx,
-	                  1,
-	                  DMA_TO_DEVICE,
-	                  DMA_PREP_INTERRUPT | DMA_CTRL_ACK,
-	                  (void *)&dma_ctx);
-	if (!pdma_tx->txdesc) {
-		printk("pdma_tx->txdex=NULL\n");
+	pdma->txdesc=pdma->chan_tx->device->device_prep_slave_sg(pdma->chan_tx,
+	                &pdma->sgtx,
+	                1,
+	                DMA_TO_DEVICE,
+	                DMA_PREP_INTERRUPT | DMA_CTRL_ACK,
+	                (void *)&dma_ctx);
+	if (!pdma->txdesc) {
+		printk("pdma->txdex=NULL\n");
 		while(1);
 	}
 
 	if (!t->rx_buf) {
-		pdma_tx->txdesc->callback = qspi0_nuc980_slave_dma_callback;
-		pdma_tx->txdesc->callback_param = &qspi0_dma_slave_done;
+		pdma->txdesc->callback = qspi0_nuc980_slave_dma_callback;
+		pdma->txdesc->callback_param = &qspi0_dma_slave_done;
 	} else {
-		pdma_tx->txdesc->callback = NULL;
-		pdma_tx->txdesc->callback_param = NULL;
+		pdma->txdesc->callback = NULL;
+		pdma->txdesc->callback_param = NULL;
 	}
 
-	cookie = pdma_tx->txdesc->tx_submit(pdma_tx->txdesc);
+	cookie = pdma->txdesc->tx_submit(pdma->txdesc);
 	if (dma_submit_error(cookie)) {
 		printk("tx cookie=%d\n",cookie);
 		while(1);
@@ -335,21 +341,24 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 
 	qspi0_slave_done_state=0;
 
+	/* unmap buffers if mapped above */
 	if (t->rx_buf)
-		memcpy((void *)t->rx_buf, (const void *)qspi0_dest_mem_p.vir_addr, t->len);
+		dma_unmap_single(hw->dev, pdma->sgrx.dma_address, t->len,
+		                 DMA_FROM_DEVICE);
+	if (t->tx_buf)
+		dma_unmap_single(hw->dev, pdma->sgtx.dma_address, t->len,
+		                 DMA_TO_DEVICE);
 
-	dma_free_writecombine(NULL, PAGE_ALIGN(qspi0_src_mem_p.size), (void *)qspi0_src_mem_p.vir_addr, qspi0_src_mem_p.phy_addr);
-	dma_free_writecombine(NULL, PAGE_ALIGN(qspi0_dest_mem_p.size), (void *)qspi0_dest_mem_p.vir_addr, qspi0_dest_mem_p.phy_addr);
 
 #elif defined(CONFIG_SPI_NUC980_QSPI0_NO_PDMA)
 	if (hw->rx) {
-		for(i = 0; i < hw->len; i++) {
+		for(i = 0; i < t->len; i++) {
 			__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
 			while (((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x100)); //RXEMPTY
 			hw_rx(hw, __raw_readl(hw->regs + REG_RX), i);
 		}
 	} else {
-		for(i = 0; i < hw->len ; i++) {
+		for(i = 0; i < t->len; i++) {
 			while (((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x20000)); //TXFULL
 			__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
 		}
@@ -654,8 +663,7 @@ static struct nuc980_spi_info *nuc980_qspi0_parse_dt(struct device *dev) {
 static int nuc980_qspi0_probe(struct platform_device *pdev)
 {
 #if defined(CONFIG_SPI_NUC980_QSPI0_PDMA)
-	struct nuc980_ip_rx_dma *pdma_rx=&dma_rx;
-	struct nuc980_ip_tx_dma *pdma_tx=&dma_tx;
+	struct nuc980_ip_dma *pdma=&dma;
 	dma_cap_mask_t mask;
 #endif
 	struct nuc980_spi *hw;
@@ -674,21 +682,21 @@ static int nuc980_qspi0_probe(struct platform_device *pdev)
 	/* Request the DMA channel from the DMA engine and then use the device from
 	 * the channel for the proxy channel also.
 	 */
-	pdma_rx->chan_rx = dma_request_channel(mask, NULL, NULL);
-	if (!pdma_rx->chan_rx) {
+	pdma->chan_rx = dma_request_channel(mask, NULL, NULL);
+	if (!pdma->chan_rx) {
 		printk("RX DMA channel request error\n");
 		return -1;
 	}
-	pdma_rx->chan_rx->private=(void *)1;
-	printk("RX %s: %s module removed\n",__func__, dma_chan_name(pdma_rx->chan_rx));
+	pdma->chan_rx->private=(void *)1;
+	printk("RX %s: %s module removed\n",__func__, dma_chan_name(pdma->chan_rx));
 
-	pdma_tx->chan_tx = dma_request_channel(mask, NULL, NULL);
-	if (!pdma_tx->chan_tx) {
+	pdma->chan_tx = dma_request_channel(mask, NULL, NULL);
+	if (!pdma->chan_tx) {
 		printk("TX DMA channel request error\n");
 		return -1;
 	}
-	pdma_tx->chan_tx->private=(void *)1;
-	printk("TX %s: %s module removed\n",__func__, dma_chan_name(pdma_tx->chan_tx));
+	pdma->chan_tx->private=(void *)1;
+	printk("TX %s: %s module removed\n",__func__, dma_chan_name(pdma->chan_tx));
 #endif
 
 	master = spi_alloc_master(&pdev->dev, sizeof(struct nuc980_spi));

@@ -132,30 +132,6 @@ struct spinand_ops spinand_dev[] = {
 	{ },
 };
 
-///WB
-/**
- * WB_spinand_die_select- send command 0xc2 to select die
- * Description:
- *   Select die function.
- *   Select die #1, set the bit to 1
- *   Select die #0, clear the bit to 0
- */
-static int WB_spinand_die_select(struct spi_device *spi_nand, u8 dieid)
-{
-	int retval;
-	struct spinand_cmd cmd = {0};
-
-	cmd.cmd = WB_MULTI_DIESELECT,
-	    cmd.n_addr = 1,
-	        cmd.addr[0] = dieid,
-
-
-	                      retval = spinand_cmd(spi_nand, &cmd);
-	if (retval < 0)
-		dev_err(&spi_nand->dev, "error %d set otp\n", retval);
-
-	return retval;
-}
 
 void mt29f_read_page_to_cache(struct spinand_cmd *cmd, u32 page_id)
 {
@@ -262,8 +238,8 @@ static inline struct spinand_state *mtd_to_state(struct mtd_info *mtd) {
 }
 
 #ifdef CONFIG_MTD_SPINAND_ONDIEECC
-static int enable_hw_ecc;
-static int enable_read_hw_ecc;
+//static int enable_hw_ecc;
+//static int enable_read_hw_ecc;
 
 static struct nand_ecclayout spinand_oob_64 = {
 	.eccbytes = 24,
@@ -480,8 +456,7 @@ static int spinand_enable_ecc(struct spi_device *spi_nand)
 {
 	int retval;
 	u8 otp = 0;
-///WB
-	WB_spinand_die_select(spi_nand, 0);
+
 	retval = spinand_get_otp(spi_nand, &otp);
 	if (retval < 0)
 		return retval;
@@ -495,8 +470,7 @@ static int spinand_enable_ecc(struct spi_device *spi_nand)
 			return retval;
 		return spinand_get_otp(spi_nand, &otp);
 	}
-	///WB
-	WB_spinand_die_select(spi_nand, 1);
+
 	retval = spinand_get_otp(spi_nand, &otp);
 	if (retval < 0)
 		return retval;
@@ -519,8 +493,7 @@ static int spinand_disable_ecc(struct spi_device *spi_nand)
 	int retval;
 	u8 otp = 0;
 
-///WB
-	WB_spinand_die_select(spi_nand, 0);
+
 	retval = spinand_get_otp(spi_nand, &otp);
 	if (retval < 0)
 		return retval;
@@ -534,8 +507,7 @@ static int spinand_disable_ecc(struct spi_device *spi_nand)
 	} else {
 		//return 0;
 	}
-///WB
-	WB_spinand_die_select(spi_nand, 1);
+
 	retval = spinand_get_otp(spi_nand, &otp);
 	if (retval < 0)
 		return retval;
@@ -564,15 +536,11 @@ static int spinand_disable_ecc(struct spi_device *spi_nand)
 static int spinand_write_enable(struct spi_device *spi_nand)
 {
 	struct spinand_cmd cmd = {0};
-///WB
-	WB_spinand_die_select(spi_nand, 0);
 
 	cmd.cmd = CMD_WR_ENABLE;
-	///WB
+
 	spinand_cmd(spi_nand, &cmd);
 
-	///WB
-	WB_spinand_die_select(spi_nand, 1);
 	return spinand_cmd(spi_nand, &cmd);
 }
 
@@ -585,13 +553,11 @@ static int spinand_write_enable(struct spi_device *spi_nand)
 static int spinand_write_disable(struct spi_device *spi_nand)
 {
 	struct spinand_cmd cmd = {0};
-///WB
-	WB_spinand_die_select(spi_nand, 0);
+
 	cmd.cmd = CMD_WR_DISABLE;
 
 	spinand_cmd(spi_nand, &cmd);
-	///WB
-	WB_spinand_die_select(spi_nand, 1);
+
 	return spinand_cmd(spi_nand, &cmd);
 }
 
@@ -600,11 +566,6 @@ static int spinand_read_page_to_cache(struct spi_device *spi_nand, u32 page_id)
 	struct spinand_cmd cmd = {0};
 	u16 row;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
-
-	///WB
-	u8 dieid;
-	dieid = (int)(page_id>>16);
-	WB_spinand_die_select(spi_nand, dieid);
 
 	row = page_id;
 	cmd.cmd = CMD_READ;
@@ -662,7 +623,7 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 	                       dev_get_drvdata(&spi_nand->dev);
 
 #ifdef CONFIG_MTD_SPINAND_ONDIEECC
-	if (enable_read_hw_ecc) {
+	if (0) { //(enable_read_hw_ecc) {
 		if (spinand_enable_ecc(spi_nand) < 0)
 			dev_err(&spi_nand->dev, "enable HW ECC failed!");
 	}
@@ -704,13 +665,13 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 	}
 
 #ifdef CONFIG_MTD_SPINAND_ONDIEECC
-	if (enable_read_hw_ecc) {
+	if (0) { //(enable_read_hw_ecc) {
 		ret = spinand_disable_ecc(spi_nand);
 		if (ret < 0) {
 			dev_err(&spi_nand->dev, "disable ecc failed!!\n");
 			return ret;
 		}
-		enable_read_hw_ecc = 0;
+		//enable_read_hw_ecc = 0;
 	}
 #endif
 	if (ecc_error)
@@ -739,11 +700,6 @@ static int spinand_program_data_to_cache(struct spi_device *spi_nand,
 	u16 column;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
 
-///WB
-	u8 dieid;
-	dieid = (int)(page_id>>16);
-	WB_spinand_die_select(spi_nand, dieid);
-
 	column = byte_id;
 	cmd.cmd = CMD_PROG_PAGE_CLRCACHE;
 	cmd.n_addr = 2;
@@ -768,10 +724,6 @@ static int spinand_program_execute(struct spi_device *spi_nand, u32 page_id)
 	struct spinand_cmd cmd = {0};
 	u16 row;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
-///WB
-	u8 dieid;
-	dieid = (int)(page_id>>16);
-	WB_spinand_die_select(spi_nand, dieid);
 
 	row = page_id;
 	cmd.cmd = CMD_PROG_PAGE_EXC;
@@ -799,21 +751,21 @@ static int spinand_program_page(struct spi_device *spi_nand,
 {
 	int retval = 0;
 	u8 status = 0;
-	uint8_t *wbuf;
+//	uint8_t *wbuf;
 #ifdef CONFIG_MTD_SPINAND_ONDIEECC
-	unsigned int i, j;
+//	unsigned int i, j;
 
-	enable_read_hw_ecc = 0;
-	wbuf = kzalloc(CACHE_BUF, GFP_KERNEL);
-	if (!wbuf)
-		return -ENOMEM;
+	//enable_read_hw_ecc = 0;
+//	wbuf = kzalloc(CACHE_BUF, GFP_KERNEL);
+//	if (!wbuf)
+//		return -ENOMEM;
 
-	spinand_read_page(spi_nand, page_id, 0, CACHE_BUF, wbuf);
+//	spinand_read_page(spi_nand, page_id, 0, CACHE_BUF, wbuf);
 
-	for (i = offset, j = 0; i < len; i++, j++)
-		wbuf[i] &= buf[j];
+//	for (i = offset, j = 0; i < len; i++, j++)
+//		wbuf[i] &= buf[j];
 
-	if (enable_hw_ecc) {
+	if (0) { //(enable_hw_ecc) {
 		retval = spinand_enable_ecc(spi_nand);
 		if (retval < 0) {
 			dev_err(&spi_nand->dev, "enable ecc failed!!\n");
@@ -832,7 +784,8 @@ static int spinand_program_page(struct spi_device *spi_nand,
 		dev_err(&spi_nand->dev, "wait timedout!!!\n");
 
 	retval = spinand_program_data_to_cache(spi_nand, page_id,
-	                                       offset, len, wbuf);
+//	                                       offset, len, wbuf);
+	                                       offset, len, buf);
 	if (retval < 0)
 		goto exit;
 
@@ -860,26 +813,26 @@ static int spinand_program_page(struct spi_device *spi_nand,
 		}
 	}
 #ifdef CONFIG_MTD_SPINAND_ONDIEECC
-	if (enable_hw_ecc) {
+	if (0) { //(enable_hw_ecc) {
 		retval = spinand_disable_ecc(spi_nand);
 		if (retval < 0) {
 			dev_err(&spi_nand->dev, "disable ecc failed!!\n");
 			goto exit;
 		}
-		enable_hw_ecc = 0;
+		//enable_hw_ecc = 0;
 	}
 #endif
-	retval = spinand_write_disable(spi_nand);
-	if (retval < 0) {
-		dev_err(&spi_nand->dev, "write disable failed!!\n");
-		goto exit;
-	}
-	if (wait_till_ready(spi_nand))
-		dev_err(&spi_nand->dev, "wait timedout!!!\n");
+//	retval = spinand_write_disable(spi_nand);
+//	if (retval < 0) {
+//		dev_err(&spi_nand->dev, "write disable failed!!\n");
+//		goto exit;
+//	}
+//	if (wait_till_ready(spi_nand))
+//		dev_err(&spi_nand->dev, "wait timedout!!!\n");
 
 exit:
 #ifdef CONFIG_MTD_SPINAND_ONDIEECC
-	kfree(wbuf);
+//	kfree(wbuf);
 #endif
 	return retval;
 }
@@ -898,10 +851,6 @@ static int spinand_erase_block_erase(struct spi_device *spi_nand, u16 block_id)
 	struct spinand_cmd cmd = {0};
 	u16 row;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
-///WB
-	u8 dieid;
-	dieid = (int)(block_id>>10);
-	WB_spinand_die_select(spi_nand, dieid);
 
 	row = block_id;
 	cmd.cmd = CMD_ERASE_BLK;
@@ -954,13 +903,13 @@ static int spinand_erase_block(struct spi_device *spi_nand, u16 block_id)
 				break;
 		}
 	}
-	retval = spinand_write_disable(spi_nand);
-	if (retval < 0) {
-		dev_err(&spi_nand->dev, "write disable failed!!\n");
-		return retval;
-	}
-	if (wait_till_ready(spi_nand))
-		dev_err(&spi_nand->dev, "wait timedout!!!\n");
+//	retval = spinand_write_disable(spi_nand);
+//	if (retval < 0) {
+//		dev_err(&spi_nand->dev, "write disable failed!!\n");
+//		return retval;
+//	}
+//	if (wait_till_ready(spi_nand))
+//		dev_err(&spi_nand->dev, "wait timedout!!!\n");
 	return 0;
 }
 
@@ -972,7 +921,7 @@ static int spinand_write_page_hwecc(struct mtd_info *mtd,
 	int eccsize = chip->ecc.size;
 	int eccsteps = chip->ecc.steps;
 
-	enable_hw_ecc = 1;
+	//enable_hw_ecc = 1;
 	chip->write_buf(mtd, p, eccsize * eccsteps);
 	return 0;
 }
@@ -987,7 +936,7 @@ static int spinand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
 	struct spinand_info *info = (struct spinand_info *)chip->priv;
 	struct spinand_ops *dev_ops = info->dev_ops;
 
-	enable_read_hw_ecc = 1;
+	//enable_read_hw_ecc = 1;
 
 	chip->read_buf(mtd, p, eccsize * eccsteps);
 	if (oob_required)
@@ -1167,8 +1116,7 @@ static int spinand_lock_block(struct spi_device *spi_nand, u8 lock)
 	struct spinand_cmd cmd = {0};
 	int ret;
 	u8 otp = 0;
-///WB
-	WB_spinand_die_select(spi_nand, 0);
+
 	ret = spinand_get_otp(spi_nand, &otp);
 
 	cmd.cmd = CMD_WRITE_REG;
@@ -1181,8 +1129,6 @@ static int spinand_lock_block(struct spi_device *spi_nand, u8 lock)
 	if (ret < 0)
 		dev_err(&spi_nand->dev, "error %d lock block\n", ret);
 
-	///WB
-	WB_spinand_die_select(spi_nand, 1);
 	ret = spinand_get_otp(spi_nand, &otp);
 
 	cmd.cmd = CMD_WRITE_REG;
@@ -1278,6 +1224,12 @@ static int spinand_probe(struct spi_device *spi_nand)
 		return -ENXIO;
 
 	ppdata.of_node = spi_nand->dev.of_node;
+
+#ifdef CONFIG_MTD_SPINAND_ONDIEECC
+	if (spinand_enable_ecc(spi_nand) < 0)
+		dev_err(&spi_nand->dev, "enable HW ECC failed!");
+#endif
+
 	return mtd_device_parse_register(mtd, NULL, &ppdata, NULL, 0);
 }
 

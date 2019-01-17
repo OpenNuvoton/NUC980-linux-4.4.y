@@ -1497,7 +1497,7 @@ static void nuc980_dma_issue_pending(struct dma_chan *chan)
 }
 
 
-static int __init nuc980_dma_probe(struct platform_device *pdev)
+static int nuc980_dma_probe(struct platform_device *pdev)
 {
 	struct nuc980_dma_platform_data *pdata;
 	struct nuc980_dma_engine *edma;

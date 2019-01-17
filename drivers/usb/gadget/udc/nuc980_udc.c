@@ -399,11 +399,13 @@ void paser_irq_cep(struct nuc980_udc *udc, u32 irq)
 
 			__raw_writel(USBD_CEPINTSTS_STSDONEIF, udc->base + REG_USBD_CEPINTSTS);
 			if (!is_last)
-				__raw_writel(USBD_CEPINTEN_RXPKIEN|USBD_CEPINTEN_STSDONEIEN, udc->base + REG_USBD_CEPINTEN);
-			else
+			{
+				__raw_writel(USBD_CEPINTEN_SETUPPKIEN|USBD_CEPINTEN_RXPKIEN|USBD_CEPINTEN_STSDONEIEN, udc->base + REG_USBD_CEPINTEN);
+			}
+			else 
 			{
 				__raw_writel(USB_CEPCTL_NAKCLR, udc->base + REG_USBD_CEPCTL);
-				__raw_writel(USBD_CEPINTEN_STSDONEIEN, udc->base + REG_USBD_CEPINTEN);
+				__raw_writel(USBD_CEPINTEN_SETUPPKIEN|USBD_CEPINTEN_STSDONEIEN, udc->base + REG_USBD_CEPINTEN);
 				udc->ep0state = EP0_END_XFER;
 			}
 		}
@@ -417,11 +419,13 @@ void paser_irq_cep(struct nuc980_udc *udc, u32 irq)
 				is_last = write_fifo(ep,req);
 
 			if (!is_last)
-				__raw_writel(USBD_CEPINTEN_STSDONEIEN|USBD_CEPINTEN_TXPKIEN|USBD_CEPINTEN_INTKIEN, udc->base + REG_USBD_CEPINTEN);
-			else
+			{
+				__raw_writel(USBD_CEPINTEN_SETUPPKIEN|USBD_CEPINTEN_STSDONEIEN|USBD_CEPINTEN_TXPKIEN|USBD_CEPINTEN_INTKIEN, udc->base + REG_USBD_CEPINTEN);
+			}
+			else 
 			{
 				if (udc->setup_ret >= 0)
-					__raw_writel(USB_CEPCTL_NAKCLR, udc->base + REG_USBD_CEPCTL);   // clear nak so that sts stage is complete
+					__raw_writel(USB_CEPCTL_NAKCLR, udc->base + REG_USBD_CEPCTL);
 				__raw_writel(USBD_CEPINTEN_STSDONEIEN|USBD_CEPINTEN_TXPKIEN|USBD_CEPINTEN_SETUPPKIEN, udc->base + REG_USBD_CEPINTEN);
 
 				if (udc->setup_ret < 0)
@@ -548,7 +552,6 @@ static irqreturn_t nuc980_udc_irq(int irq, void *_dev)
 
 	if (IrqStL & USBD_GINTSTS_CEPIF)
 	{
-//printk("2. 0x%x / 0x%x\n", __raw_readl(udc->base + REG_USBD_CEPINTSTS), __raw_readl(udc->base + REG_USBD_CEPINTEN));
 		IrqSt = __raw_readl(udc->base + REG_USBD_CEPINTSTS) & __raw_readl(udc->base + REG_USBD_CEPINTEN);
 		__raw_writel(IrqSt, udc->base + REG_USBD_CEPINTSTS);
 		if (IrqSt && udc->driver)
@@ -562,7 +565,6 @@ static irqreturn_t nuc980_udc_irq(int irq, void *_dev)
 		{
 			if (IrqStL & (1 << j))
 			{
-//printk("%d. 0x%x / 0x%x\n", j, __raw_readl(udc->base + REG_USBD_EPA_EPINTSTS+0x28*j), __raw_readl(udc->base + REG_USBD_EPA_EPINTEN+0x28*j));
 				//in-token and out token interrupt can deal with one only
 				IrqSt = __raw_readl(udc->base + REG_USBD_EPA_EPINTSTS+0x28*j) & __raw_readl(udc->base + REG_USBD_EPA_EPINTEN+0x28*j);
 				if (IrqSt && udc->driver)
@@ -875,22 +877,19 @@ static int nuc980_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_
         if ((req->req.length != 0) && (udc->ep0state == EP0_END_XFER))
         {
             udc->ep0state = EP0_IN_DATA_PHASE;
-            __raw_writel(0x08, udc->base + REG_USBD_CEPINTEN);
+            __raw_writel(0x0a, udc->base + REG_USBD_CEPINTEN);
 		}
 		if ((udc->setup_ret > 1000) || ((req->req.length==0)&&(udc->ep0state == EP0_OUT_DATA_PHASE)))
 		{
-			__raw_writel(USB_CEPCTL_NAKCLR, udc->base + REG_USBD_CEPCTL);   // clear nak so that sts stage is complete
-			__raw_writel(0x402, udc->base + REG_USBD_CEPINTEN);     // suppkt int//enb sts completion int
+			__raw_writel(USB_CEPCTL_NAKCLR, udc->base + REG_USBD_CEPCTL);
+			__raw_writel(0x402, udc->base + REG_USBD_CEPINTEN);
 			done(ep, req, 0);
 			__raw_writel(USB_CEPCTL_FLUSH, udc->base + REG_USBD_CEPCTL);
 		}
 	}
 	else if (ep->index > 0)
 	{
-//		if (!udc->usb_dma_trigger || (ep->index!=udc->usb_dma_owner))
-			__raw_writel(ep->irq_enb, udc->base + REG_USBD_EPA_EPINTEN + 0x28*(ep->index-1));
-//printk("%d, 0x%x, 0x%x, 0x%x\n", ep->index, __raw_readl(udc->base + REG_USBD_EPA_EPDATCNT + 0x28*(ep->index-1)), __raw_readl(udc->base + REG_USBD_EPA_EPINTSTS+0x28*(ep->index-1)), __raw_readl(udc->base + REG_USBD_EPA_EPRSPCTL+0x28*(ep->index-1)));
-
+		__raw_writel(ep->irq_enb, udc->base + REG_USBD_EPA_EPINTEN + 0x28*(ep->index-1));
 	}
 
 	local_irq_restore(flags);
@@ -1163,7 +1162,7 @@ static int nuc980_udc_start(struct usb_gadget *g, struct usb_gadget_driver *driv
 	__raw_writel(0x03, udc->base + REG_USBD_GINTEN);    /* enable usb, cep interrupt */
 	__raw_writel((USBD_BUSINTEN_RESUMEIEN | USBD_BUSINTEN_RSTIEN | USBD_BUSINTEN_VBUSDETIEN), udc->base + REG_USBD_BUSINTEN);
 	__raw_writel(0, udc->base + REG_USBD_FADDR);
-	__raw_writel((USBD_CEPINTEN_SETUPPKIEN | USBD_CEPINTEN_STSDONEIEN), udc->base + REG_USBD_CEPINTEN);
+	__raw_writel(0x402, udc->base + REG_USBD_CEPINTEN);
 
 
 	nuc980_udc_enable(udc);
@@ -1335,11 +1334,11 @@ static void udc_isr_ctrl_pkt(struct nuc980_udc *udc)
 
 			if (crq.bRequestType & USB_DIR_IN) {
 				udc->ep0state = EP0_IN_DATA_PHASE;
-				__raw_writel(USBD_CEPINTEN_INTKIEN, udc->base + REG_USBD_CEPINTEN);
+				__raw_writel(USBD_CEPINTEN_SETUPPKIEN|USBD_CEPINTEN_INTKIEN, udc->base + REG_USBD_CEPINTEN);
 			}
 			else {
 				udc->ep0state = EP0_OUT_DATA_PHASE;
-				__raw_writel(USBD_CEPINTEN_RXPKIEN, udc->base + REG_USBD_CEPINTEN);
+				__raw_writel(USBD_CEPINTEN_SETUPPKIEN|USBD_CEPINTEN_RXPKIEN, udc->base + REG_USBD_CEPINTEN);
 			}
 
 			if (udc->gadget.speed == USB_SPEED_FULL)
@@ -1350,12 +1349,12 @@ static void udc_isr_ctrl_pkt(struct nuc980_udc *udc)
             if ((ret < 0) || (crq.bRequest == USB_REQ_SET_ADDRESS)) {
 				__raw_writel(USBD_CEPINTSTS_STSDONEIF, udc->base + REG_USBD_CEPINTSTS);
 				__raw_writel(USB_CEPCTL_NAKCLR, udc->base + REG_USBD_CEPCTL);
-				__raw_writel(USBD_CEPINTEN_STSDONEIEN, udc->base + REG_USBD_CEPINTEN);
+				__raw_writel(USBD_CEPINTEN_SETUPPKIEN|USBD_CEPINTEN_STSDONEIEN, udc->base + REG_USBD_CEPINTEN);
 			}
 			else if (ret > 1000) {
 				pr_devel("DELAYED_STATUS:%p\n", req);
 				udc->ep0state = EP0_END_XFER;
-				__raw_writel(0, udc->base + REG_USBD_CEPINTEN);
+				__raw_writel(USBD_CEPINTEN_SETUPPKIEN, udc->base + REG_USBD_CEPINTEN);
 			}
 			break;
 

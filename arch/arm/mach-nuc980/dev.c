@@ -862,7 +862,6 @@ static struct nuc980_spi_info nuc980_qspi0_platform_data = {
 	.rxneg = 0,
 	.divider = 4,
 	.sleep = 0,
-	.txnum = 0,
 	.txbitlen = 8,
 	.bus_num = 0,
 };
@@ -946,7 +945,6 @@ static struct nuc980_spi_info nuc980_spi0_platform_data = {
 	.rxneg = 0,
 	.divider = 4,
 	.sleep = 0,
-	.txnum = 0,
 	.txbitlen = 8,
 	.bus_num = 1,
 };
@@ -1031,7 +1029,6 @@ static struct nuc980_spi_info nuc980_spi1_platform_data = {
 	.rxneg = 0,
 	.divider = 4,
 	.sleep = 0,
-	.txnum = 0,
 	.txbitlen = 8,
 	.bus_num = 1,
 };
@@ -1081,7 +1078,6 @@ static struct nuc980_spi_info nuc980_qspi0_slave_platform_data = {
 	.rxneg = 0,
 	.divider = 4,
 	.sleep = 0,
-	.txnum = 0,
 	.txbitlen = 8,
 	.bus_num = 1,
 };
@@ -1128,7 +1124,6 @@ static struct nuc980_spi_info nuc980_spi0_slave_platform_data = {
 	.rxneg = 0,
 	.divider = 4,
 	.sleep = 0,
-	.txnum = 0,
 	.txbitlen = 8,
 	.bus_num = 1,
 };
@@ -1175,7 +1170,6 @@ static struct nuc980_spi_info nuc980_spi1_slave_platform_data = {
 	.rxneg = 0,
 	.divider = 4,
 	.sleep = 0,
-	.txnum = 0,
 	.txbitlen = 8,
 	.bus_num = 1,
 };

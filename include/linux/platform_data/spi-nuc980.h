@@ -21,7 +21,6 @@ struct nuc980_spi_info {
 	unsigned int rxneg;
 	unsigned int divider;
 	unsigned int sleep;
-	unsigned int txnum;
 	unsigned int txbitlen;
 	unsigned int clkpol;
 	int bus_num;

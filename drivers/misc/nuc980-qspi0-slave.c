@@ -555,16 +555,16 @@ static struct nuc980_spi_info *nuc980_qspi0_parse_dt(struct device *dev)
 		sci->txneg = temp;
 	}
 
-	if (of_property_read_u32(dev->of_node, "txneg", &temp)) {
-		dev_warn(dev, "can't get txneg from dt\n");
-		sci->txneg = 0;
+	if (of_property_read_u32(dev->of_node, "clkpol", &temp)) {
+		dev_warn(dev, "can't get clkpol from dt\n");
+		sci->clkpol = 0;
 	} else {
-		sci->txneg = temp;
+		sci->clkpol = temp;
 	}
 
 	if (of_property_read_u32(dev->of_node, "rxneg", &temp)) {
 		dev_warn(dev, "can't get rxneg from dt\n");
-		sci->rxneg = 1;
+		sci->rxneg = 0;
 	} else {
 		sci->rxneg = temp;
 	}
@@ -581,13 +581,6 @@ static struct nuc980_spi_info *nuc980_qspi0_parse_dt(struct device *dev)
 		sci->sleep = 0;
 	} else {
 		sci->sleep = temp;
-	}
-
-	if (of_property_read_u32(dev->of_node, "txnum", &temp)) {
-		dev_warn(dev, "can't get txnum from dt\n");
-		sci->txnum = 0;
-	} else {
-		sci->txnum = temp;
 	}
 
 	if (of_property_read_u32(dev->of_node, "txbitlen", &temp)) {

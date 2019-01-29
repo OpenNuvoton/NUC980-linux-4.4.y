@@ -305,7 +305,7 @@ static int nuc980_spi1_update_state(struct spi_device *spi,
 
 	if(hw->pdata->hz != hz) {
 		clk = clk_get_rate(hw->clk);
-		div = DIV_ROUND_UP(clk, hz * 2) - 1;
+		div = DIV_ROUND_UP(clk, hz) - 1;
 		hw->pdata->hz = hz;
 		hw->pdata->divider = div;
 	}
@@ -352,6 +352,7 @@ static int nuc980_spi1_setupxfer(struct spi_device *spi,
 	nuc980_rx_edge(hw, hw->pdata->rxneg);
 	nuc980_set_clock_polarity(hw, hw->pdata->clkpol);
 	nuc980_send_first(hw, hw->pdata->lsb);
+	nuc980_set_divider(hw);
 
 	return 0;
 }

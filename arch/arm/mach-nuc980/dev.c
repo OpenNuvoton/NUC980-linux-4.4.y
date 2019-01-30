@@ -830,7 +830,7 @@ static struct spi_board_info nuc980_qspi0_board_info[] __initdata = {
 #ifdef CONFIG_MTD_M25P80
 	{
 		.modalias = "m25p80",
-		.max_speed_hz = 15000000,
+		.max_speed_hz = 30000000,
 		.bus_num = 0,
 		.chip_select = 0,	//use SS0
 		.platform_data = &nuc980_qspi0_flash_data,
@@ -918,7 +918,7 @@ static struct spi_board_info nuc980_spi0_board_info[] __initdata = {
 #ifdef CONFIG_MTD_M25P80
 	{
 		.modalias = "m25p80",
-		.max_speed_hz = 15000000,
+		.max_speed_hz = 30000000,
 		.bus_num = 1,
 		.chip_select = 0,	//use SS0
 		.platform_data = &nuc980_spi0_flash_data,
@@ -1002,7 +1002,7 @@ static struct spi_board_info nuc980_spi1_board_info[] __initdata = {
 #ifdef CONFIG_MTD_M25P80
 	{
 		.modalias = "m25p80",
-		.max_speed_hz = 15000000,
+		.max_speed_hz = 30000000,
 		.bus_num = 1,
 		.chip_select = 0,	//use SS0
 		.platform_data = &nuc980_spi1_flash_data,

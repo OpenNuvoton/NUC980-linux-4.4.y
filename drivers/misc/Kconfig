@@ -516,16 +516,6 @@ config SRAM
 	  the genalloc API. It is supposed to be used for small on-chip SRAM
 	  areas found on many SoCs.
 
-config NUC980_EBI
-        bool "NUC980 EBI driver"
-        depends on ARCH_NUC980
-        select GENERIC_ALLOCATOR
-        help
-        Driver for NUC980 EBI controller.
-        Used to configure the EBI (external bus interface) when the device-
-        tree is used. This bus supports external ethernet controller,
-        SRAMs etc.
-
 config NUC980_ETIMER
         tristate "NUC980 Enhance Timer (ETIMER) support"
         depends on ARCH_NUC980

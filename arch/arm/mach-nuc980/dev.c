@@ -809,6 +809,12 @@ static struct mtd_partition nuc980_qspi0_flash_partitions[] = {
 		.size = 0x0200000,
 		.offset = 0x0C00000,
 	},
+#elif defined(CONFIG_BOARD_IOT)
+	{
+		.name = "user",
+		.size = 0x1000000,
+		.offset = 0x1000000,
+	},
 #else
 	{
 		.name = "kernel",
@@ -824,10 +830,15 @@ static struct mtd_partition nuc980_qspi0_flash_partitions[] = {
 };
 
 static struct flash_platform_data nuc980_qspi0_flash_data = {
+#ifdef CONFIG_BOARD_IOT
+	.name = "mt29f",
+#else
 	.name = "m25p80",
+#endif
 	.parts = nuc980_qspi0_flash_partitions,
 	.nr_parts = ARRAY_SIZE(nuc980_qspi0_flash_partitions),
 	.type = "mx66l51235l",
+
 };
 #endif
 
@@ -835,7 +846,11 @@ static struct flash_platform_data nuc980_qspi0_flash_data = {
 static struct spi_board_info nuc980_qspi0_board_info[] __initdata = {
 #ifdef CONFIG_MTD_M25P80
 	{
+#ifdef CONFIG_BOARD_IOT
+		.modalias = "mt29f",
+#else
 		.modalias = "m25p80",
+#endif
 		.max_speed_hz = 30000000,
 		.bus_num = 0,
 		.chip_select = 0,	//use SS0

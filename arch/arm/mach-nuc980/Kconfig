@@ -29,6 +29,10 @@ config BOARD_NUC980
 config BOARD_ETH2UART
 	depends on !USE_OF
 	bool "NUC980 ETHERNET To UART Board"
+
+config BOARD_IOT
+	depends on !USE_OF
+	bool "NUC980 IoT Board"
 endchoice
 
 config NUC980_FIQ

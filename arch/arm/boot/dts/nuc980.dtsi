@@ -753,12 +753,14 @@
 						 //0 0x1 0x5 0	 /* eint1_A1 */
 						 //0 0xE 0x6 0	 /* eint1_A14 */
 
-						 3 0x2 0x4 0   /* eint2_D0 */
+						 //3 0x0 0x4 0   /* eint2_D0 */
 						 //4 0xA 0x5 0	 /* eint2_E10 */
+						 //1 0x3 0x3 0	 /* eint2_B3 */
+						 //1 0xD 0x2 0	 /* eint2_B13 */
 
-						 3 0x3 0x4 0   /* eint3_D1 */
+						 //3 0x3 0x4 0   /* eint3_D1 */
 						 //4 0xE 0x5 0	 /* eint3_E12 */
-
+						 //6 0xF 0x4 0	 /* eint3_G15 */
 						 >;
 				};
 			};
@@ -1480,12 +1482,24 @@
 
 			/* eintX-config : */
 			/* 1st: 0(Disable)/1(Enable) */
-			/* 2nd: 0(PH0)/1(PF11) */
+			/* 2nd: 0(PA0)/1(PA13) */
 			/* 3rd: 0(both)/1(rasing)/2(falling)/3(heigh level)/4(low level) */
-			eint0-config = <1 0 0>;
-			eint1-config = <1 0 0>;
-			eint2-config = <1 0 0>;
-			eint3-config = <1 0 0>;
+			eint0-config = <0 0 0>;
+
+			/* 1st: 0(Disable)/1(Enable) */
+			/* 2nd: 0(PA1)/1(PA14) */
+			/* 3rd: 0(both)/1(rasing)/2(falling)/3(heigh level)/4(low level) */
+			eint1-config = <0 0 0>;
+
+			/* 1st: 0(Disable)/1(Enable) */
+			/* 2nd: 0(PD0)/1(PE10)/2(PB3)/3(PB13) */
+			/* 3rd: 0(both)/1(rasing)/2(falling)/3(heigh level)/4(low level) */
+			eint2-config = <0 2 0>;
+
+			/* 1st: 0(Disable)/1(Enable) */
+			/* 2nd: 0(PD1)/1(PE12)/2(PG15) */
+			/* 3rd: 0(both)/1(rasing)/2(falling)/3(heigh level)/4(low level) */
+			eint3-config = <0 2 0>;
 			status = "okay";
 		};
 

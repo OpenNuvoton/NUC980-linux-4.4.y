@@ -227,6 +227,18 @@ static int nuc980_gpio_core_to_irq(struct gpio_chip *chip, unsigned offset)
 		if((__raw_readl(REG_MFP_GPE_H) & (0xf<<16))==(0x5<<16))
 			irqno = IRQ_EXT3_E12;
 		break;
+	case NUC980_PB3:
+		if((__raw_readl(REG_MFP_GPB_L) & (0xf<<12))==(0x3<<12))
+			irqno = IRQ_EXT2_B3;
+		break;
+	case NUC980_PB13:
+		if((__raw_readl(REG_MFP_GPB_H) & (0xf<<20))==(0x2<<20))
+			irqno = IRQ_EXT2_B13;
+		break;
+	case NUC980_PG15:
+		if((__raw_readl(REG_MFP_GPG_H) & (0xf<<24))==(0x4<<24))
+			irqno = IRQ_EXT3_G15;
+		break;
 	default:
 		irqno = IRQ_GPIO_START+offset;
 		break;
@@ -298,7 +310,7 @@ struct nuc980_eint_pins eint1[]= {
 /*
  * @brief       External Interrupt 2 Handler
  * @details     This function will be used by EINT2,
- *              when enable IRQ_EXT2_D0 or IRQ_EXT2_E10 in eint2
+ *              when enable IRQ_EXT2_D0 , IRQ_EXT2_E10 , IRQ_EXT2_B3 or IRQ_EXT2_B13 in eint2
  */
 /*
 static irqreturn_t nuc980_eint2_interrupt(int irq, void *dev_id){
@@ -307,20 +319,23 @@ static irqreturn_t nuc980_eint2_interrupt(int irq, void *dev_id){
 }
 */
 
-/* If enable IRQ_EXT2_D0 or IRQ_EXT2_E10 , linux will enable EINT2
+
+/* If enable IRQ_EXT2_D0 , IRQ_EXT2_E10 , IRQ_EXT2_B3 , IRQ_EXT2_B13 , linux will enable EINT2
  * User can modify trigger tiypes as below :
  * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
  */
 struct nuc980_eint_pins eint2[]= {
 //{IRQ_EXT2_D0, nuc980_eint2_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint2"},
 //{IRQ_EXT2_E10,nuc980_eint2_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint2"},
+//{IRQ_EXT2_B3,nuc980_eint2_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint2"},
+//{IRQ_EXT2_B13,nuc980_eint2_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint2"},
 	{0,0,0,0}
 };
 
 /*
  * @brief       External Interrupt 3 Handler
  * @details     This function will be used by EINT3,
- *              when enable IRQ_EXT3_D1 or IRQ_EXT3_E12 in eint3
+ *              when enable IRQ_EXT3_D1 , IRQ_EXT3_E12 or IRQ_EXT3_G15 in eint3
  */
 /*
 static irqreturn_t nuc980_eint3_interrupt(int irq, void *dev_id){
@@ -329,13 +344,15 @@ static irqreturn_t nuc980_eint3_interrupt(int irq, void *dev_id){
 }
 */
 
-/* If enable IRQ_EXT3_D1 or IRQ_EXT3_E12 , linux will enable EINT31
+
+/* If enable IRQ_EXT3_D1 , IRQ_EXT3_E12 or IRQ_EXT3_G15 , linux will enable EINT31
  * User can modify trigger tiypes as below :
  * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
  */
 struct nuc980_eint_pins eint3[]= {
 //{IRQ_EXT3_D1, nuc980_eint3_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint3"},
 //{IRQ_EXT3_E12,nuc980_eint3_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint3"},
+//{IRQ_EXT3_G15,nuc980_eint3_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint3"},
 	{0,0,0,0}
 };
 
@@ -412,6 +429,12 @@ static int nuc980_enable_eint(uint32_t flag,struct platform_device *pdev)
 			case IRQ_EXT2_E10:
 				p = devm_pinctrl_get_select(&pdev->dev, "eint2-PE10");
 				break;
+			case IRQ_EXT2_B3:
+				p = devm_pinctrl_get_select(&pdev->dev, "eint2-PB3");
+				break;
+			case IRQ_EXT2_B13:
+				p = devm_pinctrl_get_select(&pdev->dev, "eint2-PB13");
+				break;
 			}
 			if (IS_ERR(p)) {
 				dev_err(&pdev->dev, "unable to reserve pin\n");
@@ -436,6 +459,9 @@ static int nuc980_enable_eint(uint32_t flag,struct platform_device *pdev)
 				break;
 			case IRQ_EXT3_E12:
 				p = devm_pinctrl_get_select(&pdev->dev, "eint3-PE12");
+				break;
+			case IRQ_EXT3_G15:
+				p = devm_pinctrl_get_select(&pdev->dev, "eint3-PG15");
 				break;
 			}
 			if (IS_ERR(p)) {
@@ -526,7 +552,15 @@ static int nuc980_enable_eint(uint32_t flag,struct platform_device *pdev)
 		return -EINVAL;
 	}
 	if(val32[0]==1) {
-		irqnum=(val32[1]==0)?(IRQ_EXT2_D0):(IRQ_EXT2_E10);
+		if(val32[1]==0)
+			irqnum = IRQ_EXT2_D0;
+		else if(val32[1]==1) 
+			irqnum = IRQ_EXT2_E10;
+		else if(val32[1]==2) {
+			printk("======================>IRQ_EXT2_B3\n");
+			irqnum = IRQ_EXT2_B3;
+		}else
+			irqnum = IRQ_EXT2_B13;			
 		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
 		if(flag==1) {
 			__raw_writel((1<<6) | __raw_readl(REG_WKUPSER0),REG_WKUPSER0);
@@ -544,7 +578,13 @@ static int nuc980_enable_eint(uint32_t flag,struct platform_device *pdev)
 		return -EINVAL;
 	}
 	if(val32[0]==1) {
-		irqnum=(val32[1]==0)?(IRQ_EXT3_D1):(IRQ_EXT3_E12);
+		if(val32[1]==0)
+			irqnum = IRQ_EXT3_D1;
+		else if(val32[1]==1)
+			irqnum = IRQ_EXT3_E12;
+		else
+			irqnum = IRQ_EXT3_G15;
+
 		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
 		if(flag==3) {
 			__raw_writel((1<<7) | __raw_readl(REG_WKUPSER0),REG_WKUPSER0);

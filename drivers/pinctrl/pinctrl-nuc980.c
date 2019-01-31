@@ -409,8 +409,11 @@ static const unsigned eint1_0_pin[] = {0x01};
 static const unsigned eint1_1_pin[] = {0x0E};
 static const unsigned eint2_0_pin[] = {0x30};
 static const unsigned eint2_1_pin[] = {0x4A};
+static const unsigned eint2_2_pin[] = {0x13};
+static const unsigned eint2_3_pin[] = {0x1D};
 static const unsigned eint3_0_pin[] = {0x31};
 static const unsigned eint3_1_pin[] = {0x4C};
+static const unsigned eint3_2_pin[] = {0x6F};
 
 static const unsigned ebi8_0_pin[] =    {0x09, 0x08, 0x07, // nCS0, nRE, nWE,
                                          0x60, 0x61, 0x12, 0x63, 0x66, 0x67, 0x68, 0x69, 0x0C, 0x0B, //address0~9
@@ -1754,6 +1757,18 @@ static const struct nuc980_pinctrl_group nuc980_pinctrl_groups[] = {
 		.func = 0x5,
 	},
 	{
+		.name = "eint2_2_grp",
+		.pins = eint2_2_pin,
+		.num_pins = ARRAY_SIZE(eint2_2_pin),
+		.func = 0x3,
+	},
+	{
+		.name = "eint2_3_grp",
+		.pins = eint2_3_pin,
+		.num_pins = ARRAY_SIZE(eint2_3_pin),
+		.func = 0x2,
+	},
+	{
 		.name = "eint3_0_grp",
 		.pins = eint3_0_pin,
 		.num_pins = ARRAY_SIZE(eint3_0_pin),
@@ -1764,6 +1779,12 @@ static const struct nuc980_pinctrl_group nuc980_pinctrl_groups[] = {
 		.pins = eint3_1_pin,
 		.num_pins = ARRAY_SIZE(eint3_1_pin),
 		.func = 0x5,
+	},
+	{
+		.name = "eint3_2_grp",
+		.pins = eint3_2_pin,
+		.num_pins = ARRAY_SIZE(eint3_2_pin),
+		.func = 0x4,
 	},
 	{
 		.name = "ebi8_0_grp",
@@ -2071,8 +2092,8 @@ static const char * const jtag0_groups[] = {"jtag0_grp"};
 static const char * const jtag1_groups[] = {"jtag1_grp"};
 static const char * const eint0_groups[] = {"eint0_0_grp", "eint0_1_grp"};
 static const char * const eint1_groups[] = {"eint1_0_grp", "eint1_1_grp"};
-static const char * const eint2_groups[] = {"eint2_0_grp", "eint2_1_grp"};
-static const char * const eint3_groups[] = {"eint3_0_grp", "eint3_1_grp"};
+static const char * const eint2_groups[] = {"eint2_0_grp", "eint2_1_grp", "eint2_2_grp", "eint2_3_grp"};
+static const char * const eint3_groups[] = {"eint3_0_grp", "eint3_1_grp", "eint3_2_grp"};
 static const char * const ebi8_0_groups[] = {"ebi8_0_grp"};
 static const char * const ebi8_1_groups[] = {"ebi8_1_grp"};
 static const char * const ebi8_2_groups[] = {"ebi8_2_grp"};
@@ -4477,6 +4498,22 @@ static const struct pinctrl_map nuc980_pinmap[] = {
 		.data.mux.group = "eint2_1_grp",
 	},
 	{
+		.dev_name = "nuc980-gpio.3",
+		.name = "eint2-PB3",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc980",
+		.data.mux.function = "eint2",
+		.data.mux.group = "eint2_2_grp",
+	},
+	{
+		.dev_name = "nuc980-gpio.3",
+		.name = "eint2-PB13",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc980",
+		.data.mux.function = "eint2",
+		.data.mux.group = "eint2_3_grp",
+	},
+	{
 		.dev_name = "nuc980-gpio.4",
 		.name = "eint3-PD1",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
@@ -4491,6 +4528,14 @@ static const struct pinctrl_map nuc980_pinmap[] = {
 		.ctrl_dev_name = "pinctrl-nuc980",
 		.data.mux.function = "eint3",
 		.data.mux.group = "eint3_1_grp",
+	},
+	{
+		.dev_name = "nuc980-gpio.4",
+		.name = "eint3-PG15",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc980",
+		.data.mux.function = "eint3",
+		.data.mux.group = "eint3_2_grp",
 	},
 	{
 		.dev_name = "nuc980-ebi",

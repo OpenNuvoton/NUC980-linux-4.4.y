@@ -13,7 +13,7 @@ config VIDEO0_FREQ
 	int "Video frequency"
 	depends on VIDEO0_NUC980
 	default "24000000"
-if !OF
+if !USE_OF
 choice
 	prompt "Nuvoton NUC980 Image Sensor Selection"
 	depends on VIDEO0_NUC980
@@ -28,6 +28,8 @@ config SENSOR0_NT99050
 	bool "NT99050"
 config SENSOR0_TW9912
 	bool "TW9912"
+config SENSOR0_GC0308
+        bool "GC0308"
 endchoice
 endif
 
@@ -47,7 +49,7 @@ config VIDEO1_FREQ
         int "Video frequency"
         depends on VIDEO1_NUC980
 	default "24000000"
-if !OF
+if !USE_OF
 choice
         prompt "Nuvoton NUC980 Image Sensor Selection"
         depends on VIDEO1_NUC980
@@ -62,6 +64,8 @@ config SENSOR1_NT99050
         bool "NT99050"
 config SENSOR1_TW9912
         bool "TW9912"
+config SENSOR1_GC0308
+        bool "GC0308"
 endchoice
 
 endif

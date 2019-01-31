@@ -681,6 +681,9 @@ static struct i2c_board_info __initdata nuc980_i2c_clients1[] = {
 #if defined(CONFIG_SENSOR1_NT99050)
 	{I2C_BOARD_INFO("cap1_nt99050", 0x21),},
 #endif
+#if defined(CONFIG_SENSOR1_GC0308)
+	{I2C_BOARD_INFO("cap1_gc0308", 0x21),},
+#endif
 };
 
 //port 1
@@ -727,6 +730,9 @@ static struct i2c_board_info __initdata nuc980_i2c_clients2[] = {
 #endif
 #if defined(CONFIG_SENSOR0_NT99050)
 	{I2C_BOARD_INFO("cap0_nt99050", 0x21),},
+#endif
+#if defined(CONFIG_SENSOR0_GC0308)
+	{I2C_BOARD_INFO("cap0_gc0308", 0x21),},
 #endif
 };
 
@@ -1616,6 +1622,7 @@ static struct i2c_board_info __initdata nuc980_i2c_clients4[] = {
 #if defined(CONFIG_SENSOR0_NT99050) || defined(CONFIG_SENSOR1_NT99050)
 	{I2C_BOARD_INFO("nt99050", 0x21),},
 #endif
+
 };
 
 static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {

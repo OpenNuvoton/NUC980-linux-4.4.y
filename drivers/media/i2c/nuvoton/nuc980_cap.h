@@ -82,6 +82,7 @@
 #define SENSOR_NT99050      2
 #define SENSOR_OV5640       3
 #define SENSOR_TW9912       4
+#define SENSOR_GC0308       5
 
 
 enum nuvoton_vin_frame_state {

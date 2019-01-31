@@ -1489,6 +1489,8 @@ extern int nuvoton_vin0_probe_nt99141(struct nuvoton_vin_device* cam);
 extern int nuvoton_vin0_probe_nt99050(struct nuvoton_vin_device* cam);
 #elif defined(CONFIG_SENSOR0_TW9912)
 extern int nuvoton_vin0_probe_tw9912(struct nuvoton_vin_device* cam);
+#elif defined(CONFIG_SENSOR0_GC0308)
+extern int nuvoton_vin0_probe_gc0308(struct nuvoton_vin_device* cam);
 #endif
 #else
 extern int nuvoton_vin0_probe_ov7725(struct nuvoton_vin_device* cam);
@@ -1496,6 +1498,7 @@ extern int nuvoton_vin0_probe_ov5640(struct nuvoton_vin_device* cam);
 extern int nuvoton_vin0_probe_nt99141(struct nuvoton_vin_device* cam);
 extern int nuvoton_vin0_probe_nt99050(struct nuvoton_vin_device* cam);
 extern int nuvoton_vin0_probe_tw9912(struct nuvoton_vin_device* cam);
+extern int nuvoton_vin0_probe_gc0308(struct nuvoton_vin_device* cam);
 #endif
 int nuvoton_vdi0_device_register(struct platform_device *pdev)
 {
@@ -1538,6 +1541,8 @@ int nuvoton_vdi0_device_register(struct platform_device *pdev)
 	err=nuvoton_vin0_probe_nt99050(cam); //sensor probe;
 #elif defined(CONFIG_SENSOR0_TW9912)
 	err=nuvoton_vin0_probe_tw9912(cam);//sensor probe;
+#elif defined(CONFIG_SENSOR0_GC0308)
+	err=nuvoton_vin0_probe_gc0308(cam);//sensor probe;
 #endif
 	if(err<0) {
 		gpio_free(CAP0_PD_PIN);
@@ -1556,7 +1561,8 @@ int nuvoton_vdi0_device_register(struct platform_device *pdev)
 		err=nuvoton_vin0_probe_nt99050(cam); //sensor probe;
 	else if(sensor0_model==SENSOR_TW9912)
 		err=nuvoton_vin0_probe_tw9912(cam); //sensor probe;
-
+	else if(sensor0_model==SENSOR_GC0308)
+		err=nuvoton_vin0_probe_gc0308(cam); //sensor probe;
 
 	if(err<0) {
 		gpio_free(CAP0_PD_PIN);
@@ -1692,6 +1698,8 @@ static int nuvoton_cap0_device_probe(struct platform_device *pdev)
 			sensor0_model = 3;
 		} else if(pstr[0]=='t' && pstr[1]=='w' && pstr[2]=='9' && pstr[3]=='9' && pstr[4]=='1' && pstr[5]=='2') {
 			sensor0_model = 4;
+		}else if(pstr[0]=='g' && pstr[1]=='c' && pstr[2]=='0' && pstr[3]=='3' && pstr[4]=='0' && pstr[5]=='8') {
+			sensor0_model = 5;
 		}
 
 		//of_property_read_string(pdev->dev.of_node,"powerdown-pin",&pstr1);
@@ -1734,6 +1742,8 @@ static int nuvoton_cap0_device_resume(struct platform_device *pdev)
 	nuvoton_vin0_probe_nt99050(cam);
 #elif defined(CONFIG_SENSOR0_TW9912)
 	nuvoton_vin0_probe_tw9912(cam);
+#elif defined(CONFIG_SENSOR0_GC0308)
+	nuvoton_vin0_probe_gc0308(cam);
 #endif
 #else
 	if(sensor0_model==SENSOR_OV7725)
@@ -1746,6 +1756,8 @@ static int nuvoton_cap0_device_resume(struct platform_device *pdev)
 		nuvoton_vin0_probe_nt99050(cam);
 	else if(sensor0_model==SENSOR_TW9912)
 		nuvoton_vin0_probe_tw9912(cam);
+	else if(sensor0_model==SENSOR_GC0308)
+		nuvoton_vin0_probe_gc0308(cam);
 #endif
 	if(cam->CtlReg==1)
 		__raw_writel(__raw_readl(REG_CAP0_CTL)|0x1,REG_CAP0_CTL);

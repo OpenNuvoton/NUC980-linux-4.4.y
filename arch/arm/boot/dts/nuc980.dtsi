@@ -753,7 +753,7 @@
 						 //0 0x1 0x5 0	 /* eint1_A1 */
 						 //0 0xE 0x6 0	 /* eint1_A14 */
 
-						 //3 0x0 0x4 0   /* eint2_D0 */
+						 3 0x0 0x4 0   /* eint2_D0 */
 						 //4 0xA 0x5 0	 /* eint2_E10 */
 						 //1 0x3 0x3 0	 /* eint2_B3 */
 						 //1 0xD 0x2 0	 /* eint2_B13 */
@@ -1571,7 +1571,8 @@
 
 			#address-cells = <1>;
 			#size-cells = <0>;
-			nt99141@2a {
+			/*
+			cap1_nt99141@2a {
 				compatible = "nuvoton,cap1-nt99141";
 				reg = <0x2a>;
 			};
@@ -1591,6 +1592,11 @@
 				compatible = "nuvoton,cap1-tw9912";
 				reg = <0x44>;
 			};
+                        cap1_gc0308@21 {
+                                compatible = "nuvoton,cap1-gc0308";
+                                reg = <0x21>;
+                        };
+			*/
 		};
 
 		i2c2: i2c2@b0082000 {
@@ -1606,6 +1612,7 @@
 
 			#address-cells = <1>;
 			#size-cells = <0>;
+			/*
 			cap0_nt99141@2a {
 				compatible = "nuvoton,cap0-nt99141";
 				reg = <0x2a>;
@@ -1626,6 +1633,11 @@
 				compatible = "nuvoton,cap0-tw9912";
 				reg = <0x44>;
 			};
+                        cap0_gc0308@21 {
+                                compatible = "nuvoton,cap0-gc0308";
+                                reg = <0x21>;
+                        };
+			*/
 		};
 
 		i2c3: i2c3@b0083000 {
@@ -1967,8 +1979,7 @@
 			pinctrl-0 = <&pinctrl_cap0>;
 			status = "disabled";
 			frequency = <24000000>;
-			model = "nt99050";	/*Support ov7725, nt99141, nt99050, ov5640 and tw9912 */
-
+			model = "nt99050";      /*Support ov7725, nt99141, nt99050, ov5640, tw9912 or gc0308 */
 		};
 		cap1@b0014000 {
 			compatible = "nuvoton,nuc980-cap1";
@@ -1978,7 +1989,7 @@
 			pinctrl-0 = <&pinctrl_cap1>;
 			status = "disabled";
 			frequency = <24000000>;
-			model = "nt99050";	/*Support ov7725, nt99141, nt99050, ov5640 and tw9912 */
+			model = "nt99050";      /*Support ov7725, nt99141, nt99050, ov5640, tw9912 or gc0308 */
 		};
 
 		dma@b0008000 {

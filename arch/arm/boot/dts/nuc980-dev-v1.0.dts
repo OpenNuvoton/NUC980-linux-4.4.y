@@ -187,12 +187,20 @@
 		i2c1: i2c1@b0081000 {
 			status = "disabled";
 			pinctrl-0 = <&pinctrl_i2c1_PB>;
+			cap1_nt99141@2a {
+                                compatible = "nuvoton,cap1-nt99141";
+                                reg = <0x2a>;
+                        };
 		};
 
 
 		i2c2: i2c2@b0082000 {
 			status = "disabled";
 			pinctrl-0 = <&pinctrl_i2c2_PB>;
+			cap0_nt99141@2a {
+                                compatible = "nuvoton,cap0-nt99141";
+                                reg = <0x2a>;
+                        };
 		};
 
 	};
@@ -245,9 +253,11 @@
 			status = "disabled";
 		};
 		cap0@b0024000 {
+			model = "nt99141";
 			status = "disabled";
 		};
 		cap1@b0014000 {
+			model = "nt99141";
 			status = "disabled";
 		};
 		dma@b0008000 {

@@ -181,14 +181,12 @@ struct nuc980_dma_engine {
 	struct nuc980_dma_chan  channels[];
 };
 
-static inline struct device *chan2dev(struct nuc980_dma_chan *edmac)
-{
+static inline struct device *chan2dev(struct nuc980_dma_chan *edmac) {
 	ENTRY();
 	return &edmac->chan.dev->device;
 }
 
-static struct nuc980_dma_chan *to_nuc980_dma_chan(struct dma_chan *chan)
-{
+static struct nuc980_dma_chan *to_nuc980_dma_chan(struct dma_chan *chan) {
 	ENTRY();
 	return container_of(chan, struct nuc980_dma_chan, chan);
 }
@@ -291,8 +289,7 @@ static void nuc980_dma_set_active(struct nuc980_dma_chan *edmac,
 
 /* Called with @edmac->lock held and interrupts disabled */
 static struct nuc980_dma_desc *
-nuc980_dma_get_active(struct nuc980_dma_chan *edmac)
-{
+nuc980_dma_get_active(struct nuc980_dma_chan *edmac) {
 	DMA_DEBUG("NUC980 GDMA %s\n", __FUNCTION__ );
 	if (list_empty(&edmac->active))
 		return NULL;
@@ -719,8 +716,7 @@ static int hw_interrupt(struct nuc980_dma_chan *edmac)
  */
 
 static struct nuc980_dma_desc *
-nuc980_dma_desc_get(struct nuc980_dma_chan *edmac)
-{
+nuc980_dma_desc_get(struct nuc980_dma_chan *edmac) {
 	struct nuc980_dma_desc *desc, *_desc;
 	struct nuc980_dma_desc *ret = NULL;
 	ENTRY();
@@ -1195,8 +1191,7 @@ static void nuc980_dma_free_chan_resources(struct dma_chan *chan)
  */
 static struct dma_async_tx_descriptor *
 nuc980_dma_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest,
-                           dma_addr_t src, size_t len, unsigned long flags)
-{
+                           dma_addr_t src, size_t len, unsigned long flags) {
 	struct nuc980_dma_chan *edmac = to_nuc980_dma_chan(chan);
 	struct nuc980_dma_desc *desc, *first;
 	size_t bytes, offset;
@@ -1256,8 +1251,7 @@ fail:
 static struct dma_async_tx_descriptor *
 nuc980_dma_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
                          unsigned int sg_len, enum dma_transfer_direction dir,
-                         unsigned long flags, void *context)
-{
+                         unsigned long flags, void *context) {
 	struct nuc980_dma_chan *edmac = to_nuc980_dma_chan(chan);
 	struct nuc980_dma_desc *desc, *first;
 	struct scatterlist *sg;
@@ -1359,8 +1353,7 @@ fail:
 static struct dma_async_tx_descriptor *
 nuc980_dma_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t dma_addr,
                            size_t buf_len, size_t period_len,
-                           enum dma_transfer_direction dir, unsigned long flags)
-{
+                           enum dma_transfer_direction dir, unsigned long flags) {
 	struct nuc980_dma_chan *edmac = to_nuc980_dma_chan(chan);
 	struct nuc980_dma_desc *desc, *first;
 	size_t offset = 0;
@@ -1470,8 +1463,8 @@ static int nuc980_dma_slave_config(struct dma_chan *chan,
  * This function can be used to query state of a given transaction.
  */
 static enum dma_status nuc980_dma_tx_status(struct dma_chan *chan,
-        dma_cookie_t cookie,
-        struct dma_tx_state *state)
+                dma_cookie_t cookie,
+                struct dma_tx_state *state)
 {
 	struct nuc980_dma_chan *edmac = to_nuc980_dma_chan(chan);
 	enum dma_status ret;

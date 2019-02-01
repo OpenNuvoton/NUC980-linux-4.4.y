@@ -283,7 +283,7 @@ static int nuvoton_vidioc0_try_fmt_vid_cap(struct file *file, void *priv,struct 
 	/*Set capture format for nuvoton sensor interface */
 	__raw_writel( (__raw_readl(REG_CAP0_CWS) & ~(0x0fff0fff)) | (s->cropcap.bounds.width) | (s->cropcap.bounds.height<<16),REG_CAP0_CWS );
 	switch(pix->pixelformat) {
-	/* Packet YUV422 */
+		/* Packet YUV422 */
 	case V4L2_PIX_FMT_YUYV:
 	case V4L2_PIX_FMT_RGB555:
 	case V4L2_PIX_FMT_RGB565:
@@ -361,7 +361,7 @@ static int nuvoton_vidioc0_try_fmt_vid_cap(struct file *file, void *priv,struct 
 		cam->vpe.PacketEnable=1;
 		break;
 
-	/* Planar YUV422 */
+		/* Planar YUV422 */
 	case V4L2_PIX_FMT_YUV422P:
 	case V4L2_PIX_FMT_YUV411P:
 		if(pix->pixelformat==V4L2_PIX_FMT_YUV422P)  outfmt = 0<<7;
@@ -432,15 +432,15 @@ static int nuvoton_vidioc0_try_fmt_vid_cap(struct file *file, void *priv,struct 
 	case V4L2_PIX_FMT_VYUY:
 		break;
 
-	/* packet only Y*/
+		/* packet only Y*/
 	case V4L2_PIX_FMT_GREY:
 		break;
 
-	/* Packet RGB555 */
+		/* Packet RGB555 */
 	case V4L2_PIX_FMT_RGB555:
 		break;
 
-	/* Packet RGB565 */
+		/* Packet RGB565 */
 	case V4L2_PIX_FMT_RGB565:
 		break;
 
@@ -1698,7 +1698,7 @@ static int nuvoton_cap0_device_probe(struct platform_device *pdev)
 			sensor0_model = 3;
 		} else if(pstr[0]=='t' && pstr[1]=='w' && pstr[2]=='9' && pstr[3]=='9' && pstr[4]=='1' && pstr[5]=='2') {
 			sensor0_model = 4;
-		}else if(pstr[0]=='g' && pstr[1]=='c' && pstr[2]=='0' && pstr[3]=='3' && pstr[4]=='0' && pstr[5]=='8') {
+		} else if(pstr[0]=='g' && pstr[1]=='c' && pstr[2]=='0' && pstr[3]=='3' && pstr[4]=='0' && pstr[5]=='8') {
 			sensor0_model = 5;
 		}
 

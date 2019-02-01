@@ -97,20 +97,19 @@ static const struct gpio_port port_class[] = {
 };
 
 static const struct gpio_port *nuc980_gpio_cla_port(unsigned gpio_num,
-        unsigned *group,unsigned *num)
-{
+                unsigned *group,unsigned *num) {
 	*group = gpio_num / GPIO_OFFSET;
 	*num = gpio_num % GPIO_OFFSET;
 	return &port_class[*group];
 }
 
 static int nuc980_gpio_core_direction_in(struct gpio_chip *gc,
-        unsigned gpio_num)
+                unsigned gpio_num)
 {
 	int port_num,group_num;
 	unsigned long value;
 	const struct gpio_port *port =
-	    nuc980_gpio_cla_port(gpio_num, &group_num, &port_num);
+	        nuc980_gpio_cla_port(gpio_num, &group_num, &port_num);
 	ENTRY();
 	spin_lock(&gpio_lock);
 	value = __raw_readl(port->dir);
@@ -144,12 +143,12 @@ static void nuc980_gpio_core_set(struct gpio_chip *gc, unsigned gpio_num,
 }
 
 static int nuc980_gpio_core_direction_out(struct gpio_chip *gc,
-        unsigned gpio_num, int val)
+                unsigned gpio_num, int val)
 {
 	int port_num,group_num;
 	unsigned long value;
 	const struct gpio_port *port =
-	    nuc980_gpio_cla_port(gpio_num, &group_num, &port_num);
+	        nuc980_gpio_cla_port(gpio_num, &group_num, &port_num);
 	ENTRY();
 	spin_lock(&gpio_lock);
 	value = __raw_readl(port->dir);
@@ -554,13 +553,13 @@ static int nuc980_enable_eint(uint32_t flag,struct platform_device *pdev)
 	if(val32[0]==1) {
 		if(val32[1]==0)
 			irqnum = IRQ_EXT2_D0;
-		else if(val32[1]==1) 
+		else if(val32[1]==1)
 			irqnum = IRQ_EXT2_E10;
 		else if(val32[1]==2) {
 			printk("======================>IRQ_EXT2_B3\n");
 			irqnum = IRQ_EXT2_B3;
-		}else
-			irqnum = IRQ_EXT2_B13;			
+		} else
+			irqnum = IRQ_EXT2_B13;
 		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
 		if(flag==1) {
 			__raw_writel((1<<6) | __raw_readl(REG_WKUPSER0),REG_WKUPSER0);

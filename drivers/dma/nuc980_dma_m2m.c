@@ -65,7 +65,7 @@ int M2M_Compare(void)
 	struct dma_proxy_channel *pchannel_p=&channels;
 	for(i=0; i<pchannel_p->src_mem_p.size; i++) {
 		if(*((unsigned char *)(pchannel_p->src_mem_p.vir_addr )+i)!=
-		   *((unsigned char *)(pchannel_p->dest_mem_p.vir_addr)+i)) {
+		    *((unsigned char *)(pchannel_p->dest_mem_p.vir_addr)+i)) {
 			printk("[Compare Error]%d %d %d\n",i,
 			       *((unsigned char *)(pchannel_p->src_mem_p.vir_addr )+i),
 			       *((unsigned char *)(pchannel_p->dest_mem_p.vir_addr)+i)
@@ -108,10 +108,10 @@ int M2M_Trigger(void)
 	dma_param->dst_addr=pchannel_p->dest_mem_p.phy_addr;
 	dma_param->size=pchannel_p->dest_mem_p.size;
 	tx = pchannel_p->channel_p->device->device_prep_dma_memcpy(pchannel_p->channel_p,
-	        dma_param->dst_addr,
-	        dma_param->src_addr,
-	        dma_param->size,
-	        dma_param->cfg);
+	                dma_param->dst_addr,
+	                dma_param->src_addr,
+	                dma_param->size,
+	                dma_param->cfg);
 
 	dma_m2m_done.done = false;
 	tx->callback = nuc980_m2m_dma_callback;
@@ -187,10 +187,10 @@ static int __init MyDmaM2M_init(void)
 	dma_param->dst_addr=pchannel_p->dest_mem_p.phy_addr;
 	dma_param->size=pchannel_p->dest_mem_p.size;
 	tx = pchannel_p->channel_p->device->device_prep_dma_memcpy(pchannel_p->channel_p,
-	        dma_param->dst_addr,
-	        dma_param->src_addr,
-	        dma_param->size,
-	        dma_param->cfg);
+	                dma_param->dst_addr,
+	                dma_param->src_addr,
+	                dma_param->size,
+	                dma_param->cfg);
 
 	dma_m2m_done.done = false;
 	tx->callback = nuc980_m2m_dma_callback;

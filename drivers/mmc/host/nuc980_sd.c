@@ -577,8 +577,8 @@ static void nuc980_sd_completed_command(struct nuc980_sd_host *host, unsigned in
 			host->in_use_index = 0;
 
 			if(host->request->cmd->data->flags ==MMC_DATA_WRITE &&
-			   host->request->cmd->opcode == 53 &&
-			   host->request->cmd->data->blksz  <=64) {
+			    host->request->cmd->opcode == 53 &&
+			    host->request->cmd->data->blksz  <=64) {
 				/* To Avoid CMD53 reading data than less 64 bytes will be worng */
 				udelay(1);
 				nuc980_sd_write(REG_DMACCSR, nuc980_sd_read(REG_DMACCSR) | DMACCSR_SW_RST);

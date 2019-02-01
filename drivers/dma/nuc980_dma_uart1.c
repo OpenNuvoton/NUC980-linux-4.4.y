@@ -53,7 +53,7 @@ static void Slave_Compare(void)
 	int i;
 	for(i=0; i<src_mem_p.size; i++) {
 		if(*((unsigned char *)(src_mem_p.vir_addr )+i)!=
-		   *((unsigned char *)(dest_mem_p.vir_addr)+i)) {
+		    *((unsigned char *)(dest_mem_p.vir_addr)+i)) {
 			printk("[Compare Error]%d %d %d\n",i,
 			       *((unsigned char *)(src_mem_p.vir_addr )+i),
 			       *((unsigned char *)(dest_mem_p.vir_addr)+i)

@@ -1009,7 +1009,7 @@ static struct spi_board_info nuc980_spi1_board_info[] __initdata = {
 	{
 		.modalias = "m25p80",
 		.max_speed_hz = 30000000,
-		.bus_num = 1,
+		.bus_num = 2,
 		.chip_select = 0,	//use SS0
 		.platform_data = &nuc980_spi1_flash_data,
 		.mode = SPI_MODE_0,
@@ -1019,7 +1019,7 @@ static struct spi_board_info nuc980_spi1_board_info[] __initdata = {
 	{
 		.modalias = "spidev",
 		.max_speed_hz = 75000000,
-		.bus_num = 1,
+		.bus_num = 2,
 		.chip_select = 1,	//use SS1
 		.mode = SPI_MODE_0,
 	},
@@ -1036,7 +1036,7 @@ static struct nuc980_spi_info nuc980_spi1_platform_data = {
 	.divider = 4,
 	.sleep = 0,
 	.txbitlen = 8,
-	.bus_num = 1,
+	.bus_num = 2,
 };
 #endif
 
@@ -1071,7 +1071,7 @@ static struct spi_board_info nuc980_qspi0_slave_board_info[] __initdata = {
 	{
 		.modalias = "nuc980-qspi0-slave",
 		.max_speed_hz = 30000000,
-		.bus_num = 1,
+		.bus_num = 0,
 		.chip_select = 0,       //use SS0
 		.mode = SPI_MODE_0,
 	},
@@ -1085,7 +1085,7 @@ static struct nuc980_spi_info nuc980_qspi0_slave_platform_data = {
 	.divider = 4,
 	.sleep = 0,
 	.txbitlen = 8,
-	.bus_num = 1,
+	.bus_num = 0,
 };
 
 static struct resource nuc980_qspi0_slave_resource[] = {
@@ -1163,7 +1163,7 @@ static struct spi_board_info nuc980_spi1_slave_board_info[] __initdata = {
 	{
 		.modalias = "nuc980-spi1-slave",
 		.max_speed_hz = 30000000,
-		.bus_num = 1,
+		.bus_num = 2,
 		.chip_select = 0,       //use SS0
 		.mode = SPI_MODE_0,
 	},
@@ -1177,7 +1177,7 @@ static struct nuc980_spi_info nuc980_spi1_slave_platform_data = {
 	.divider = 4,
 	.sleep = 0,
 	.txbitlen = 8,
-	.bus_num = 1,
+	.bus_num = 2,
 };
 
 static struct resource nuc980_spi1_slave_resource[] = {

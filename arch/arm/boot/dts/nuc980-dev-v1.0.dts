@@ -91,6 +91,7 @@
 			lsb	 = <0>;
 			txneg   = <1>;
 			rxneg   = <0>;
+			clkpol  = <0>;
 			divider = <4>;
 			sleep   = <0>;
 			txnum   = <0>;
@@ -124,6 +125,7 @@
 			lsb	 = <0>;
 			txneg   = <1>;
 			rxneg   = <0>;
+			clkpol  = <0>;
 			divider = <4>;
 			sleep   = <0>;
 			txnum   = <0>;
@@ -146,11 +148,12 @@
 			lsb	 = <0>;
 			txneg   = <1>;
 			rxneg   = <0>;
+			clkpol  = <0>;
 			divider = <4>;
 			sleep   = <0>;
 			txnum   = <0>;
 			txbitlen = <8>;
-			bus_num	= <1>;
+			bus_num	= <2>;
 
 			spidev@0x01 {
 				compatible = "spidev";

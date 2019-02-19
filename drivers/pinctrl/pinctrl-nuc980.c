@@ -716,7 +716,7 @@ static const struct nuc980_pinctrl_group nuc980_pinctrl_groups[] = {
 		.name = "uart3_0_grp",
 		.pins = uart3_0_pins,
 		.num_pins = ARRAY_SIZE(uart3_0_pins),
-		.func = 0x6,
+		.func = 0x5,
 	},
 	{
 		.name = "uart3_1_grp",

@@ -100,7 +100,9 @@ int nuc980_set_oneshot(struct clock_event_device *clk)
 static int nuc980_clockevent_setnextevent(unsigned long evt,
 					  struct clock_event_device *clk)
 {
+	__raw_writel(0, REG_TIMER_CTL(TIMER4));
 	__raw_writel(evt, REG_TIMER_CMPR(TIMER4));
+	while(__raw_readl(REG_TIMER_DR(TIMER4)) != 0);
 	__raw_writel(__raw_readl(REG_TIMER_CTL(TIMER4)) | COUNTEN,
 		     REG_TIMER_CTL(TIMER4));
 
@@ -136,7 +138,7 @@ static void nuc980_clockevent_resume(struct clock_event_device *clk)
 #endif
 static struct clock_event_device nuc980_clockevent_device = {
 	.name = "nuc980-timer4",
-	.shift = 32,
+	.shift = 24,
 	.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
         .set_state_shutdown = nuc980_shutdown,
 	.set_state_oneshot = nuc980_set_oneshot,
@@ -193,7 +195,7 @@ static void __init nuc980_clockevents_init(void)
 
 	nuc980_clockevent_device.cpumask = cpumask_of(0);
 
-	clockevents_config_and_register(&nuc980_clockevent_device, rate, 2, 0xffffff);
+	clockevents_config_and_register(&nuc980_clockevent_device, rate, 12, 0xffffff);
 }
 
 static void __init nuc980_clocksource_init(void)

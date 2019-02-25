@@ -27,6 +27,25 @@
 #define BUFSIZE (10 * 64 * 2048)
 #define CACHE_BUF 2112
 
+struct mtd_partition spinand_partitions[] = {
+	{
+		.name = "u-boot",
+		.offset = 0,
+		.size = 2 * 1024 * 1024,
+	},
+	{
+		.name = "Kernel",
+		.size = 20 * 1024 * 1024,
+		.offset = MTDPART_OFS_APPEND,
+	},
+	{
+		.name = "user",
+		.offset = MTDPART_OFS_APPEND,
+		.size = MTDPART_SIZ_FULL
+	}
+};
+
+
 static int spinand_cmd(struct spi_device *spi, struct spinand_cmd *cmd);
 
 
@@ -1230,7 +1249,7 @@ static int spinand_probe(struct spi_device *spi_nand)
 		dev_err(&spi_nand->dev, "enable HW ECC failed!");
 #endif
 
-	return mtd_device_parse_register(mtd, NULL, &ppdata, NULL, 0);
+	return mtd_device_parse_register(mtd, NULL, &ppdata, spinand_partitions, ARRAY_SIZE(spinand_partitions));
 }
 
 /*

@@ -809,12 +809,6 @@ static struct mtd_partition nuc980_qspi0_flash_partitions[] = {
 		.size = 0x0200000,
 		.offset = 0x0C00000,
 	},
-#elif defined(CONFIG_BOARD_IOT)
-	{
-		.name = "user",
-		.size = 0x1000000,
-		.offset = 0x1000000,
-	},
 #else
 	{
 		.name = "kernel",

@@ -247,8 +247,14 @@ static int nuc980_spi1_txrx(struct spi_device *spi, struct spi_transfer *t)
 		/* prepare the RX dma transfer */
 		sg_init_table(&pdma->sgrx, 1);
 		pdma->slave_config.src_addr = SPIx_RX;
-		pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-		pdma->sgrx.length=t->len;
+		if ((t->len > 100) && !(t->len % 4)) {
+			__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
+			pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+			pdma->sgrx.length=t->len/4;
+		} else {
+			pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+			pdma->sgrx.length=t->len;
+		}
 		pdma->slave_config.src_maxburst = 1;
 		pdma->slave_config.direction = DMA_DEV_TO_MEM;
 		pdma->slave_config.device_fc = false;
@@ -288,8 +294,14 @@ static int nuc980_spi1_txrx(struct spi_device *spi, struct spi_transfer *t)
 	/* prepare the TX dma transfer */
 	sg_init_table(&pdma->sgtx, 1);
 	pdma->slave_config.dst_addr = SPIx_TX;
-	pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-	pdma->sgtx.length=t->len;
+	if ((t->len > 100) && !(t->len % 4)) {
+		__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
+		pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+		pdma->sgtx.length=t->len/4;
+	} else {
+		pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+		pdma->sgtx.length=t->len;
+	}
 	pdma->slave_config.dst_maxburst = 1;
 	pdma->slave_config.direction = DMA_MEM_TO_DEV;
 	dmaengine_slave_config(pdma->chan_tx,&(pdma->slave_config));
@@ -347,6 +359,8 @@ static int nuc980_spi1_txrx(struct spi_device *spi, struct spi_transfer *t)
 	if (t->tx_buf)
 		dma_unmap_single(hw->dev, pdma->sgtx.dma_address, t->len,
 		                 DMA_TO_DEVICE);
+
+	__raw_writel(((__raw_readl(hw->regs + REG_CTL) & ~(0x81F00))|0x800), hw->regs + REG_CTL); //restore to 8 bits, no byte reorder
 
 #elif defined(CONFIG_SPI_NUC980_SPI1_NO_PDMA)
 	if (hw->rx) {

@@ -46,6 +46,14 @@ struct nand_flash_dev nand_flash_ids[] = {
 		{ .id = {0x0b, 0xe2} }, SZ_2K, 256, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
 	},
 	{
+		"XT26G01BWSEGA 1G 3.3V",
+		{ .id = {0x0b, 0xf1} }, SZ_2K, 128, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
+	},
+	{
+		"XT26G02BWSIGA 2G 3.3V",
+		{ .id = {0x0b, 0xf2} }, SZ_2K, 256, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
+	},
+	{
 		"MKSV1GCW-BE 1G 3.3V",
 		{ .id = {0xd5, 0x11} }, SZ_2K, 128, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
 	},

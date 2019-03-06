@@ -240,8 +240,7 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 	__raw_writel(__raw_readl(hw->regs + REG_FIFOCTL) | 0x3, hw->regs + REG_FIFOCTL); //CWWeng : RXRST & TXRST
 	while (__raw_readl(hw->regs + REG_STATUS) & (1<<23)); //TXRXRST
 #if defined(CONFIG_SPI_NUC980_QSPI0_PDMA)
-	__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x1<<0), hw->regs + REG_PDMACTL); //Disable SPIx TX PDMA
-	__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x1<<1), hw->regs + REG_PDMACTL); //Disable SPIx RX PDMA
+	__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x3), hw->regs + REG_PDMACTL); //Disable SPIx TX/RX PDMA
 
 	if (t->rx_buf) {
 		/* prepare the RX dma transfer */
@@ -345,9 +344,10 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 		while(1);
 	}
 
-	__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)|(0x1<<0), hw->regs + REG_PDMACTL); //Enable SPIx TX PDMA
 	if (t->rx_buf)
-		__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)|(0x1<<1), hw->regs + REG_PDMACTL); //Enable SPIx RX PDMA
+		__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)|(0x3), hw->regs + REG_PDMACTL); //Enable SPIx TX/RX PDMA
+	else
+		__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)|(0x1), hw->regs + REG_PDMACTL); //Enable SPIx TX PDMA
 
 	wait_event_interruptible(qspi0_slave_done, (qspi0_slave_done_state != 0));
 

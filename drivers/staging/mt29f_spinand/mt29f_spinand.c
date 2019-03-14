@@ -406,7 +406,10 @@ static int wait_till_ready(struct spi_device *spi_nand)
 		else if (!(stat & 0x1))
 			break;
 
-		cond_resched();
+		/* For SPI NAND performance issue, remark cond_resched() that yields CPU
+		 * to other process. Hence, it may influence other process's performance.
+		 */
+		//	cond_resched();
 	} while (!time_after_eq(jiffies, deadline));
 
 	if ((stat & 0x1) == 0)
@@ -569,16 +572,16 @@ static int spinand_write_enable(struct spi_device *spi_nand)
  * Description:
  *   After write and erase the Nand cells, the write enable has to be disabled.
  */
-static int spinand_write_disable(struct spi_device *spi_nand)
-{
-	struct spinand_cmd cmd = {0};
+//static int spinand_write_disable(struct spi_device *spi_nand)
+//{
+//	struct spinand_cmd cmd = {0};
 
-	cmd.cmd = CMD_WR_DISABLE;
+//	cmd.cmd = CMD_WR_DISABLE;
 
-	spinand_cmd(spi_nand, &cmd);
+//	spinand_cmd(spi_nand, &cmd);
 
-	return spinand_cmd(spi_nand, &cmd);
-}
+//	return spinand_cmd(spi_nand, &cmd);
+//}
 
 static int spinand_read_page_to_cache(struct spi_device *spi_nand, u32 page_id)
 {
@@ -651,8 +654,8 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 	if (ret < 0)
 		return ret;
 
-	if (wait_till_ready(spi_nand))
-		dev_err(&spi_nand->dev, "WAIT timedout!!!\n");
+//	if (wait_till_ready(spi_nand))
+//		dev_err(&spi_nand->dev, "WAIT timedout!!!\n");
 
 	while (1) {
 		ret = spinand_read_status(spi_nand, &status);
@@ -934,7 +937,7 @@ static int spinand_erase_block(struct spi_device *spi_nand, u16 block_id)
 
 #ifdef CONFIG_MTD_SPINAND_ONDIEECC
 static int spinand_write_page_hwecc(struct mtd_info *mtd,
-                                    struct nand_chip *chip, const uint8_t *buf, int oob_required)
+                                    struct nand_chip *chip, const uint8_t *buf, int oob_required, int page)
 {
 	const uint8_t *p = buf;
 	int eccsize = chip->ecc.size;
@@ -1014,7 +1017,10 @@ static int spinand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 		if ((status & STATUS_OIP_MASK) == STATUS_READY)
 			return 0;
 
-		cond_resched();
+		/* For SPI NAND performance issue, remark cond_resched() that yields CPU
+		 * to other process. Hence, it may influence other process's performance.
+		 */
+		//cond_resched();
 	}
 	return 0;
 }

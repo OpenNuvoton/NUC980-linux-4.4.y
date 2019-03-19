@@ -47,6 +47,7 @@ static int usb_hcd_nuc980_probe(const struct hc_driver *driver,
 	struct pinctrl *p = NULL;
 #endif
 
+	(void)p;
 	printk("usb_hcd_nuc980_probe, id = %d, name: %s\n", pdev->id, dev_name(&pdev->dev));
 
 	/*------------------------------------------------------------*/

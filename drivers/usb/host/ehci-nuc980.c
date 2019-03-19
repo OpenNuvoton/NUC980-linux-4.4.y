@@ -62,6 +62,8 @@ static int usb_nuc980_probe(const struct hc_driver *driver,
 	u32   val32[2];
 #endif
 
+	(void)p;
+
 	if (IS_ERR(clk_get(NULL, "usbh_hclk"))) {
 		printk("clk_get error!!\n");
 		return -1;

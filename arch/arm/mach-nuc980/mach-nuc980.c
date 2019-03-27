@@ -83,7 +83,7 @@ static struct map_desc nuc980_iodesc[] __initdata = {
 	IODESC_ENT(SRAM),
 };
 
-extern void nuc980_restart(char mode, const char *cmd);
+extern void nuc980_restart(enum reboot_mode mode, const char *cmd);
 extern void nuc980_timer_init(void);
 static struct platform_device *nuc980_dev[] __initdata = {
 
@@ -118,5 +118,5 @@ MACHINE_START(NUC980, "NUC980")
 	.init_time = nuc980_timer_init,
 	.init_late = nuc980_init_late,
 	.reserve	= nuc980_reserve_memoey,
-//	.restart = nuc980_restart,
+	.restart = nuc980_restart,
 MACHINE_END

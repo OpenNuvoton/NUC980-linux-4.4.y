@@ -561,6 +561,7 @@ static int nuc980_qspi0_setupxfer(struct spi_device *spi,
 	if (ret)
 		return ret;
 
+	nuc980_set_divider(hw);
 	nuc980_qspi0_setup_txbitlen(hw, hw->pdata->txbitlen);
 	nuc980_tx_edge(hw, hw->pdata->txneg);
 	nuc980_rx_edge(hw, hw->pdata->rxneg);

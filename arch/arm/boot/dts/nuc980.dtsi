@@ -1777,7 +1777,7 @@
 			compatible = "nuvoton,nuc980-pwm1";
 			reg = <0xb0059000 0x100>;
 			interrupts = <61 4 1>;
-			id = <6>;
+			id = <7>;
 			map-addr = <0xf0059000>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_pwm13>;

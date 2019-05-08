@@ -1370,7 +1370,8 @@ static int nuc980_nand_probe(struct platform_device *pdev)
 fail3:
 fail2:
 fail1:
-	kfree(nuc980_nand);
+	devm_kfree(&pdev->dev, nuc980_nand);//clyu
+	LEAVE();
 	return retval;
 }
 

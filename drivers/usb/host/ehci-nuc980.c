@@ -58,6 +58,9 @@ static int usb_nuc980_probe(const struct hc_driver *driver,
 	u32  physical_map_ehci;
 	struct pinctrl *p;
 	int retval;
+#ifdef FORCE_PORT0_HOST
+	unsigned long flags;
+#endif
 #ifdef CONFIG_USE_OF
 	u32   val32[2];
 #endif
@@ -77,6 +80,7 @@ static int usb_nuc980_probe(const struct hc_driver *driver,
 	clk_enable(clk_get(NULL, "usbh_hclk"));
 
 #ifdef FORCE_PORT0_HOST
+	local_irq_save(flags);
 	do {
 		__raw_writel(0x59UL, REG_WRPRTR);
 		__raw_writel(0x16UL, REG_WRPRTR);
@@ -88,6 +92,8 @@ static int usb_nuc980_probe(const struct hc_driver *driver,
 
 	/* set USB port 0 used for Host */
 	__raw_writel(__raw_readl(REG_PWRON) | (1<<16), (volatile void __iomem *)REG_PWRON);
+	__raw_writel(0, REG_WRPRTR);
+	local_irq_restore(flags);
 #endif
 
 

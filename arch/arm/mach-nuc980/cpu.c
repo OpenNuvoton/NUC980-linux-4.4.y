@@ -52,6 +52,9 @@ u32 nuc980_uart_init(void){
 
 void nuc980_restart(enum reboot_mode mode, const char *cmd)
 {
+	unsigned long flags;
+
+	local_irq_save(flags);
 	//UnlockReg
 	while (__raw_readl(NUC980_VA_GCR + 0x1fc) != 1) {
 		__raw_writel(0x59, NUC980_VA_GCR + 0x1fc);
@@ -60,5 +63,6 @@ void nuc980_restart(enum reboot_mode mode, const char *cmd)
 	}
 
 	__raw_writel(1, REG_AHBIPRST);	// System reset...
+	local_irq_restore(flags);
 }
 EXPORT_SYMBOL(nuc980_restart);

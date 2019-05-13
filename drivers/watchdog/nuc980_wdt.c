@@ -92,9 +92,10 @@ static int nuc980wdt_ping(struct watchdog_device *wdd)
 
 static int nuc980wdt_start(struct watchdog_device *wdd)
 {
-	unsigned int val = 0;
+	unsigned int val = RSTEN | WDTEN;
+	unsigned long flags;
 
-	val |= (RSTEN | WDTEN);
+
 #ifdef CONFIG_NUC980_WDT_WKUP
 	val |= INTEN;
 	val |= WKEN;
@@ -107,19 +108,28 @@ static int nuc980wdt_start(struct watchdog_device *wdd)
 	} else {
 		val |= 0x7 << 8;
 	}
+
+	local_irq_save(flags);
 	Unlock_RegWriteProtect();
 	__raw_writel(val, REG_WDT_CTL);
 	Lock_RegWriteProtect();
+	local_irq_restore(flags);
 	__raw_writel(RESET_COUNTER, REG_WDT_RSTCNT);
+
 	return 0;
 }
 
 static int nuc980wdt_stop(struct watchdog_device *wdd)
 {
+	unsigned long flags;
+
+	pr_warn("Stopping WDT is probably not a good idea\n");
+
+	local_irq_save(flags);
 	Unlock_RegWriteProtect();
 	__raw_writel(0, REG_WDT_CTL);
-	pr_warn("Stopping WDT is probably not a good idea\n");
 	Lock_RegWriteProtect();
+	local_irq_restore(flags);
 	return 0;
 }
 
@@ -127,8 +137,9 @@ static int nuc980wdt_stop(struct watchdog_device *wdd)
 static int nuc980wdt_set_timeout(struct watchdog_device *wdd, unsigned int timeout)
 {
 	unsigned int val;
+	unsigned long flags;
 
-	Unlock_RegWriteProtect();
+
 	val = __raw_readl(REG_WDT_CTL);
 	val &= ~TOUTSEL;
 	if(timeout < 2) {
@@ -143,8 +154,12 @@ static int nuc980wdt_set_timeout(struct watchdog_device *wdd, unsigned int timeo
 		val |= 0x7 << 8;
 	}
 
+	local_irq_save(flags);
+	Unlock_RegWriteProtect();
 	__raw_writel(val, REG_WDT_CTL);
 	Lock_RegWriteProtect();
+	local_irq_restore(flags);
+
 	return 0;
 }
 
@@ -171,6 +186,7 @@ static struct watchdog_device nuc980_wdd = {
 static irqreturn_t nuc980_wdt_interrupt(int irq, void *dev_id)
 {
 	__raw_writel(RESET_COUNTER, REG_WDT_RSTCNT);
+
 	Unlock_RegWriteProtect();
 	if (__raw_readl(REG_WDT_CTL) & IF) {
 		__raw_writel(__raw_readl(REG_WDT_CTL) | IF, REG_WDT_CTL);
@@ -295,11 +311,15 @@ static void nuc980wdt_shutdown(struct platform_device *pdev)
 static u32 reg_save;
 static int nuc980wdt_suspend(struct platform_device *dev, pm_message_t state)
 {
+	unsigned long flags;
+
 	reg_save = __raw_readl(REG_WDT_CTL);
 
+	local_irq_save(flags);
 	Unlock_RegWriteProtect();
 	__raw_writel(__raw_readl(REG_WDT_CTL) & ~RSTEN, REG_WDT_CTL); //Disable WDT reset
 	Lock_RegWriteProtect();
+	local_irq_restore(flags);
 
 	__raw_writel( (1 << 0) | __raw_readl(REG_WKUPSER0), REG_WKUPSER0); //Enable System WDT wakeup
 	if (request_irq(IRQ_WDT, nuc980_wdt_interrupt, IRQF_NO_SUSPEND, "nuc980wdt", NULL)) {
@@ -312,10 +332,14 @@ static int nuc980wdt_suspend(struct platform_device *dev, pm_message_t state)
 
 static int nuc980wdt_resume(struct platform_device *dev)
 {
+	unsigned long flags;
 
+	local_irq_save(flags);
 	Unlock_RegWriteProtect();
 	__raw_writel(reg_save, REG_WDT_CTL);
 	Lock_RegWriteProtect();
+	local_irq_restore(flags);
+
 	__raw_writel(RESET_COUNTER, REG_WDT_RSTCNT);
 	disable_irq_wake(IRQ_WDT);
 	free_irq(IRQ_WDT, NULL);

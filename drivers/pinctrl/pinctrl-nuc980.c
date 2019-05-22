@@ -505,6 +505,7 @@ static const unsigned usbh_lite3_pf5_pf4[]   = {0x55, 0x54};   // USBH Lite3 D+/
 static const unsigned usbh_lite4_pe7_pe6[]   = {0x47, 0x46};   // USBH Lite4 D+/D- is PE.7/PE.6
 static const unsigned usbh_lite4_pf7_pf6[]   = {0x57, 0x56};   // USBH Lite4 D+/D- is PF.7/PF.6
 static const unsigned usbh_lite4_pg10_pa15[] = {0x6a, 0x0f};   // USBH Lite4 D+/D- is PG.10/PA.15
+static const unsigned usbh_lite4_pb13_pf6[]  = {0x1d, 0x56};   // USBH Lite4 D+/D- is PB.13/PF.6
 
 static const unsigned usbh_lite5_pe9_pe8[]   = {0x49, 0x48};   // USBH Lite5 D+/D- is PE.9/PE.8
 static const unsigned usbh_lite5_pf9_pf8[]   = {0x59, 0x58};   // USBH Lite5 D+/D- is PF.9/PF.8
@@ -1955,6 +1956,12 @@ static const struct nuc980_pinctrl_group nuc980_pinctrl_groups[] = {
 		.func = 0x4,
 	},
 	{
+		.name = "usbh_lite4_4_grp",
+		.pins = usbh_lite4_pb13_pf6,
+		.num_pins = ARRAY_SIZE(usbh_lite4_pb13_pf6),
+		.func = 0x6,
+	},
+	{
 		.name = "usbh_lite5_1_grp",
 		.pins = usbh_lite5_pe9_pe8,
 		.num_pins = ARRAY_SIZE(usbh_lite5_pe9_pe8),
@@ -2111,7 +2118,7 @@ static const char * const usbh_lite0_groups[] = {"usbh_lite0_1_grp", "usbh_lite0
 static const char * const usbh_lite1_groups[] = {"usbh_lite1_1_grp", "usbh_lite1_2_grp"};
 static const char * const usbh_lite2_groups[] = {"usbh_lite2_1_grp", "usbh_lite2_2_grp"};
 static const char * const usbh_lite3_groups[] = {"usbh_lite3_1_grp", "usbh_lite3_2_grp"};
-static const char * const usbh_lite4_groups[] = {"usbh_lite4_1_grp", "usbh_lite4_2_grp", "usbh_lite4_3_grp"};
+static const char * const usbh_lite4_groups[] = {"usbh_lite4_1_grp", "usbh_lite4_2_grp", "usbh_lite4_3_grp", "usbh_lite4_4_grp"};
 static const char * const usbh_lite5_groups[] = {"usbh_lite5_1_grp", "usbh_lite5_2_grp", "usbh_lite5_3_grp", "usbh_lite5_4_grp"};
 
 static const struct nuc980_pmx_func nuc980_functions[] = {
@@ -4784,6 +4791,14 @@ static const struct pinctrl_map nuc980_pinmap[] = {
 		.ctrl_dev_name = "pinctrl-nuc980",
 		.data.mux.function = "usbh_lite4_dp_dm",
 		.data.mux.group = "usbh_lite4_3_grp",
+	},
+	{
+		.dev_name = "nuc980-ohci.5",
+		.name = "usbh_lite4_pb13_pf6",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc980",
+		.data.mux.function = "usbh_lite4_dp_dm",
+		.data.mux.group = "usbh_lite4_4_grp",
 	},
 	{
 		.dev_name = "nuc980-ohci.6",

@@ -537,6 +537,8 @@ choice
 	bool "D+/D- is PF.7/PF.6"
     config LITE4_PG10_PA15
 	bool "D+/D- is PG.10/PA.15"
+    config LITE4_PB13_PF6
+	bool "D+/D- is PB.13/PF.6"
 endchoice
 
 config USB_NUC980_USBH_LITE5

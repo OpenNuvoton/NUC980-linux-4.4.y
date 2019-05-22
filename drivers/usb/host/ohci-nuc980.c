@@ -43,12 +43,10 @@ static int usb_hcd_nuc980_probe(const struct hc_driver *driver,
 	struct ohci_hcd *ohci ;
 #ifdef CONFIG_USE_OF
 	u32   val32[2];
-#else
-	struct pinctrl *p = NULL;
 #endif
+	struct pinctrl *p=NULL;
 
-	(void)p;
-	printk("usb_hcd_nuc980_probe, id = %d, name: %s\n", pdev->id, dev_name(&pdev->dev));
+	printk("usb_hcd_nuc980_probe, id = %d, name: %s, %d\n", pdev->id, dev_name(&pdev->dev), (int)p);
 
 	/*------------------------------------------------------------*/
 	/*  USBH Lite initialization                                  */
@@ -121,6 +119,8 @@ static int usb_hcd_nuc980_probe(const struct hc_driver *driver,
 		p = devm_pinctrl_get_select(&pdev->dev, "usbh_lite4_pf7_pf6");
 #elif defined(CONFIG_LITE4_PG10_PA15)
 		p = devm_pinctrl_get_select(&pdev->dev, "usbh_lite4_pg10_pa15");
+#elif defined(CONFIG_LITE4_PB13_PF6)
+		p = devm_pinctrl_get_select(&pdev->dev, "usbh_lite4_pb13_pf6");
 #endif
 		if (IS_ERR(p)) {
 			dev_err(&pdev->dev, "unable to reserve usbh_lite4 pin\n");

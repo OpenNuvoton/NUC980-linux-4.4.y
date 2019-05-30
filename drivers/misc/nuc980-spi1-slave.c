@@ -105,8 +105,7 @@ struct nuc980_spi {
 };
 
 
-static inline struct nuc980_spi1 *to_hw(struct spi_device *sdev)
-{
+static inline struct nuc980_spi1 *to_hw(struct spi_device *sdev) {
 	return spi_master_get_devdata(sdev->master);
 }
 
@@ -157,7 +156,7 @@ static inline void nuc980_spi1_chipsel(struct spi_device *spi, int value)
 }
 
 static inline void nuc980_spi1_setup_txbitlen(struct nuc980_spi *hw,
-        unsigned int txbitlen)
+                unsigned int txbitlen)
 {
 	unsigned int val;
 	unsigned long flags;
@@ -524,8 +523,7 @@ static void nuc980_init_spi(struct nuc980_spi *hw)
 }
 
 #ifdef CONFIG_OF
-static struct nuc980_spi_info *nuc980_spi1_parse_dt(struct device *dev)
-{
+static struct nuc980_spi_info *nuc980_spi1_parse_dt(struct device *dev) {
 	struct nuc980_spi_info *sci;
 	u32 temp;
 
@@ -601,8 +599,7 @@ static struct nuc980_spi_info *nuc980_spi1_parse_dt(struct device *dev)
 	return sci;
 }
 #else
-static struct nuc980_spi_info *nuc980_spi1_parse_dt(struct device *dev)
-{
+static struct nuc980_spi_info *nuc980_spi1_parse_dt(struct device *dev) {
 	return dev->platform_data;
 }
 #endif
@@ -717,12 +714,24 @@ static int nuc980_spi1_slave_probe(struct platform_device *pdev)
 		goto err_irq;
 	}
 
-	hw->clk = clk_get(NULL, "spi2");
+	hw->clk = clk_get(NULL, "spi1_eclk");
 	if (IS_ERR(hw->clk)) {
 		dev_err(&pdev->dev, "No clock for device\n");
 		err = PTR_ERR(hw->clk);
 		goto err_clk;
 	}
+	clk_prepare(hw->clk);
+	clk_enable(hw->clk);
+
+	hw->clk = clk_get(NULL, "spi1");
+	if (IS_ERR(hw->clk)) {
+		dev_err(&pdev->dev, "No clock for device\n");
+		err = PTR_ERR(hw->clk);
+		goto err_clk;
+	}
+
+	clk_prepare(hw->clk);
+	clk_enable(hw->clk);
 
 #if defined(CONFIG_OF)
 	p = devm_pinctrl_get_select_default(&pdev->dev);

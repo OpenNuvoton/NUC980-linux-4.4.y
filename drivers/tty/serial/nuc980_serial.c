@@ -813,6 +813,8 @@ static int nuc980serial_startup(struct uart_port *port)
 	if(up->uart_pdma_enable_flag == 1) {
 		nuc980_prepare_RX_dma(up);
 
+		nuc980_prepare_TX_dma(up);
+
 		// trigger pdma
 		serial_out(up, UART_REG_IER, (serial_in(up, UART_REG_IER)|RXPDMAEN));
 	}
@@ -836,11 +838,19 @@ static void nuc980serial_shutdown(struct uart_port *port)
 
 #ifdef USING_SRAM
 		sram_free((void *)up->dest_mem_p.vir_addr, up->dest_mem_p.size);
+#else
+		if(up->dest_mem_p.size != 0)
+		{
+			dma_free_writecombine(NULL, up->dest_mem_p.size, (void *)up->dest_mem_p.vir_addr, up->dest_mem_p.phy_addr);
+		}
 #endif
 
-		if(up->src_mem_p.vir_addr != 0)
+		if(up->src_mem_p.size != 0)
+		{
 			dma_free_writecombine(NULL, up->src_mem_p.size, (void *)up->src_mem_p.vir_addr, up->src_mem_p.phy_addr);
+		}
 
+		up->Tx_pdma_busy_flag = 0;
 		up->dest_mem_p.size = 0;
 		up->src_mem_p.size = 0;
 	}

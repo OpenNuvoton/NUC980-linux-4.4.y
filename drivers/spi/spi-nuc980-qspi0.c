@@ -42,6 +42,8 @@
 
 #include <linux/platform_data/dma-nuc980.h>
 
+#include <mach/map.h>
+
 /* spi registers offset */
 #define REG_CTL		0x00
 #define REG_CLKDIV	0x04
@@ -68,6 +70,8 @@
 #define SPIx_RX NUC980_PA_SPI0 + 0x30
 #define PDMA_SPIx_TX PDMA_SPI0_TX
 #define PDMA_SPIx_RX PDMA_SPI0_RX
+
+static int is_spidev = 0;
 
 #if defined(CONFIG_SPI_NUC980_QSPI0_PDMA)
 static char dummy_buf[4096];
@@ -117,7 +121,7 @@ static void qspi0_nuc980_slave_dma_callback(void *arg)
 
 	done->done = true;
 	qspi0_slave_done_state = 1;
-	wake_up_interruptible(&qspi0_slave_done);
+	//wake_up_interruptible(&qspi0_slave_done);
 
 	return;
 }
@@ -238,12 +242,18 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 	__raw_writel(__raw_readl(hw->regs + REG_FIFOCTL) | 0x3, hw->regs + REG_FIFOCTL); //CWWeng : RXRST & TXRST
 	while (__raw_readl(hw->regs + REG_STATUS) & (1<<23)); //TXRXRST
 #if defined(CONFIG_SPI_NUC980_QSPI0_PDMA)
+
 	/* For short length transmission, using CPU instead */
 	if ((t->len < 100)) {
 		unsigned int	i;
 
 		hw->tx = t->tx_buf;
 		hw->rx = t->rx_buf;
+
+		if(t->rx_nbits & SPI_NBITS_QUAD) {
+			__raw_writel(((__raw_readl(hw->regs + REG_CTL)|0x400000) & ~0x100000), hw->regs + REG_CTL);//Enable Quad mode, direction input
+		}
+
 		if (hw->rx) {
 			for(i = 0; i < t->len; i++) {
 				__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
@@ -257,15 +267,20 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 			}
 		}
 
+		__raw_writel((__raw_readl(hw->regs + REG_CTL) & ~0x700000), hw->regs + REG_CTL);//Restore to single mode, direction input
+
+
 	} else {
 
-		__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x3), hw->regs + REG_PDMACTL); //Disable SPIx TX/RX PDMA
-
 		if (t->rx_buf) {
+			if(t->rx_nbits & SPI_NBITS_QUAD) {
+				__raw_writel(((__raw_readl(hw->regs + REG_CTL)|0x400000) & ~0x100000), hw->regs + REG_CTL);//Enable Quad mode, direction input
+			}
+
 			/* prepare the RX dma transfer */
 			sg_init_table(&pdma->sgrx, 1);
 			pdma->slave_config.src_addr = SPIx_RX;
-			if (!(t->len % 4)) {
+			if (!is_spidev && !(t->len % 4) && !(((int)t->rx_buf) % 4)) {
 				__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
 				pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 				pdma->sgrx.length=t->len/4;
@@ -312,7 +327,8 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 		/* prepare the TX dma transfer */
 		sg_init_table(&pdma->sgtx, 1);
 		pdma->slave_config.dst_addr = SPIx_TX;
-		if (!(t->len % 4)) {
+
+		if (!is_spidev && !(t->len % 4) && !(((int)t->tx_buf) % 4)) {
 			__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
 			pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 			pdma->sgtx.length=t->len/4;
@@ -320,9 +336,11 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 			pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
 			pdma->sgtx.length=t->len;
 		}
+
 		pdma->slave_config.dst_maxburst = 1;
 		pdma->slave_config.direction = DMA_MEM_TO_DEV;
 		dmaengine_slave_config(pdma->chan_tx,&(pdma->slave_config));
+
 		if (t->tx_buf) {
 			pdma->sgtx.dma_address = dma_map_single(hw->dev,
 			                                        (void *)t->tx_buf,
@@ -363,14 +381,31 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 			while(1);
 		}
 
+
 		if (t->rx_buf)
 			__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)|(0x3), hw->regs + REG_PDMACTL); //Enable SPIx TX/RX PDMA
 		else
 			__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)|(0x1), hw->regs + REG_PDMACTL); //Enable SPIx TX PDMA
 
-		wait_event_interruptible(qspi0_slave_done, (qspi0_slave_done_state != 0));
+		//wait_event_interruptible(qspi0_slave_done, (qspi0_slave_done_state != 0));
+		while (qspi0_slave_done_state == 0);
 
 		qspi0_slave_done_state=0;
+
+#if 0 //QUAD + byte reorder issue
+		while (__raw_readl(hw->regs + REG_STATUS) & 1); //wait busy
+#else
+		__raw_writel((__raw_readl(hw->regs + REG_CTL) & ~SPIEN), hw->regs + REG_CTL); //Disable SPIEN
+		__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x3), hw->regs + REG_PDMACTL); //Disable SPIx TX/RX PDMA
+		__raw_writel(__raw_readl(hw->regs + REG_FIFOCTL) | 0x3, hw->regs + REG_FIFOCTL); //RXRST & TXRST
+		while (__raw_readl(hw->regs + REG_STATUS) & 0x800000); //TXRXRST
+		__raw_writel(__raw_readl(hw->regs + REG_FIFOCTL) | 0x300, hw->regs + REG_FIFOCTL); //TXFBCLR/RXFBCLR
+		__raw_writel((__raw_readl(hw->regs + REG_CTL) | SPIEN), hw->regs + REG_CTL); //Enable SPIEN
+#endif
+
+		__raw_writel(((__raw_readl(hw->regs + REG_CTL) & ~(0x81F00))|0x800), hw->regs + REG_CTL); //restore to 8 bits, no byte reorder
+		__raw_writel(((__raw_readl(hw->regs + REG_CTL) & ~(0x400000)) & ~0x100000), hw->regs + REG_CTL);//Disable Quad mode, direction input
+
 
 		/* unmap buffers if mapped above */
 		if (t->rx_buf)
@@ -380,11 +415,14 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 			dma_unmap_single(hw->dev, pdma->sgtx.dma_address, t->len,
 			                 DMA_TO_DEVICE);
 
-		__raw_writel(((__raw_readl(hw->regs + REG_CTL) & ~(0x81F00))|0x800), hw->regs + REG_CTL); //restore to 8 bits, no byte reorder
-
 	}
 
 #elif defined(CONFIG_SPI_NUC980_QSPI0_NO_PDMA)
+
+	if(t->rx_nbits & SPI_NBITS_QUAD) {
+		__raw_writel(((__raw_readl(hw->regs + REG_CTL)|0x400000) & ~0x100000), hw->regs + REG_CTL);//Enable Quad mode, direction input
+	}
+
 	if (hw->rx) {
 		for(i = 0; i < t->len; i++) {
 			__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
@@ -398,6 +436,7 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 		}
 	}
 
+	__raw_writel((__raw_readl(hw->regs + REG_CTL) & ~0x700000), hw->regs + REG_CTL);//Restore to single mode, direction input
 #endif
 
 	return t->len;
@@ -511,6 +550,12 @@ static int nuc980_qspi0_update_state(struct spi_device *spi,
 	unsigned int hz;
 	unsigned char spimode;
 
+	if (strcmp(spi->modalias,"spidev")) {
+		is_spidev = 0;
+	} else {
+		is_spidev = 1;
+	}
+
 	bpw = t ? t->bits_per_word : spi->bits_per_word;
 	hz  = t ? t->speed_hz : spi->max_speed_hz;
 
@@ -561,7 +606,6 @@ static int nuc980_qspi0_setupxfer(struct spi_device *spi,
 	if (ret)
 		return ret;
 
-	nuc980_set_divider(hw);
 	nuc980_qspi0_setup_txbitlen(hw, hw->pdata->txbitlen);
 	nuc980_tx_edge(hw, hw->pdata->txneg);
 	nuc980_rx_edge(hw, hw->pdata->rxneg);

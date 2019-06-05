@@ -45,6 +45,9 @@ struct mtd_partition spinand_partitions[] = {
 	}
 };
 
+static int is_set_spinand_quad = 0;
+
+static u8 nand_id[3];
 
 static int spinand_cmd(struct spi_device *spi, struct spinand_cmd *cmd);
 
@@ -331,6 +334,11 @@ static int spinand_cmd(struct spi_device *spi, struct spinand_cmd *cmd)
 	if (cmd->n_rx) {
 		x[3].len = cmd->n_rx;
 		x[3].rx_buf = cmd->rx_buf;
+		if (cmd->cmd == CMD_READ_QUAD) {
+			x[3].rx_nbits = 4;
+		} else {
+			x[3].rx_nbits = 1;
+		}
 		spi_message_add_tail(&x[3], &message);
 	}
 
@@ -345,7 +353,6 @@ static int spinand_cmd(struct spi_device *spi, struct spinand_cmd *cmd)
 static int spinand_read_id(struct spi_device *spi_nand, u8 *id)
 {
 	int retval;
-	u8 nand_id[3];
 	struct spinand_cmd cmd = {0};
 
 	cmd.cmd = CMD_READ_ID;
@@ -613,7 +620,12 @@ static int spinand_read_from_cache(struct spi_device *spi_nand, u32 page_id,
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
 
 	column = byte_id;
+
+#ifdef CONFIG_SPI_NUC980_QSPI0_QUAD
+	cmd.cmd = CMD_READ_QUAD;
+#else
 	cmd.cmd = CMD_READ_RDM;
+#endif
 
 	cmd.n_addr = 3;
 	dev_ops->spinand_read_data(&cmd, column, page_id);
@@ -622,6 +634,34 @@ static int spinand_read_from_cache(struct spi_device *spi_nand, u32 page_id,
 	cmd.rx_buf = rbuf;
 
 	return spinand_cmd(spi_nand, &cmd);
+}
+
+static int spinand_set_quad_mode(struct spi_device *spi_nand, u8 enable)
+{
+	int retval;
+	u8 otp = 0;
+
+	retval = spinand_get_otp(spi_nand, &otp);
+	if (retval < 0)
+		return retval;
+
+	if (enable) {
+		otp |= 1;
+		retval = spinand_set_otp(spi_nand, &otp);
+		if (retval < 0)
+			return retval;
+	} else {
+		otp &= ~1;
+		retval = spinand_set_otp(spi_nand, &otp);
+		if (retval < 0)
+			return retval;
+	}
+
+	retval = spinand_get_otp(spi_nand, &otp);
+	if (retval < 0)
+		return retval;
+
+	return 0;
 }
 
 /*
@@ -680,11 +720,25 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 		}
 	}
 
+#ifdef CONFIG_SPI_NUC980_QSPI0_QUAD
+	if (!is_set_spinand_quad) {
+		if ((nand_id[1] == NAND_MFR_MACRONIX) || (nand_id[1] == NAND_MFR_XTX) || (nand_id[1] == NAND_MFR_MK)) {
+			ret = spinand_set_quad_mode(spi_nand, 1);
+			if (ret < 0) {
+				dev_err(&spi_nand->dev, "enable quad mode failed!!\n");
+				return ret;
+			}
+		}
+		is_set_spinand_quad = 1;
+	}
+#endif
+
 	ret = spinand_read_from_cache(spi_nand, page_id, offset, len, rbuf);
 	if (ret < 0) {
 		dev_err(&spi_nand->dev, "read from cache failed!!\n");
 		return ret;
 	}
+
 
 #ifdef CONFIG_MTD_SPINAND_ONDIEECC
 	if (0) { //(enable_read_hw_ecc) {

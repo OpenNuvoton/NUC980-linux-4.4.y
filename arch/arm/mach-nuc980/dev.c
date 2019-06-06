@@ -945,7 +945,11 @@ static struct spi_board_info nuc980_spi0_board_info[] __initdata = {
 		.modalias = "spidev",
 		.max_speed_hz = 75000000,
 		.bus_num = 1,
+		#if defined(CONFIG_BOARD_IOT)
+		.chip_select = 0,	//use SS0
+		#else
 		.chip_select = 1,	//use SS1
+		#endif
 		.mode = SPI_MODE_0,
 	},
 #endif

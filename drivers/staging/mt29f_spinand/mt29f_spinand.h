@@ -26,6 +26,7 @@
 /* cmd */
 #define CMD_READ			0x13
 #define CMD_READ_RDM			0x03
+#define CMD_READ_QUAD			0x6B
 #define CMD_PROG_PAGE_CLRCACHE		0x02
 #define CMD_PROG_PAGE			0x84
 #define CMD_PROG_PAGE_EXC		0x10

@@ -69,6 +69,8 @@
 #define PDMA_SPIx_TX PDMA_SPI1_TX
 #define PDMA_SPIx_RX PDMA_SPI1_RX
 
+static int is_spidev = 0;
+
 #if defined(CONFIG_SPI_NUC980_SPI0_PDMA)
 static char dummy_buf[4096];
 static volatile int spi0_slave_done_state=0;
@@ -265,7 +267,7 @@ static int nuc980_spi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 			/* prepare the RX dma transfer */
 			sg_init_table(&pdma->sgrx, 1);
 			pdma->slave_config.src_addr = SPIx_RX;
-			if (!(t->len % 4)) {
+			if (!is_spidev && !(t->len % 4) && !(((int)t->rx_buf) % 4)) {
 				__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
 				pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 				pdma->sgrx.length=t->len/4;
@@ -312,7 +314,7 @@ static int nuc980_spi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 		/* prepare the TX dma transfer */
 		sg_init_table(&pdma->sgtx, 1);
 		pdma->slave_config.dst_addr = SPIx_TX;
-		if (!(t->len % 4)) {
+		if (!is_spidev && !(t->len % 4) && !(((int)t->tx_buf) % 4)) {
 			__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
 			pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 			pdma->sgtx.length=t->len/4;
@@ -370,6 +372,8 @@ static int nuc980_spi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 
 		wait_event_interruptible(spi0_slave_done, (spi0_slave_done_state != 0));
 		spi0_slave_done_state=0;
+
+		while(__raw_readl(hw->regs + REG_STATUS) & 1); //wait busy
 
 		/* unmap buffers if mapped above */
 		if (t->rx_buf)
@@ -509,6 +513,12 @@ static int nuc980_spi0_update_state(struct spi_device *spi,
 	unsigned int bpw;
 	unsigned int hz;
 	unsigned char spimode;
+
+	if (strcmp(spi->modalias,"spidev")) {
+		is_spidev = 0;
+	} else {
+		is_spidev = 1;
+	}
 
 	bpw = t ? t->bits_per_word : spi->bits_per_word;
 	hz  = t ? t->speed_hz : spi->max_speed_hz;

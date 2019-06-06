@@ -33,6 +33,10 @@ config BOARD_ETH2UART
 config BOARD_IOT
 	depends on !USE_OF
 	bool "NUC980 IoT Board"
+
+config BOARD_USB8P
+	depends on !USE_OF
+	bool "NUC980 8 Port USB Board"
 endchoice
 
 config NUC980_FIQ

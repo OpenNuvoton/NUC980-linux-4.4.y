@@ -508,7 +508,7 @@ static void nuc980_set_curdest(struct net_device *dev)
 	__raw_writel(ether->start_tx_ptr,  REG_TXDLSA);
 }
 
-static void nuc980_reset_mac(struct net_device *dev, int need_free)
+static void nuc980_reset_mac(struct net_device *dev)
 {
 	struct nuc980_ether *ether = netdev_priv(dev);
 
@@ -521,8 +521,6 @@ static void nuc980_reset_mac(struct net_device *dev, int need_free)
 	if (!netif_queue_stopped(dev))
 		netif_stop_queue(dev);
 
-	if(need_free)
-		nuc980_free_desc(dev);
 	nuc980_init_desc(dev);
 
 	ether->cur_tx = 0x0;
@@ -533,12 +531,6 @@ static void nuc980_reset_mac(struct net_device *dev, int need_free)
 	nuc980_enable_cam(dev);
 	nuc980_enable_cam_command(dev);
 	nuc980_enable_mac_interrupt(dev);
-
-
-	ETH_ENABLE_TX;
-	ETH_ENABLE_RX;
-
-	ETH_TRIGGER_RX;
 
 	dev->trans_start = jiffies; /* prevent tx timeout */
 
@@ -705,7 +697,7 @@ static irqreturn_t nuc980_tx_interrupt(int irq, void *dev_id)
 		dev_err(&pdev->dev, "emc defer exceed interrupt\n");
 	} else if (status & MISTA_TXBERR) {
 		dev_err(&pdev->dev, "emc bus error interrupt\n");
-		nuc980_reset_mac(dev, 1);
+		BUG();
 	}
 
 	if (netif_queue_stopped(dev)) {
@@ -810,7 +802,7 @@ static irqreturn_t nuc980_rx_interrupt(int irq, void *dev_id)
 		struct platform_device *pdev = ether->pdev;
 
 		dev_err(&pdev->dev, "emc rx bus error\n");
-		nuc980_reset_mac(dev, 1);
+		BUG();
 
 	} else {
 		if(status & MISTA_WOL) {
@@ -828,21 +820,11 @@ static irqreturn_t nuc980_rx_interrupt(int irq, void *dev_id)
 
 static int nuc980_ether_open(struct net_device *dev)
 {
-	struct nuc980_ether *ether;
-	struct platform_device *pdev;
+	struct nuc980_ether *ether = netdev_priv(dev);
+	struct platform_device *pdev = ether->pdev;
 
-	ether = netdev_priv(dev);
-	pdev = ether->pdev;
-
-	nuc980_reset_mac(dev, 0);
-	nuc980_set_fifo_threshold(dev);
-	nuc980_set_curdest(dev);
-	nuc980_enable_cam(dev);
-	nuc980_enable_cam_command(dev);
-	nuc980_enable_mac_interrupt(dev);
+	nuc980_reset_mac(dev);
 	nuc980_set_global_maccmd(dev);
-	ETH_ENABLE_RX;
-
 
 	if (request_irq(ether->txirq, nuc980_tx_interrupt,
 						0x0, pdev->name, dev)) {
@@ -861,7 +843,7 @@ static int nuc980_ether_open(struct net_device *dev)
 	netif_start_queue(dev);
 	napi_enable(&ether->napi);
 
-	ETH_TRIGGER_RX;
+	ETH_ENABLE_RX;
 
 	dev_info(&pdev->dev, "%s is OPENED\n", dev->name);
 

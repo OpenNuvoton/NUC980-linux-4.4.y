@@ -1746,6 +1746,7 @@ static const struct usb_device_id option_ids[] = {
 	 .driver_info = RSVD(3) | RSVD(4) | RSVD(5) },
 	{ USB_DEVICE(ZTE_VENDOR_ID, ZTE_PRODUCT_ZM8620_X),
 	 .driver_info = RSVD(3) | RSVD(4) | RSVD(5) },
+	{ USB_DEVICE(ZTE_VENDOR_ID, 0x1476)},/*for ME3630-W*/
 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) },
 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) },
 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) },
@@ -2056,6 +2057,22 @@ static int option_probe(struct usb_serial *serial,
 		return -ENODEV;
 #endif
 
+#if 1  /////////////////////for ME3630-W///////////////////////
+	if (serial->dev->descriptor.idVendor == 0x19d2 &&
+	    serial->dev->descriptor.idProduct == 0x1476 &&
+	    serial->interface->cur_altsetting->desc. bInterfaceNumber == 3)
+		return -ENODEV;
+
+	if (serial->dev->descriptor.idVendor == 0x19d2 &&
+	    serial->dev->descriptor.idProduct == 0x1476 &&
+	    serial->interface->cur_altsetting->desc. bInterfaceNumber == 4)
+		return -ENODEV;
+
+	if (serial->dev->descriptor.idVendor == 0x19d2 &&
+	    serial->dev->descriptor.idProduct == 0x1476 &&
+	    serial->interface->cur_altsetting->desc. bInterfaceNumber == 5)
+		return -ENODEV;
+#endif
 	/* Store the device flags so we can use them during attach. */
 	usb_set_serial_data(serial, (void *)device_flags);
 

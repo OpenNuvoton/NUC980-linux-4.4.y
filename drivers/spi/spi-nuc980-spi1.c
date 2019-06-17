@@ -240,151 +240,130 @@ static int nuc980_spi1_txrx(struct spi_device *spi, struct spi_transfer *t)
 	while (__raw_readl(hw->regs + REG_STATUS) & (1<<23)); //TXRXRST
 
 #if defined(CONFIG_SPI_NUC980_SPI1_PDMA)
-	/* For short length transmission, using CPU instead */
-	if ((t->len < 100)) {
-		unsigned int    i;
+	__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x3), hw->regs + REG_PDMACTL); //Disable SPIx TX/RX PDMA
 
-		hw->tx = t->tx_buf;
-		hw->rx = t->rx_buf;
-		if (hw->rx) {
-			for(i = 0; i < t->len; i++) {
-				__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
-				while (((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x100)); //RXEMPTY
-				hw_rx(hw, __raw_readl(hw->regs + REG_RX), i);
-			}
-		} else {
-			for(i = 0; i < t->len; i++) {
-				while (((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x20000)); //TXFULL
-				__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
-			}
-		}
-
-	} else {
-		__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x3), hw->regs + REG_PDMACTL); //Disable SPIx TX/RX PDMA
-
-		if (t->rx_buf) {
-			/* prepare the RX dma transfer */
-			sg_init_table(&pdma->sgrx, 1);
-			pdma->slave_config.src_addr = SPIx_RX;
-			if (!is_spidev && !(t->len % 4) && !(((int)t->rx_buf) % 4)) {
-				__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
-				pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-				pdma->sgrx.length=t->len/4;
-			} else {
-				pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-				pdma->sgrx.length=t->len;
-			}
-			pdma->slave_config.src_maxburst = 1;
-			pdma->slave_config.direction = DMA_DEV_TO_MEM;
-			pdma->slave_config.device_fc = false;
-			dmaengine_slave_config(pdma->chan_rx,&(pdma->slave_config));
-
-			pdma->sgrx.dma_address = dma_map_single(hw->dev,
-			                                        (void *)t->rx_buf,
-			                                        t->len, DMA_FROM_DEVICE);
-			if (dma_mapping_error(hw->dev, pdma->sgrx.dma_address)) {
-				dev_err(hw->dev, "tx dma map error\n");
-			}
-
-			dma_crx.reqsel = PDMA_SPIx_RX;
-			dma_crx.timeout_counter = 0;
-			dma_crx.timeout_prescaler = 0;
-			dma_crx.en_sc = 0;
-			pdma->rxdesc=pdma->chan_rx->device->device_prep_slave_sg(pdma->chan_rx,
-			                &pdma->sgrx,
-			                1,
-			                DMA_FROM_DEVICE,
-			                DMA_PREP_INTERRUPT | DMA_CTRL_ACK,
-			                (void *)&dma_crx); //PDMA Request Source Select
-			if (!pdma->rxdesc) {
-				printk("pdma->rxdesc=NULL\n");
-				while(1);
-			}
-			spi1_dma_slave_done.done = false;
-			pdma->rxdesc->callback = spi1_nuc980_slave_dma_callback;
-			pdma->rxdesc->callback_param = &spi1_dma_slave_done;
-			cookie = pdma->rxdesc->tx_submit(pdma->rxdesc);
-			if (dma_submit_error(cookie)) {
-				printk("rx cookie=%d\n",cookie);
-				while(1);
-			}
-		}
-
-		/* prepare the TX dma transfer */
-		sg_init_table(&pdma->sgtx, 1);
-		pdma->slave_config.dst_addr = SPIx_TX;
-		if (!is_spidev && !(t->len % 4) && !(((int)t->tx_buf) % 4)) {
+	if (t->rx_buf) {
+		/* prepare the RX dma transfer */
+		sg_init_table(&pdma->sgrx, 1);
+		pdma->slave_config.src_addr = SPIx_RX;
+		if (!is_spidev && !(t->len % 4) && !(((int)t->rx_buf) % 4)) {
 			__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
-			pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-			pdma->sgtx.length=t->len/4;
+			pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+			pdma->sgrx.length=t->len/4;
 		} else {
-			pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-			pdma->sgtx.length=t->len;
+			pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+			pdma->sgrx.length=t->len;
 		}
-		pdma->slave_config.dst_maxburst = 1;
-		pdma->slave_config.direction = DMA_MEM_TO_DEV;
-		dmaengine_slave_config(pdma->chan_tx,&(pdma->slave_config));
-		if (t->tx_buf) {
-			pdma->sgtx.dma_address = dma_map_single(hw->dev,
-			                                        (void *)t->tx_buf,
-			                                        t->len, DMA_TO_DEVICE);
-			if (dma_mapping_error(hw->dev, pdma->sgtx.dma_address)) {
-				dev_err(hw->dev, "tx dma map error\n");
-			}
-		} else {
-			pdma->sgtx.dma_address=virt_to_phys(dummy_buf);
+		pdma->slave_config.src_maxburst = 1;
+		pdma->slave_config.direction = DMA_DEV_TO_MEM;
+		pdma->slave_config.device_fc = false;
+		dmaengine_slave_config(pdma->chan_rx,&(pdma->slave_config));
+
+		pdma->sgrx.dma_address = dma_map_single(hw->dev,
+		                                        (void *)t->rx_buf,
+		                                        t->len, DMA_FROM_DEVICE);
+		if (dma_mapping_error(hw->dev, pdma->sgrx.dma_address)) {
+			dev_err(hw->dev, "tx dma map error\n");
 		}
 
-		dma_ctx.reqsel = PDMA_SPIx_TX;
-		dma_ctx.timeout_counter = 0;
-		dma_ctx.timeout_prescaler = 0;
-		dma_ctx.en_sc = 0;
-		pdma->txdesc=pdma->chan_tx->device->device_prep_slave_sg(pdma->chan_tx,
-		                &pdma->sgtx,
+		dma_crx.reqsel = PDMA_SPIx_RX;
+		dma_crx.timeout_counter = 0;
+		dma_crx.timeout_prescaler = 0;
+		dma_crx.en_sc = 0;
+		pdma->rxdesc=pdma->chan_rx->device->device_prep_slave_sg(pdma->chan_rx,
+		                &pdma->sgrx,
 		                1,
-		                DMA_TO_DEVICE,
+		                DMA_FROM_DEVICE,
 		                DMA_PREP_INTERRUPT | DMA_CTRL_ACK,
-		                (void *)&dma_ctx);
-		if (!pdma->txdesc) {
-			printk("pdma->txdex=NULL\n");
-			while(1);
+		                (void *)&dma_crx); //PDMA Request Source Select
+		if (!pdma->rxdesc) {
+			printk("pdma->rxdesc=NULL\n");
+			BUG();
 		}
-
-		if (!t->rx_buf) {
-			pdma->txdesc->callback = spi1_nuc980_slave_dma_callback;
-			pdma->txdesc->callback_param = &spi1_dma_slave_done;
-		} else {
-			pdma->txdesc->callback = NULL;
-			pdma->txdesc->callback_param = NULL;
-		}
-
-		cookie = pdma->txdesc->tx_submit(pdma->txdesc);
+		spi1_dma_slave_done.done = false;
+		pdma->rxdesc->callback = spi1_nuc980_slave_dma_callback;
+		pdma->rxdesc->callback_param = &spi1_dma_slave_done;
+		cookie = pdma->rxdesc->tx_submit(pdma->rxdesc);
 		if (dma_submit_error(cookie)) {
-			printk("tx cookie=%d\n",cookie);
-			while(1);
+			printk("rx cookie=%d\n",cookie);
+			BUG();
 		}
-
-		if (t->rx_buf)
-			__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)|(0x3), hw->regs + REG_PDMACTL); //Enable SPIx TX/RX PDMA
-		else
-			__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)|(0x1), hw->regs + REG_PDMACTL); //Enable SPIx TX PDMA
-
-		wait_event_interruptible(spi1_slave_done, (spi1_slave_done_state != 0));
-		spi1_slave_done_state=0;
-
-		while(__raw_readl(hw->regs + REG_STATUS) & 1); //wait busy
-
-		/* unmap buffers if mapped above */
-		if (t->rx_buf)
-			dma_unmap_single(hw->dev, pdma->sgrx.dma_address, t->len,
-			                 DMA_FROM_DEVICE);
-		if (t->tx_buf)
-			dma_unmap_single(hw->dev, pdma->sgtx.dma_address, t->len,
-			                 DMA_TO_DEVICE);
-
-		__raw_writel(((__raw_readl(hw->regs + REG_CTL) & ~(0x81F00))|0x800), hw->regs + REG_CTL); //restore to 8 bits, no byte reorder
-
 	}
+
+	/* prepare the TX dma transfer */
+	sg_init_table(&pdma->sgtx, 1);
+	pdma->slave_config.dst_addr = SPIx_TX;
+	if (!is_spidev && !(t->len % 4) && !(((int)t->tx_buf) % 4)) {
+		__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
+		pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+		pdma->sgtx.length=t->len/4;
+	} else {
+		pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+		pdma->sgtx.length=t->len;
+	}
+	pdma->slave_config.dst_maxburst = 1;
+	pdma->slave_config.direction = DMA_MEM_TO_DEV;
+	dmaengine_slave_config(pdma->chan_tx,&(pdma->slave_config));
+	if (t->tx_buf) {
+		pdma->sgtx.dma_address = dma_map_single(hw->dev,
+		                                        (void *)t->tx_buf,
+		                                        t->len, DMA_TO_DEVICE);
+		if (dma_mapping_error(hw->dev, pdma->sgtx.dma_address)) {
+			dev_err(hw->dev, "tx dma map error\n");
+		}
+	} else {
+		pdma->sgtx.dma_address=virt_to_phys(dummy_buf);
+	}
+
+	dma_ctx.reqsel = PDMA_SPIx_TX;
+	dma_ctx.timeout_counter = 0;
+	dma_ctx.timeout_prescaler = 0;
+	dma_ctx.en_sc = 0;
+	pdma->txdesc=pdma->chan_tx->device->device_prep_slave_sg(pdma->chan_tx,
+	                &pdma->sgtx,
+	                1,
+	                DMA_TO_DEVICE,
+	                DMA_PREP_INTERRUPT | DMA_CTRL_ACK,
+	                (void *)&dma_ctx);
+	if (!pdma->txdesc) {
+		printk("pdma->txdex=NULL\n");
+		BUG();
+	}
+
+	if (!t->rx_buf) {
+		pdma->txdesc->callback = spi1_nuc980_slave_dma_callback;
+		pdma->txdesc->callback_param = &spi1_dma_slave_done;
+	} else {
+		pdma->txdesc->callback = NULL;
+		pdma->txdesc->callback_param = NULL;
+	}
+
+	cookie = pdma->txdesc->tx_submit(pdma->txdesc);
+	if (dma_submit_error(cookie)) {
+		printk("tx cookie=%d\n",cookie);
+		BUG();
+	}
+
+	if (t->rx_buf)
+		__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)|(0x3), hw->regs + REG_PDMACTL); //Enable SPIx TX/RX PDMA
+	else
+		__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)|(0x1), hw->regs + REG_PDMACTL); //Enable SPIx TX PDMA
+
+	wait_event_interruptible(spi1_slave_done, (spi1_slave_done_state != 0));
+	spi1_slave_done_state=0;
+
+	while(__raw_readl(hw->regs + REG_STATUS) & 1); //wait busy
+
+	/* unmap buffers if mapped above */
+	if (t->rx_buf)
+		dma_unmap_single(hw->dev, pdma->sgrx.dma_address, t->len,
+		                 DMA_FROM_DEVICE);
+	if (t->tx_buf)
+		dma_unmap_single(hw->dev, pdma->sgtx.dma_address, t->len,
+		                 DMA_TO_DEVICE);
+
+	__raw_writel(((__raw_readl(hw->regs + REG_CTL) & ~(0x81F00))|0x800), hw->regs + REG_CTL); //restore to 8 bits, no byte reorder
+
 
 #elif defined(CONFIG_SPI_NUC980_SPI1_NO_PDMA)
 	if (hw->rx) {

@@ -312,7 +312,7 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 			                (void *)&dma_crx); //PDMA Request Source Select
 			if (!pdma->rxdesc) {
 				printk("pdma->rxdesc=NULL\n");
-				while(1);
+				BUG();
 			}
 			qspi0_dma_slave_done.done = false;
 			pdma->rxdesc->callback = qspi0_nuc980_slave_dma_callback;
@@ -320,7 +320,7 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 			cookie = pdma->rxdesc->tx_submit(pdma->rxdesc);
 			if (dma_submit_error(cookie)) {
 				printk("rx cookie=%d\n",cookie);
-				while(1);
+				BUG();
 			}
 		}
 
@@ -364,7 +364,7 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 		                (void *)&dma_ctx);
 		if (!pdma->txdesc) {
 			printk("pdma->txdex=NULL\n");
-			while(1);
+			BUG();
 		}
 
 		if (!t->rx_buf) {
@@ -378,7 +378,7 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 		cookie = pdma->txdesc->tx_submit(pdma->txdesc);
 		if (dma_submit_error(cookie)) {
 			printk("tx cookie=%d\n",cookie);
-			while(1);
+			BUG();
 		}
 
 

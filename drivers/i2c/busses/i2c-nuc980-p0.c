@@ -484,9 +484,6 @@ static int nuc980_i2c0_doxfer(struct nuc980_i2c *i2c,
 	int spins = 20;
 	int ret;
 
-	//printk("\n nuc980_i2c0_doxfer ");
-	//printk("\n i2c->msg->addr = 0x%x ", i2c->msg->addr);
-
 	spin_lock_irq(&i2c->lock);
 
 	i2c->msg     = msgs;
@@ -554,8 +551,6 @@ static int nuc980_i2c0_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int 
 	int retry;
 	int ret;
 
-	//printk("\n nuc980_i2c0_xfer \n");
-
 	nuc980_i2c0_enable_irq(i2c);
 
 	for (retry = 0; retry < adap->retries; retry++) {
@@ -577,8 +572,6 @@ static int nuc980_i2c0_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int 
 static int nuc980_reg_slave(struct i2c_client *slave)
 {
 	struct nuc980_i2c *priv = i2c_get_adapdata(slave->adapter);
-
-	printk("\n nuc980_reg_slave \n");
 
 	if (priv->slave)
 		return -EBUSY;
@@ -608,8 +601,6 @@ static int nuc980_unreg_slave(struct i2c_client *slave)
 {
 	struct nuc980_i2c *priv = i2c_get_adapdata(slave->adapter);
 
-	//printk("\n nuc980_unreg_slave \n");
-
 	// Disable I2C
 	writel(readl(priv->regs + CTL0) &~ (0x1 << 6), (priv->regs + CTL0)); // CTL0
 	// Disable i2c interrupt
@@ -626,7 +617,7 @@ static int nuc980_unreg_slave(struct i2c_client *slave)
 /* declare our i2c functionality */
 static u32 nuc980_i2c0_func(struct i2c_adapter *adap)
 {
-	return I2C_FUNC_I2C | I2C_FUNC_PROTOCOL_MANGLING;
+	return I2C_FUNC_I2C | I2C_FUNC_PROTOCOL_MANGLING | I2C_FUNC_SMBUS_EMUL ;
 }
 
 /* i2c bus registration info */
@@ -656,8 +647,6 @@ static int nuc980_i2c0_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 
 	struct pinctrl *pinctrl;
-
-	//printk("\n nuc980_i2c0_probe \n");
 
 	if (!pdev->dev.of_node) {
 		pdata = pdev->dev.platform_data;

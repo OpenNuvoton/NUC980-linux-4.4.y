@@ -626,7 +626,7 @@ static int nuc980_unreg_slave(struct i2c_client *slave)
 /* declare our i2c functionality */
 static u32 nuc980_i2c3_func(struct i2c_adapter *adap)
 {
-	return I2C_FUNC_I2C | I2C_FUNC_PROTOCOL_MANGLING;
+	return I2C_FUNC_I2C | I2C_FUNC_PROTOCOL_MANGLING | I2C_FUNC_SMBUS_EMUL ;
 }
 
 /* i2c bus registration info */

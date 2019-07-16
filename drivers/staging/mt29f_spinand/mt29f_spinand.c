@@ -216,7 +216,8 @@ struct spinand_ops mt29f_spinand_ops = {
 };
 
 
-static inline struct spinand_ops *get_dev_ops(struct spi_device *spi_nand) {
+static inline struct spinand_ops *get_dev_ops(struct spi_device *spi_nand)
+{
 	struct mtd_info *mtd = (struct mtd_info *)dev_get_drvdata
 	                       (&spi_nand->dev);
 	struct nand_chip *chip = (struct nand_chip *)mtd->priv;
@@ -251,7 +252,8 @@ void spinand_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
  * OOB area specification layout:  Total 32 available free bytes.
  */
 
-static inline struct spinand_state *mtd_to_state(struct mtd_info *mtd) {
+static inline struct spinand_state *mtd_to_state(struct mtd_info *mtd)
+{
 	struct nand_chip *chip = (struct nand_chip *)mtd->priv;
 	struct spinand_info *info = (struct spinand_info *)chip->priv;
 	struct spinand_state *state = (struct spinand_state *)info->priv;
@@ -770,7 +772,7 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
  *   Since it is writing the data to cache, there is no tPROG time.
  */
 static int spinand_program_data_to_cache(struct spi_device *spi_nand,
-                u32 page_id, u16 byte_id, u16 len, u8 *wbuf)
+        u32 page_id, u16 byte_id, u16 len, u8 *wbuf)
 {
 	struct spinand_cmd cmd = {0};
 	u16 column;
@@ -1121,16 +1123,16 @@ static void spinand_cmdfunc(struct mtd_info *mtd, unsigned int command,
 	struct spinand_state *state = (struct spinand_state *)info->priv;
 
 	switch (command) {
-		/*
-		 * READ0 - read in first  0x800 bytes
-		 */
+	/*
+	 * READ0 - read in first  0x800 bytes
+	 */
 	case NAND_CMD_READ1:
 	case NAND_CMD_READ0:
 		state->buf_ptr = 0;
 		spinand_read_page(info->spi, page, 0x0,
 		                  (mtd->writesize + mtd->oobsize), state->buf);
 		break;
-		/* READOOB reads only the OOB because no ECC is performed. */
+	/* READOOB reads only the OOB because no ECC is performed. */
 	case NAND_CMD_READOOB:
 		state->buf_ptr = 0;
 		spinand_read_page(info->spi, page,
@@ -1146,20 +1148,20 @@ static void spinand_cmdfunc(struct mtd_info *mtd, unsigned int command,
 	case NAND_CMD_PARAM:
 		state->buf_ptr = 0;
 		break;
-		/* ERASE1 stores the block and page address */
+	/* ERASE1 stores the block and page address */
 	case NAND_CMD_ERASE1:
 		spinand_erase_block(info->spi, page);
 		break;
-		/* ERASE2 uses the block and page address from ERASE1 */
+	/* ERASE2 uses the block and page address from ERASE1 */
 	case NAND_CMD_ERASE2:
 		break;
-		/* SEQIN sets up the addr buffer and all registers except the length */
+	/* SEQIN sets up the addr buffer and all registers except the length */
 	case NAND_CMD_SEQIN:
 		state->col = column;
 		state->row = page;
 		state->buf_ptr = 0;
 		break;
-		/* PAGEPROG reuses all of the setup from SEQIN and adds the length */
+	/* PAGEPROG reuses all of the setup from SEQIN and adds the length */
 	case NAND_CMD_PAGEPROG:
 		spinand_program_page(info->spi, state->row, state->col,
 		                     state->buf_ptr, state->buf);
@@ -1170,7 +1172,7 @@ static void spinand_cmdfunc(struct mtd_info *mtd, unsigned int command,
 			state->buf[0] = 0x80;
 		state->buf_ptr = 0;
 		break;
-		/* RESET command */
+	/* RESET command */
 	case NAND_CMD_RESET:
 		if (wait_till_ready(info->spi))
 			dev_err(&info->spi->dev, "WAIT timedout!!!\n");
@@ -1302,6 +1304,8 @@ static int spinand_probe(struct spi_device *spi_nand)
 	if (nand_scan(mtd, 1))
 		return -ENXIO;
 
+	/* add mtd-id. The string should same as uboot definition */
+	mtd->name = "nand0";
 	ppdata.of_node = spi_nand->dev.of_node;
 
 #ifdef CONFIG_MTD_SPINAND_ONDIEECC
@@ -1309,7 +1313,13 @@ static int spinand_probe(struct spi_device *spi_nand)
 		dev_err(&spi_nand->dev, "enable HW ECC failed!");
 #endif
 
-	return mtd_device_parse_register(mtd, NULL, &ppdata, spinand_partitions, ARRAY_SIZE(spinand_partitions));
+#ifndef CONFIG_MTD_CMDLINE_PARTS
+	info->parts = (struct mtd_partition*)spinand_partitions;
+	info->nr_parts = ARRAY_SIZE(spinand_partitions);
+#endif
+
+	//return mtd_device_parse_register(mtd, NULL, &ppdata, spinand_partitions, ARRAY_SIZE(spinand_partitions));
+	return mtd_device_parse_register(mtd, NULL, &ppdata, info->parts, info->nr_parts);
 }
 
 /*

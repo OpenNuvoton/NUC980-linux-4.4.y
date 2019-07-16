@@ -121,6 +121,8 @@ struct spinand_info {
 	struct spi_device *spi;
 	void *priv;
 	struct spinand_ops *dev_ops;
+	struct mtd_partition    *parts;     // mtd partition
+	int                     nr_parts;   // mtd partition number
 };
 
 struct spinand_state {

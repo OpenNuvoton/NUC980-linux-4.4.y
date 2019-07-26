@@ -102,6 +102,8 @@ static int c_can_plat_probe(struct platform_device *pdev)
 		pinctrl = devm_pinctrl_get_select(&pdev->dev, "can2-PB");
 	#elif defined(CONFIG_NUC980_CAN2_PB_PC)
 		pinctrl = devm_pinctrl_get_select(&pdev->dev, "can2-PB_PC");
+	#elif defined(CONFIG_NUC980_CAN2_PD)
+		pinctrl = devm_pinctrl_get_select(&pdev->dev, "can2-PD");
 	#elif defined(CONFIG_NUC980_CAN2_PE)
 		pinctrl = devm_pinctrl_get_select(&pdev->dev, "can2-PE");
 	#endif

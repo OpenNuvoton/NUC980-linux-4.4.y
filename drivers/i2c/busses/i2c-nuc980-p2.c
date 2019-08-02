@@ -362,7 +362,7 @@ static void i2c_nuc980_irq_master_TRx(struct nuc980_i2c *i2c, unsigned long iics
 			//return;
 		}
 		else
-			writel(((readl(i2c->regs+CTL0) &~ (0x3C))|I2C_CTL_SI_AA), (i2c->regs+CTL0));
+			writel(((readl(i2c->regs+CTL0) &~ (0x3C))|I2C_CTL_SI), (i2c->regs+CTL0));
 	}
 	else if ((iicstat == M_RECE_DATA_ACK) || (iicstat == M_RECE_DATA_NACK))
 	{ /* DATA has been transmitted and ACK has been received */

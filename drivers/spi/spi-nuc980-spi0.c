@@ -569,12 +569,12 @@ static int nuc980_spi0_setup(struct spi_device *spi)
 	if (ret)
 		return ret;
 
-	spin_lock(&hw->lock);
+	mutex_lock(&hw->bitbang.lock);
 	if (!hw->bitbang.busy) {
 		nuc980_set_divider(hw);
 		nuc980_slave_select(spi, 0);
 	}
-	spin_unlock(&hw->lock);
+	mutex_unlock(&hw->bitbang.lock);
 
 	return 0;
 }

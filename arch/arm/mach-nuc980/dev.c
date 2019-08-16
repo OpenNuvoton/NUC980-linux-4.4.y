@@ -1674,7 +1674,7 @@ struct platform_device nuc980_device_gpio = {
 	.resource = nuc980_gpio_resource,
 };
 
-#ifndef CONFIG_OF
+#ifndef CONFIG_USE_OF
 struct platform_device nuc980_device_eint0 = {
 	.name = "nuc980-gpio",
 	.id = 1,
@@ -1910,7 +1910,7 @@ static struct platform_device *nuc980_public_dev[] __initdata = {
 #endif
 #if defined(CONFIG_GPIO_NUC980) || defined(CONFIG_GPIO_NUC980_MODULE)
 	&nuc980_device_gpio,
-#ifndef CONFIG_OF
+#ifndef CONFIG_USE_OF
 	&nuc980_device_eint0,
 	&nuc980_device_eint1,
 	&nuc980_device_eint2,

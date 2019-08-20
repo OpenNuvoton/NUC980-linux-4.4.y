@@ -37,6 +37,7 @@
 #include <linux/platform_device.h>
 #include <linux/io.h>
 #include <linux/clkdev.h>
+#include <linux/sched_clock.h>
 
 #include <asm/mach-types.h>
 #include <asm/mach/irq.h>
@@ -198,6 +199,12 @@ static void __init nuc980_clockevents_init(void)
 	clockevents_config_and_register(&nuc980_clockevent_device, rate, 12, 0xffffff);
 }
 
+static u64 read_sched_clock(void)
+{
+
+	return __raw_readl(REG_TIMER_DR(TIMER5));
+}
+
 static void __init nuc980_clocksource_init(void)
 {
 	unsigned int rate = 0;
@@ -223,6 +230,7 @@ static void __init nuc980_clocksource_init(void)
 
 	clocksource_mmio_init(REG_TIMER_DR(TIMER5),
 		"nuc980-timer5", rate, 200, 24, clocksource_mmio_readl_up);
+	sched_clock_register(read_sched_clock, 24, rate);
 }
 
 void __init nuc980_setup_default_serial_console(void)

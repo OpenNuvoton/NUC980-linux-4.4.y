@@ -516,18 +516,22 @@ static void nuc980serial_enable_ms(struct uart_port *port)
 
 }
 
+static int max_count = 0;
+
 static void
 receive_chars(struct uart_nuc980_port *up)
 {
 	unsigned char ch;
 	unsigned int fsr;
-	int max_count = 256;
+	unsigned int isr;
+	unsigned int dcnt;
+
 	char flag;
+	isr = serial_in(up, UART_REG_ISR);
+	fsr = serial_in(up, UART_REG_FSR);
 
-	do {
-		if(serial_in(up, UART_REG_FSR) & (1 << 14)) break;
-
-		fsr = serial_in(up, UART_REG_FSR);
+	while(!(fsr & RX_EMPTY)) {
+		//fsr = serial_in(up, UART_REG_FSR);
 		flag = TTY_NORMAL;
 		up->port.icount.rx++;
 
@@ -568,12 +572,31 @@ receive_chars(struct uart_nuc980_port *up)
 			continue;
 
 		uart_insert_char(&up->port, fsr, RX_OVER_IF, ch, flag);
+		max_count++;
+		dcnt=(serial_in(up, UART_REG_FSR) >> 8) & 0x3f;
+		if(max_count > 1023)
+		{
+			spin_lock(&up->port.lock);
+			tty_flip_buffer_push(&up->port.state->port);
+			spin_unlock(&up->port.lock);
+			max_count=0;
+			if((isr & TOUT_IF) && (dcnt == 0))
+				goto tout_end;
+		}
 
-	} while (!(fsr & RX_EMPTY) && (max_count-- > 0));
+		if(isr & RDA_IF) {
+			if(dcnt == 1)
+				return; // have remaining data, don't reset max_count
+		}
+		fsr = serial_in(up, UART_REG_FSR);
+	}
 
 	spin_lock(&up->port.lock);
 	tty_flip_buffer_push(&up->port.state->port);
 	spin_unlock(&up->port.lock);
+tout_end:
+	max_count=0;
+	return;
 }
 
 static void transmit_chars(struct uart_nuc980_port *up)
@@ -632,13 +655,14 @@ static unsigned int check_modem_status(struct uart_nuc980_port *up)
 static irqreturn_t nuc980serial_interrupt(int irq, void *dev_id)
 {
 	struct uart_nuc980_port *up = (struct uart_nuc980_port *)dev_id;
-	unsigned int isr;
+	unsigned int isr, fsr;
 
 	isr = serial_in(up, UART_REG_ISR);
+	fsr = serial_in(up, UART_REG_FSR);
 
 #if defined(CONFIG_ENABLE_UART_PDMA) || defined(CONFIG_USE_OF)
 	if(up->uart_pdma_enable_flag == 1) {
-		if(isr & (BIF | FEF | PEF | RX_OVER_IF | HWBUFE_IF)) {
+		if(fsr & (BIF | FEF | PEF | RX_OVER_IF | HWBUFE_IF)) {
 			serial_out(up, UART_REG_FSR, (BIF | FEF | PEF | RX_OVER_IF | TX_OVER_IF));
 		}
 	} else
@@ -651,10 +675,10 @@ static irqreturn_t nuc980serial_interrupt(int irq, void *dev_id)
 
 		check_modem_status(up);
 
-		if (isr & THRE_IF)
+		if (isr & THRE_INT)
 			transmit_chars(up);
 
-		if(isr & (BIF | FEF | PEF | RX_OVER_IF)) {
+		if(fsr & (BIF | FEF | PEF | RX_OVER_IF)) {
 			serial_out(up, UART_REG_FSR, (BIF | FEF | PEF | RX_OVER_IF | TX_OVER_IF));
 		}
 	}
@@ -1037,8 +1061,6 @@ static int nuc980serial_config_rs485(struct uart_port *port, struct serial_rs485
 {
 	struct uart_nuc980_port *p = to_nuc980_uart_port(port);
 
-	spin_lock(&port->lock);
-
 	p->rs485 = *rs485conf;
 
 	if (p->rs485.delay_rts_before_send >= 1000)
@@ -1060,8 +1082,6 @@ static int nuc980serial_config_rs485(struct uart_port *port, struct serial_rs485
 		// set auto direction mode
 		serial_out(p,UART_REG_ALT_CSR,(serial_in(p, UART_REG_ALT_CSR) | (1 << 10)) );
 	}
-
-	spin_unlock(&port->lock);
 
 	return 0;
 }

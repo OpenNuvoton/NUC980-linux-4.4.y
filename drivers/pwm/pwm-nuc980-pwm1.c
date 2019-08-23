@@ -402,9 +402,9 @@ static struct platform_driver nuc980_pwm1_driver = {
 #if defined(CONFIG_USE_OF)
 		.of_match_table = of_match_ptr(nuc980_pwm1_of_match),
 #endif
-#ifdef CONFIG_PM
-		.pm	= &nuc980_pwm_pm_ops,
-#endif
+//#ifdef CONFIG_PM
+//		.pm	= &nuc980_pwm_pm_ops,
+//#endif
 	},
 	.probe		= nuc980_pwm_probe,
 	.remove		= nuc980_pwm_remove,

@@ -878,7 +878,7 @@ static int nuc980_spi1_suspend(struct device *dev)
 {
 	struct nuc980_spi *hw = dev_get_drvdata(dev);
 
-	while(__raw_readl(hw->regs + REG_CTL) & 0x1)
+	while(__raw_readl(hw->regs + REG_STATUS) & 1) //wait busy
 		msleep(1);
 
 	// disable interrupt

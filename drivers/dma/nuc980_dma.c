@@ -379,20 +379,20 @@ void nuc980_dma_SetTimeOut(struct nuc980_dma_chan *edmac,u32 prescaler,u32 count
 	}
 
 	if(ch==0 || ch==1) {
-		pdma->TOC0_1 &= ~( (0xff) << (PDMA_TOC0_1_TOC1_Pos * ch));
-		pdma->TOC0_1 |= ((counter&0xff) << (PDMA_TOC0_1_TOC1_Pos * ch));
+		pdma->TOC0_1 &= ~( (0xffff) << (PDMA_TOC0_1_TOC1_Pos * ch));
+		pdma->TOC0_1 |= ((counter&0xffff) << (PDMA_TOC0_1_TOC1_Pos * ch));
 	} else if(ch==2 || ch==3) {
-		pdma->TOC2_3 &= ~( (0xff) << (PDMA_TOC0_1_TOC1_Pos * (ch-2)));
-		pdma->TOC2_3 |= ((counter&0xff)<< (PDMA_TOC0_1_TOC1_Pos * (ch-2)));
+		pdma->TOC2_3 &= ~( (0xffff) << (PDMA_TOC0_1_TOC1_Pos * (ch-2)));
+		pdma->TOC2_3 |= ((counter&0xffff)<< (PDMA_TOC0_1_TOC1_Pos * (ch-2)));
 	} else if(ch==4 || ch==5) {
-		pdma->TOC4_5 &= ~( (0xff) << (PDMA_TOC0_1_TOC1_Pos * (ch-4)));
-		pdma->TOC4_5 |= ((counter&0xff) << (PDMA_TOC0_1_TOC1_Pos * (ch-4)));
+		pdma->TOC4_5 &= ~( (0xffff) << (PDMA_TOC0_1_TOC1_Pos * (ch-4)));
+		pdma->TOC4_5 |= ((counter&0xffff) << (PDMA_TOC0_1_TOC1_Pos * (ch-4)));
 	} else if(ch==6 || ch==7) {
-		pdma->TOC6_7 &= ~( (0xff) << (PDMA_TOC0_1_TOC1_Pos * (ch-6)));
-		pdma->TOC6_7 |= ((counter&0xff) << (PDMA_TOC0_1_TOC1_Pos * (ch-6)));
+		pdma->TOC6_7 &= ~( (0xffff) << (PDMA_TOC0_1_TOC1_Pos * (ch-6)));
+		pdma->TOC6_7 |= ((counter&0xffff) << (PDMA_TOC0_1_TOC1_Pos * (ch-6)));
 	} else if(ch==8 || ch==9) {
-		pdma->TOC8_9 &= ~( (0xff) << (PDMA_TOC0_1_TOC1_Pos * (ch-8)));
-		pdma->TOC8_9 |= ((counter&0xff) << (PDMA_TOC0_1_TOC1_Pos * (ch-8)));
+		pdma->TOC8_9 &= ~( (0xffff) << (PDMA_TOC0_1_TOC1_Pos * (ch-8)));
+		pdma->TOC8_9 |= ((counter&0xffff) << (PDMA_TOC0_1_TOC1_Pos * (ch-8)));
 	}
 
 

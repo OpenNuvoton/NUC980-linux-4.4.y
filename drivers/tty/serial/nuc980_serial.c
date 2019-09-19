@@ -676,7 +676,11 @@ static void transmit_chars(struct uart_nuc980_port *up)
 {
 	struct circ_buf *xmit = &up->port.state->xmit;
 	//int count = 12;
-	int count = 16 -((serial_in(up, UART_REG_FSR)>>16)&0x3F);
+	int count = 16 -((serial_in(up, UART_REG_FSR)>>16)&0xF);
+
+	if(serial_in(up, UART_REG_FSR) & TX_FULL){
+		count = 0;
+	}
 
 	if (up->port.x_char) {
 		while(serial_in(up, UART_REG_FSR) & TX_FULL);
@@ -696,14 +700,15 @@ static void transmit_chars(struct uart_nuc980_port *up)
 		return;
 	}
 
-	do {
+	while(count > 0){
 		//while(serial_in(up, UART_REG_FSR) & TX_FULL);
 		serial_out(up, UART_REG_THR, xmit->buf[xmit->tail]);
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 		up->port.icount.tx++;
+		count--;
 		if (uart_circ_empty(xmit))
 			break;
-	} while (--count > 0);
+	}
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
 		uart_write_wakeup(&up->port);
@@ -734,7 +739,7 @@ static irqreturn_t nuc980serial_interrupt(int irq, void *dev_id)
 
 #if defined(CONFIG_ENABLE_UART_PDMA) || defined(CONFIG_USE_OF)
 	if(up->uart_pdma_enable_flag == 1) {
-		if(fsr & (BIF | FEF | PEF | RX_OVER_IF | HWBUFE_IF)) {
+		if(fsr & (BIF | FEF | PEF | RX_OVER_IF | HWBUFE_IF | TX_OVER_IF)) {
 			serial_out(up, UART_REG_FSR, (BIF | FEF | PEF | RX_OVER_IF | TX_OVER_IF));
 		}
 	} else
@@ -750,7 +755,7 @@ static irqreturn_t nuc980serial_interrupt(int irq, void *dev_id)
 		if (isr & THRE_INT)
 			transmit_chars(up);
 
-		if(fsr & (BIF | FEF | PEF | RX_OVER_IF)) {
+		if(fsr & (BIF | FEF | PEF | RX_OVER_IF | TX_OVER_IF)) {
 			serial_out(up, UART_REG_FSR, (BIF | FEF | PEF | RX_OVER_IF | TX_OVER_IF));
 		}
 	}

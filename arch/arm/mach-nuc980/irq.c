@@ -90,8 +90,8 @@ static const unsigned int Port[7] = {
 	(unsigned int)REG_GPIOG_MODE
 };
 
-static unsigned short FType[8];
-static unsigned short RType[8];
+static unsigned int gpio_type[8];
+static unsigned int gpio_inten[8];
 
 static void nuc980_irq_gpio_mask(struct irq_data *d)
 {
@@ -117,9 +117,11 @@ static void nuc980_irq_gpio_unmask(struct irq_data *d)
 	ENTRY();
 	port =(d->irq-IRQ_GPIO_START)/GPIO_OFFSET;
 	num  =(d->irq-IRQ_GPIO_START)%GPIO_OFFSET;
-	tmp = RType[port] & (0x1<<(num+16));
+	tmp = gpio_type[port] & (0x1<<(num));
+	__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x18))|tmp,(volatile unsigned int *)(Port[port]+0x18));
+	tmp = gpio_inten[port] & (0x1<<(num+16));
 	__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x1C))|tmp,(volatile unsigned int *)(Port[port]+0x1C));
-	tmp = FType[port] & (0x1<<num);
+	tmp = gpio_inten[port] & (0x1<<num);
 	__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x1C))|tmp,(volatile unsigned int *)(Port[port]+0x1C));
 	LEAVE();
 
@@ -134,76 +136,91 @@ static int nuc980_irq_gpio_type(struct irq_data *d, unsigned int type)
 
 	if (type == IRQ_TYPE_PROBE) {
 		__raw_writel(__raw_readl
-			     ((volatile unsigned int *)(Port[port] +
-							0x18)) & ~(0x1 << num),
-			     (volatile unsigned int *)(Port[port] + 0x18));
+		             ((volatile unsigned int *)(Port[port] +
+		                                        0x18)) & ~(0x1 << num),
+		             (volatile unsigned int *)(Port[port] + 0x18));
 		__raw_writel(__raw_readl
-			     ((volatile unsigned int *)(Port[port] +
-							0x1C)) | (0x1 << num) | ((0x1<<num)<<16),
-			     (volatile unsigned int *)(Port[port] + 0x1C));
+		             ((volatile unsigned int *)(Port[port] +
+		                                        0x1C)) | (0x1 << num) | ((0x1<<num)<<16),
+		             (volatile unsigned int *)(Port[port] + 0x1C));
+		gpio_type[port] &= ~(0x1<<num);
+		gpio_inten[port] |= (0x1<<num);
+		gpio_inten[port] |= (0x1<<(num+16));
 		return 0;
 	}
 	if (type & IRQ_TYPE_LEVEL_MASK) {
 		__raw_writel(__raw_readl
-			     ((volatile unsigned int *)(Port[port] +
-							0x18)) | (0x1 << num),
-			     (volatile unsigned int *)(Port[port] + 0x18));
+		             ((volatile unsigned int *)(Port[port] +
+		                                        0x18)) | (0x1 << num),
+		             (volatile unsigned int *)(Port[port] + 0x18));
 		__raw_writel(__raw_readl
-			     ((volatile unsigned int *)(Port[port] +
-							0x1C)) & ~((0x1 << num)|((0x1<<num)<<16)),
-			     (volatile unsigned int *)(Port[port] + 0x1C));
+		             ((volatile unsigned int *)(Port[port] +
+		                                        0x1C)) & ~((0x1 << num)|((0x1<<num)<<16)),
+		             (volatile unsigned int *)(Port[port] + 0x1C));
+		gpio_type[port] |= (0x1<<num);
+		gpio_inten[port] &= ~(0x1<<num);
+		gpio_inten[port] &= ~(0x1<<(num+16));
 		if (type == IRQ_TYPE_LEVEL_HIGH) {
 			__raw_writel(__raw_readl
-				     ((volatile unsigned int *)(Port[port] +
-								0x1C)) | ((0x1 <<
-									  num)<<16),
-				     (volatile unsigned int *)(Port[port] +
-							       0x1C));
+			             ((volatile unsigned int *)(Port[port] +
+			                                        0x1C)) | ((0x1 <<
+			                                                num)<<16),
+			             (volatile unsigned int *)(Port[port] +
+			                                       0x1C));
+			gpio_inten[port] |=(0x1<<(num+16));
 			return 0;
 		}
 		if (type == IRQ_TYPE_LEVEL_LOW) {
 			__raw_writel(__raw_readl
-				     ((volatile unsigned int *)(Port[port] +
-								0x1C)) | (0x1 <<
-									  num),
-				     (volatile unsigned int *)(Port[port] +
-							       0x1C));
+			             ((volatile unsigned int *)(Port[port] +
+			                                        0x1C)) | (0x1 <<
+			                                                num),
+			             (volatile unsigned int *)(Port[port] +
+			                                       0x1C));
+			gpio_inten[port] |=(0x1<<num);
 			return 0;
 		}
 	} else {
 		__raw_writel(__raw_readl
-			     ((volatile unsigned int *)(Port[port] +
-							0x18)) & ~(0x1 << num),
-			     (volatile unsigned int *)(Port[port] + 0x18));
+		             ((volatile unsigned int *)(Port[port] +
+		                                        0x18)) & ~(0x1 << num),
+		             (volatile unsigned int *)(Port[port] + 0x18));
+		gpio_type[port] &= ~(0x1<<num);
 		if (type & IRQ_TYPE_EDGE_RISING) {
 			__raw_writel(__raw_readl
-				     ((volatile unsigned int *)(Port[port] +
-								0x1C)) | ((0x1 <<
-									  num)<<16),
-				     (volatile unsigned int *)(Port[port] +
-							       0x1C));
-		} else
+			             ((volatile unsigned int *)(Port[port] +
+			                                        0x1C)) | ((0x1 <<
+			                                                num)<<16),
+			             (volatile unsigned int *)(Port[port] +
+			                                       0x1C));
+			gpio_inten[port] |=(0x1<<(num+16));
+		} else {
 			__raw_writel(__raw_readl
-				     ((volatile unsigned int *)(Port[port] +
-								0x1C)) & ~((0x1<<
-									  num)<<16),
-				     (volatile unsigned int *)(Port[port] +
-							       0x1C));
+			             ((volatile unsigned int *)(Port[port] +
+			                                        0x1C)) & ~((0x1<<
+			                                                num)<<16),
+			             (volatile unsigned int *)(Port[port] +
+			                                       0x1C));
+			gpio_inten[port] &= ~(0x1<<(num+16));
+		}
 		if (type & IRQ_TYPE_EDGE_FALLING) {
 			__raw_writel(__raw_readl
-				     ((volatile unsigned int *)(Port[port] +
-								0x1C)) | (0x1 <<
-									  num),
-				     (volatile unsigned int *)(Port[port] +
-							       0x1C));
-		} else
+			             ((volatile unsigned int *)(Port[port] +
+			                                        0x1C)) | (0x1 <<
+			                                                num),
+			             (volatile unsigned int *)(Port[port] +
+			                                       0x1C));
+			gpio_inten[port] |= (0x1<<num);
+		} else {
 			__raw_writel(__raw_readl
-				     ((volatile unsigned int *)(Port[port] +
-								0x1C)) & ~(0x1
-									   <<
-									   num),
-				     (volatile unsigned int *)(Port[port] +
-							       0x1C));
+			             ((volatile unsigned int *)(Port[port] +
+			                                        0x1C)) & ~(0x1
+			                                                <<
+			                                                num),
+			             (volatile unsigned int *)(Port[port] +
+			                                       0x1C));
+			gpio_inten[port] &= ~(0x1<<num);
+		}
 	}
 	return 0;
 }
@@ -230,12 +247,12 @@ static void nuc980_irq_demux_intgroupA(struct irq_desc *desc)
 		if (isr  & 0x1) {
 			flag=1;
 			generic_handle_irq(IRQ_GPIO_START +
-				0 * 0x20 + j);
+			                   0 * 0x20 + j);
 		}
 		isr = isr >> 1;
 	}
 	if(flag==0)
-			__raw_writel(0x01, REG_AIC_EOIS);
+		__raw_writel(0x01, REG_AIC_EOIS);
 	LEAVE();
 }
 static void nuc980_irq_demux_intgroupB(struct irq_desc *desc)
@@ -249,12 +266,12 @@ static void nuc980_irq_demux_intgroupB(struct irq_desc *desc)
 		if (isr  & 0x1) {
 			flag=1;
 			generic_handle_irq(IRQ_GPIO_START +
-				1 * 0x20 + j);
+			                   1 * 0x20 + j);
 		}
 		isr = isr >> 1;
 	}
 	if(flag==0)
-			__raw_writel(0x01, REG_AIC_EOIS);
+		__raw_writel(0x01, REG_AIC_EOIS);
 	LEAVE();
 }
 static void nuc980_irq_demux_intgroupC(struct irq_desc *desc)
@@ -268,12 +285,12 @@ static void nuc980_irq_demux_intgroupC(struct irq_desc *desc)
 		if (isr  & 0x1) {
 			flag=1;
 			generic_handle_irq(IRQ_GPIO_START +
-				2 * 0x20 + j);
+			                   2 * 0x20 + j);
 		}
 		isr = isr >> 1;
 	}
 	if(flag==0)
-			__raw_writel(0x01, REG_AIC_EOIS);
+		__raw_writel(0x01, REG_AIC_EOIS);
 	LEAVE();
 }
 static void nuc980_irq_demux_intgroupD(struct irq_desc *desc)
@@ -287,12 +304,12 @@ static void nuc980_irq_demux_intgroupD(struct irq_desc *desc)
 		if (isr  & 0x1) {
 			flag=1;
 			generic_handle_irq(IRQ_GPIO_START +
-				3 * 0x20 + j);
+			                   3 * 0x20 + j);
 		}
 		isr = isr >> 1;
 	}
 	if(flag==0)
-			__raw_writel(0x01, REG_AIC_EOIS);
+		__raw_writel(0x01, REG_AIC_EOIS);
 	LEAVE();
 }
 static void nuc980_irq_demux_intgroupE(struct irq_desc *desc)
@@ -306,12 +323,12 @@ static void nuc980_irq_demux_intgroupE(struct irq_desc *desc)
 		if (isr  & 0x1) {
 			flag=1;
 			generic_handle_irq(IRQ_GPIO_START +
-				4 * 0x20 + j);
+			                   4 * 0x20 + j);
 		}
 		isr = isr >> 1;
 	}
 	if(flag==0)
-			__raw_writel(0x01, REG_AIC_EOIS);
+		__raw_writel(0x01, REG_AIC_EOIS);
 	LEAVE();
 }
 static void nuc980_irq_demux_intgroupF(struct irq_desc *desc)
@@ -325,12 +342,12 @@ static void nuc980_irq_demux_intgroupF(struct irq_desc *desc)
 		if (isr  & 0x1) {
 			flag=1;
 			generic_handle_irq(IRQ_GPIO_START +
-				5 * 0x20 + j);
+			                   5 * 0x20 + j);
 		}
 		isr = isr >> 1;
 	}
 	if(flag==0)
-			__raw_writel(0x01, REG_AIC_EOIS);
+		__raw_writel(0x01, REG_AIC_EOIS);
 	LEAVE();
 }
 static void nuc980_irq_demux_intgroupG(struct irq_desc *desc)
@@ -344,49 +361,49 @@ static void nuc980_irq_demux_intgroupG(struct irq_desc *desc)
 		if (isr  & 0x1) {
 			flag=1;
 			generic_handle_irq(IRQ_GPIO_START +
-				6 * 0x20 + j);
+			                   6 * 0x20 + j);
 		}
 		isr = isr >> 1;
 	}
 	if(flag==0)
-			__raw_writel(0x01, REG_AIC_EOIS);
+		__raw_writel(0x01, REG_AIC_EOIS);
 	LEAVE();
 }
 
 //------------------------------------------------------------------------------
 
-static const unsigned int EXT[11]={
-                              (unsigned int)NUC980_PA0,
-                              (unsigned int)NUC980_PA1,
-                              (unsigned int)NUC980_PD0,
-                              (unsigned int)NUC980_PD1,
-                              (unsigned int)NUC980_PA13,
-                              (unsigned int)NUC980_PA14,
-                              (unsigned int)NUC980_PE10,
-                              (unsigned int)NUC980_PE12,
-                              (unsigned int)NUC980_PB3,
-                              (unsigned int)NUC980_PB13,
-                              (unsigned int)NUC980_PG15,
+static const unsigned int EXT[11]= {
+	(unsigned int)NUC980_PA0,
+	(unsigned int)NUC980_PA1,
+	(unsigned int)NUC980_PD0,
+	(unsigned int)NUC980_PD1,
+	(unsigned int)NUC980_PA13,
+	(unsigned int)NUC980_PA14,
+	(unsigned int)NUC980_PE10,
+	(unsigned int)NUC980_PE12,
+	(unsigned int)NUC980_PB3,
+	(unsigned int)NUC980_PB13,
+	(unsigned int)NUC980_PG15,
 };
 
 static void nuc980_irq_ext_mask(struct irq_data *d)
 {
 	ENTRY();
-      if(d->irq==IRQ_EXT0_A0 || d->irq==IRQ_EXT0_A13)
-              __raw_writel(1<<IRQ_EXT0, REG_AIC_INTDIS0);
-      else if(d->irq==IRQ_EXT1_A1 || d->irq==IRQ_EXT1_A14)
-              __raw_writel(1 <<IRQ_EXT1, REG_AIC_INTDIS0);
-      else if(d->irq==IRQ_EXT2_D0 || d->irq==IRQ_EXT2_E10 || IRQ_EXT2_B3 || IRQ_EXT2_B13)
-              __raw_writel(1 <<IRQ_EXT2, REG_AIC_INTDIS0);
-      else if(d->irq==IRQ_EXT3_D1 || d->irq==IRQ_EXT3_E12 || IRQ_EXT3_G15)
-              __raw_writel(1 <<IRQ_EXT3, REG_AIC_INTDIS0);
+	if(d->irq==IRQ_EXT0_A0 || d->irq==IRQ_EXT0_A13)
+		__raw_writel(1<<IRQ_EXT0, REG_AIC_INTDIS0);
+	else if(d->irq==IRQ_EXT1_A1 || d->irq==IRQ_EXT1_A14)
+		__raw_writel(1 <<IRQ_EXT1, REG_AIC_INTDIS0);
+	else if(d->irq==IRQ_EXT2_D0 || d->irq==IRQ_EXT2_E10 || IRQ_EXT2_B3 || IRQ_EXT2_B13)
+		__raw_writel(1 <<IRQ_EXT2, REG_AIC_INTDIS0);
+	else if(d->irq==IRQ_EXT3_D1 || d->irq==IRQ_EXT3_E12 || IRQ_EXT3_G15)
+		__raw_writel(1 <<IRQ_EXT3, REG_AIC_INTDIS0);
 	LEAVE();
 }
 
 static void nuc980_irq_ext_ack(struct irq_data *d)
 {
 	ENTRY();
-      __raw_writel(0x01, REG_AIC_EOIS);
+	__raw_writel(0x01, REG_AIC_EOIS);
 	LEAVE();
 }
 
@@ -394,13 +411,13 @@ static void nuc980_irq_ext_unmask(struct irq_data *d)
 {
 	ENTRY();
 	if(d->irq==IRQ_EXT0_A0 || d->irq==IRQ_EXT0_A13)
-			__raw_writel(1<<IRQ_EXT0, REG_AIC_INTEN0);
+		__raw_writel(1<<IRQ_EXT0, REG_AIC_INTEN0);
 	else if(d->irq==IRQ_EXT1_A1 || d->irq==IRQ_EXT1_A14)
-			__raw_writel(1 <<IRQ_EXT1, REG_AIC_INTEN0);
+		__raw_writel(1 <<IRQ_EXT1, REG_AIC_INTEN0);
 	else if(d->irq==IRQ_EXT2_D0 || d->irq==IRQ_EXT2_E10 || IRQ_EXT2_B3 || IRQ_EXT2_B13)
-			__raw_writel(1 <<IRQ_EXT2, REG_AIC_INTEN0);
+		__raw_writel(1 <<IRQ_EXT2, REG_AIC_INTEN0);
 	else if(d->irq==IRQ_EXT3_D1 || d->irq==IRQ_EXT3_E12 || IRQ_EXT3_G15)
-			__raw_writel(1 <<IRQ_EXT3, REG_AIC_INTEN0);
+		__raw_writel(1 <<IRQ_EXT3, REG_AIC_INTEN0);
 	LEAVE();
 }
 
@@ -412,35 +429,35 @@ static int nuc980_irq_ext_type(struct irq_data *d, unsigned int type)
 	num = (EXT[d->irq - EXT0_BASE]) % GPIO_OFFSET;
 	if (type == IRQ_TYPE_PROBE) {
 		__raw_writel(__raw_readl
-			     ((volatile unsigned int *)(Port[port] +
-		                                        0x1C)) | (0x1 << (num+16)),
-			     (volatile unsigned int *)(Port[port] + 0x1C));
-		__raw_writel(__raw_readl
-			     ((volatile unsigned int *)(Port[port] +
-		                                        0x1C)) | (0x1 << num),
-			     (volatile unsigned int *)(Port[port] + 0x1C));
-			return 0;
-		}
-
-		if (type & IRQ_TYPE_EDGE_RISING) {
-			__raw_writel(__raw_readl
-				     ((volatile unsigned int *)(Port[port] +
+		             ((volatile unsigned int *)(Port[port] +
 		                                        0x1C)) | (0x1 << (num+16)),
 		             (volatile unsigned int *)(Port[port] + 0x1C));
-		} else
-			__raw_writel(__raw_readl
-				     ((volatile unsigned int *)(Port[port] +
+		__raw_writel(__raw_readl
+		             ((volatile unsigned int *)(Port[port] +
+		                                        0x1C)) | (0x1 << num),
+		             (volatile unsigned int *)(Port[port] + 0x1C));
+		return 0;
+	}
+
+	if (type & IRQ_TYPE_EDGE_RISING) {
+		__raw_writel(__raw_readl
+		             ((volatile unsigned int *)(Port[port] +
+		                                        0x1C)) | (0x1 << (num+16)),
+		             (volatile unsigned int *)(Port[port] + 0x1C));
+	} else
+		__raw_writel(__raw_readl
+		             ((volatile unsigned int *)(Port[port] +
 		                                        0x1C)) & ~(0x1 << (num+16)),
 		             (volatile unsigned int *)(Port[port] + 0x1C));
 
-		if (type & IRQ_TYPE_EDGE_FALLING) {
-			__raw_writel(__raw_readl
-				     ((volatile unsigned int *)(Port[port] +
+	if (type & IRQ_TYPE_EDGE_FALLING) {
+		__raw_writel(__raw_readl
+		             ((volatile unsigned int *)(Port[port] +
 		                                        0x1C)) | (0x1 << num),
 		             (volatile unsigned int *)(Port[port] + 0x1C));
-		} else
-			__raw_writel(__raw_readl
-				     ((volatile unsigned int *)(Port[port] +
+	} else
+		__raw_writel(__raw_readl
+		             ((volatile unsigned int *)(Port[port] +
 		                                        0x1C)) & ~(0x1 << num),
 		             (volatile unsigned int *)(Port[port] + 0x1C));
 	LEAVE();
@@ -474,15 +491,15 @@ static void nuc980_irq_demux_intgroup2(struct irq_desc *desc)
 		    (1 << num0)) {
 			generic_handle_irq(IRQ_EXT0_A0);
 			__raw_writel(0x1 << num0,
-				     (volatile unsigned int *)(Port[port0] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port0] +
+			                                       0x20));
 		} else if (__raw_readl
-			((volatile unsigned int *)(Port[port1] +
-						   0x20)) & (1 << num1)) {
+		           ((volatile unsigned int *)(Port[port1] +
+		                                      0x20)) & (1 << num1)) {
 			generic_handle_irq(IRQ_EXT0_A13);
 			__raw_writel(0x1 << num1,
-				     (volatile unsigned int *)(Port[port1] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port1] +
+			                                       0x20));
 		} else
 			__raw_writel(0x01, REG_AIC_EOIS);
 		break;
@@ -491,15 +508,15 @@ static void nuc980_irq_demux_intgroup2(struct irq_desc *desc)
 		    (1 << num0)) {
 			generic_handle_irq(IRQ_EXT1_A1);
 			__raw_writel(0x1 << num0,
-				     (volatile unsigned int *)(Port[port0] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port0] +
+			                                       0x20));
 		} else if (__raw_readl
-			((volatile unsigned int *)(Port[port1] +
-						   0x20)) & (1 << num1)) {
+		           ((volatile unsigned int *)(Port[port1] +
+		                                      0x20)) & (1 << num1)) {
 			generic_handle_irq(IRQ_EXT1_A14);
 			__raw_writel(0x20 << num1,
-				     (volatile unsigned int *)(Port[port1] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port1] +
+			                                       0x20));
 		} else
 			__raw_writel(0x01, REG_AIC_EOIS);
 		break;
@@ -512,29 +529,29 @@ static void nuc980_irq_demux_intgroup2(struct irq_desc *desc)
 		    (1 << num0)) {
 			generic_handle_irq(IRQ_EXT2_D0);
 			__raw_writel(0x1 << num0,
-				     (volatile unsigned int *)(Port[port0] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port0] +
+			                                       0x20));
 		} else if (__raw_readl
-			((volatile unsigned int *)(Port[port1] +
-						   0x20)) & (1 << num1)) {
+		           ((volatile unsigned int *)(Port[port1] +
+		                                      0x20)) & (1 << num1)) {
 			generic_handle_irq(IRQ_EXT2_E10);
 			__raw_writel(0x1 << num1,
-				     (volatile unsigned int *)(Port[port1] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port1] +
+			                                       0x20));
 		} else if (__raw_readl
-			((volatile unsigned int *)(Port[port2] +
-						   0x20)) & (1 << num2)) {
+		           ((volatile unsigned int *)(Port[port2] +
+		                                      0x20)) & (1 << num2)) {
 			generic_handle_irq(IRQ_EXT2_B3);
 			__raw_writel(0x1 << num2,
-				     (volatile unsigned int *)(Port[port2] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port2] +
+			                                       0x20));
 		} else if (__raw_readl
-			((volatile unsigned int *)(Port[port3] +
-						   0x20)) & (1 << num3)) {
+		           ((volatile unsigned int *)(Port[port3] +
+		                                      0x20)) & (1 << num3)) {
 			generic_handle_irq(IRQ_EXT2_B13);
 			__raw_writel(0x1 << num3,
-				     (volatile unsigned int *)(Port[port3] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port3] +
+			                                       0x20));
 		} else
 			__raw_writel(0x01, REG_AIC_EOIS);
 		break;
@@ -545,22 +562,22 @@ static void nuc980_irq_demux_intgroup2(struct irq_desc *desc)
 		    (1 << num0)) {
 			generic_handle_irq(IRQ_EXT3_D1);
 			__raw_writel(0x1 << num0,
-				     (volatile unsigned int *)(Port[port0] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port0] +
+			                                       0x20));
 		} else if (__raw_readl
-			((volatile unsigned int *)(Port[port1] +
-						   0x20)) & (1 << num1)) {
+		           ((volatile unsigned int *)(Port[port1] +
+		                                      0x20)) & (1 << num1)) {
 			generic_handle_irq(IRQ_EXT3_E12);
 			__raw_writel(0x1 << num1,
-				     (volatile unsigned int *)(Port[port1] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port1] +
+			                                       0x20));
 		} else  if (__raw_readl
-			((volatile unsigned int *)(Port[port2] +
-						   0x20)) & (1 << num2)) {
+		            ((volatile unsigned int *)(Port[port2] +
+		                                       0x20)) & (1 << num2)) {
 			generic_handle_irq(IRQ_EXT3_G15);
 			__raw_writel(0x1 << num2,
-				     (volatile unsigned int *)(Port[port2] +
-							       0x20));
+			             (volatile unsigned int *)(Port[port2] +
+			                                       0x20));
 		} else
 			__raw_writel(0x01, REG_AIC_EOIS);
 		break;
@@ -580,7 +597,7 @@ void __init nuc980_init_irq(void)
 
 	for (irqno = IRQ_WDT; irqno < NR_IRQS - SPARE_IRQS; irqno++) {
 		irq_set_chip_and_handler(irqno, &nuc980_irq_chip,
-					 handle_level_irq);
+		                         handle_level_irq);
 		irq_clear_status_flags(irqno, IRQ_NOREQUEST);
 	}
 
@@ -607,7 +624,7 @@ void __init nuc980_init_irq(void)
 
 	for (irqno = IRQ_GPIO_START; irqno < IRQ_GPIO_END; irqno++) {
 		irq_set_chip_and_handler(irqno, &nuc980_irq_gpio,
-					 handle_level_irq);
+		                         handle_level_irq);
 		irq_clear_status_flags(irqno, IRQ_NOREQUEST);
 	}
 
@@ -622,7 +639,7 @@ void __init nuc980_init_irq(void)
 
 	for (irqno = IRQ_EXT0_A0; irqno <= IRQ_EXT3_G15; irqno++) {
 		irq_set_chip_and_handler(irqno, &nuc980_irq_ext,
-					 handle_level_irq);
+		                         handle_level_irq);
 		irq_clear_status_flags(irqno, IRQ_NOREQUEST);
 	}
 	LEAVE();
@@ -635,13 +652,13 @@ void __init nuc980_init_irq(void)
 static struct irq_domain *nuc980_aic_domain;
 
 static int nuc980_aic_irq_map(struct irq_domain *h, unsigned int virq,
-			      irq_hw_number_t hw)
+                              irq_hw_number_t hw)
 {
 	//printk("nuc980_aic_irq_map: %d %d\n", virq, (int)hw);
 
 	if ((IRQ_WDT <= hw) && (hw < NR_IRQS - SPARE_IRQS)) {
 		irq_set_chip_and_handler(virq, &nuc980_irq_chip,
-					 handle_level_irq);
+		                         handle_level_irq);
 		irq_clear_status_flags(virq, IRQ_NOREQUEST);
 
 #if defined(CONFIG_GPIO_NUC980)
@@ -694,11 +711,11 @@ static int nuc980_aic_irq_map(struct irq_domain *h, unsigned int virq,
 }
 
 static int nuc980_aic_irq_domain_xlate(struct irq_domain *d,
-				       struct device_node *ctrlr,
-				       const u32 * intspec,
-				       unsigned int intsize,
-				       irq_hw_number_t * out_hwirq,
-				       unsigned int *out_type)
+                                       struct device_node *ctrlr,
+                                       const u32 * intspec,
+                                       unsigned int intsize,
+                                       irq_hw_number_t * out_hwirq,
+                                       unsigned int *out_type)
 {
 	if (WARN_ON(intsize < 2))
 		return -EINVAL;
@@ -717,10 +734,10 @@ static struct irq_domain_ops nuc980_aic_irq_ops = {
 };
 
 int __init nuc980_of_init_irq(struct device_node *node,
-			      struct device_node *parent)
+                              struct device_node *parent)
 {
 	nuc980_aic_domain = irq_domain_add_linear(node, SPARE_IRQS,
-						  &nuc980_aic_irq_ops, NULL);
+	                    &nuc980_aic_irq_ops, NULL);
 	if (!nuc980_aic_domain)
 		panic("Failed to add irq domain!!\n");
 

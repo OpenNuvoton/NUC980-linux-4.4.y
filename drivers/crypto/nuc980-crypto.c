@@ -31,7 +31,7 @@
 #include <mach/nuc980-crypto.h>
 
 
-#define DMA_BUFSZ           (4096)
+#define DMA_BUFSZ           	(4096)
 
 /* Static structures */
 
@@ -40,9 +40,10 @@ struct nuc980_ctx
 	int     channel;
 	u32     mode;
 	u32     keysize;
-	struct nuc980_aes_regs  *aes_regs;
+	u32     aes_key[8];
+	volatile struct nuc980_aes_regs  *aes_regs;
 	int     hmac_key_len;
-	int     is_first_block;
+	int     sha_buffer_cnt;     /* byte count of data bufferred */
 };
 
 struct cryp_algo_template
@@ -58,14 +59,15 @@ struct nuc980_crypto_dev  nuc980_crdev;
 static int nuc980_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 {
 	struct nuc980_ctx *ctx = crypto_ablkcipher_ctx(crypto_ablkcipher_reqtfm(areq));
-	struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
-	struct nuc980_aes_regs *aes_regs = ctx->aes_regs;
+	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
+	volatile struct nuc980_aes_regs *aes_regs = ctx->aes_regs;
 	struct scatterlist   *in_sg, *out_sg;
 	int  i, req_len, dma_len, copy_len, offset;
 	int  in_sg_off, out_sg_off;
 	unsigned long   timeout;
+	u8   *ivec;
 
-	printk("[%s],ctx=0x%x, chn=%d\n", __func__, (int)ctx, ctx->channel);
+	// printk("[%s],ctx=0x%x, chn=%d\n", __func__, (int)ctx, ctx->channel);
 
 	BUG_ON(!areq->info);
 
@@ -75,19 +77,17 @@ static int nuc980_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	crpt_regs->CRPT_AES_CTL = 0;
 	crpt_regs->CRPT_INTSTS = (AESIF | AESERRIF);
 
-	for (i = 0; i < 4; i++)
-	{
-		aes_regs->iv[i] = *(u32 *)((u32)areq->info + i * 4);
-		//printk("AES IV %d = %08x\n", i, aes_regs->iv[i]);
-	}
-
 	crpt_regs->CRPT_AES_CTL = ctx->keysize | ctx->mode | AES_INSWAP | AES_OUTSWAP |
 							  AES_DMAEN | (ctx->channel << 24);
 
-	if (ctx->is_first_block)
-		ctx->is_first_block = 0;
-	else
-		crpt_regs->CRPT_AES_CTL |= AES_DMACSCAD;
+	memcpy((void *)aes_regs->key, (void *)ctx->aes_key, 32);
+	
+	ivec = (u8 *)areq->info;
+	for (i = 0; i < 4; i++)
+	{
+		aes_regs->iv[i] = (ivec[i*4]<<24) | (ivec[i*4+1]<<16) | (ivec[i*4+2]<<8) | ivec[i*4+3];
+		// printk("AES IV %d = %08x\n", i, aes_regs->iv[i]);
+	}
 
 	if (encrypt)
 		crpt_regs->CRPT_AES_CTL |= AES_ENCRYPT;
@@ -97,7 +97,6 @@ static int nuc980_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	out_sg = areq->dst;
 	in_sg_off = 0;
 	out_sg_off = 0;
-
 
 	while (req_len > 0)
 	{
@@ -140,8 +139,9 @@ static int nuc980_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 
 		crpt_regs->CRPT_AES_CTL |= AES_START;
 
-		timeout = jiffies+100;
-		while (((crpt_regs->CRPT_INTSTS & (AESIF|AESERRIF)) == 0) && time_before(jiffies, timeout))
+		timeout = jiffies+200;
+		while ((((crpt_regs->CRPT_INTSTS & (AESIF|AESERRIF)) == 0) || (crpt_regs->CRPT_AES_STS & AES_BUSY)) && 
+				time_before(jiffies, timeout))
 		{
 		}
 
@@ -173,6 +173,7 @@ static int nuc980_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 				out_sg_off = 0;
 			}
 		}
+		crpt_regs->CRPT_AES_CTL |= AES_DMACSCAD;
 	}
 
 	mutex_unlock(&nuc980_crdev.aes_lock);
@@ -195,7 +196,6 @@ static int nuc980_aes_setkey(struct crypto_ablkcipher *cipher,
 {
 	struct nuc980_ctx  *ctx = crypto_ablkcipher_ctx(cipher);
 	u32 *flags = &cipher->base.crt_flags;
-	struct nuc980_aes_regs *aes_regs = ctx->aes_regs;
 	int  i;
 
 	//printk("[%s],ctx=0x%x, chn=%d\n", __func__, (int)ctx, ctx->channel);
@@ -223,8 +223,8 @@ static int nuc980_aes_setkey(struct crypto_ablkcipher *cipher,
 	//printk("aes_regs = 0x%x\n", (u32)aes_regs);
 	for (i = 0; i < keylen/4; i++)
 	{
-		aes_regs->key[i] = (key[i*4]<<24) | (key[i*4+1]<<16) | (key[i*4+2]<<8) | key[i*4+3];
-		//printk("AES KEY %d = 0x%x, 0x%x\n", i, aes_regs->key[i], *(u32 *)(key + i * 4));
+		ctx->aes_key[i] = (key[i*4]<<24) | (key[i*4+1]<<16) | (key[i*4+2]<<8) | key[i*4+3];
+		// printk("AES KEY %d = 0x%x\n", i, ctx->aes_key[i]);
 	}
 	return 0;
 }
@@ -240,7 +240,6 @@ static int nuc980_aes_init(struct crypto_tfm *tfm)
 	ctx->mode = cryp_alg->algomode;
 	ctx->channel = 0;    /*  NUC980 has only one channel, the channel 0.  */
 	ctx->aes_regs = (struct nuc980_aes_regs *)((u32)nuc980_crdev.regs + 0x110);
-	ctx->is_first_block = 1;
 
 	mutex_unlock(&nuc980_crdev.aes_lock);
 
@@ -484,8 +483,6 @@ static struct cryp_algo_template nuc980_crypto_algs[] =
 /*                                                                     */
 /*---------------------------------------------------------------------*/
 
-#define SHA_BUFFER_LEN      PAGE_SIZE
-
 
 void  nuc980_dump_digest(void)
 {
@@ -503,62 +500,92 @@ static int do_sha(struct ahash_request *req, int is_last)
 {
 	struct nuc980_ctx *ctx = crypto_tfm_ctx(req->base.tfm);
 	struct scatterlist   *in_sg;
-	struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
-	int  req_len, dma_len;
+	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
+	int  req_len, sg_remain_len, sg_offset, do_len;
 	unsigned long   timeout;
 
 	in_sg = req->src;
 	req_len = req->nbytes;
 
-	//printk("do_sha - keylen = %d, req_len = %d\n", ctx->hmac_key_len, req_len);
+	// printk("do_sha - keylen = %d, req_len = %d, sha_buffer_cnt=%d\n", ctx->hmac_key_len, req_len, ctx->sha_buffer_cnt);
 
-	while ((req_len > 0) && in_sg)
+	if (is_last)
 	{
-		dma_len = min((int)in_sg->length, req_len);
-
-
-		if (sg_copy_to_buffer(in_sg, 1, &(nuc980_crdev.hmac_inbuf[ctx->hmac_key_len]), dma_len) != dma_len)
+		if (ctx->sha_buffer_cnt <= 0)
 		{
-			printk("sg in buffer error!\n");
-			break;
+			printk("do_sha - sha last has no data!\n");
+			return -1;
 		}
+		
+		mutex_lock(&nuc980_crdev.sha_lock);
 
-		crpt_regs->CRPT_HMAC_DMACNT = dma_len + ctx->hmac_key_len;
+		crpt_regs->CRPT_HMAC_DMACNT = ctx->sha_buffer_cnt;
 		crpt_regs->CRPT_HMAC_SADDR = nuc980_crdev.hmac_inbuf_dma_addr;
-		ctx->hmac_key_len = 0;
-
-		in_sg = sg_next(in_sg);
-
-		if (dma_len == req_len)
-			crpt_regs->CRPT_HMAC_CTL |= HMAC_DMALAST;
-
-		crpt_regs->CRPT_HMAC_CTL |= HMAC_START | HMAC_DMAEN;
+		crpt_regs->CRPT_HMAC_CTL |= HMAC_START | HMAC_DMAEN | HMAC_DMALAST;
 
 		timeout = jiffies+100;
 		while ((crpt_regs->CRPT_HMAC_STS & HMAC_BUSY) && time_before(jiffies, timeout))
 		{
 		}
+		
+		mutex_unlock(&nuc980_crdev.sha_lock);
+		
 		if (!time_before(jiffies, timeout))
 		{
+			printk("keylen=%d, dma_len = %d, req_len = %d\n", ctx->hmac_key_len, ctx->sha_buffer_cnt, req_len);
 			printk("Crypto SHA/HMAC engine failed!\n");
 			return 1;
 		}
-
-		/* For last DMA, copy the last byte to first bytes position */
-		if (ctx->is_first_block)
-		{
-			ctx->is_first_block = 0;
-			*(u8 *)(nuc980_crdev.hmac_inbuf) = *((u8 *)nuc980_crdev.hmac_inbuf + dma_len - 1);
-		}
-		else
-		{
-			*(u8 *)(nuc980_crdev.hmac_inbuf) = *((u8 *)nuc980_crdev.hmac_inbuf + dma_len);
-		}
-
-		req_len -=  dma_len;
-
-		//nuc980_dump_digest();
+		return 0;
 	}
+		
+	while ((req_len > 0) && in_sg)
+	{
+		sg_remain_len = in_sg->length;
+		sg_offset = 0;
+		
+		while (sg_remain_len > 0)
+		{
+			do_len = DMA_BUFSZ - ctx->sha_buffer_cnt;
+			do_len = min(do_len, sg_remain_len);
+			
+			memcpy(&nuc980_crdev.hmac_inbuf[ctx->sha_buffer_cnt], (u8 *)sg_virt(in_sg) + sg_offset, do_len); 
+			
+			sg_remain_len -= do_len;
+			sg_offset += do_len;
+			ctx->sha_buffer_cnt += do_len;
+			req_len -= do_len;
+			
+			if ((sg_remain_len == 0) && (sg_next(in_sg) == NULL))
+			{
+				return 0;    /* no more data, data in DMA buffer will be left to next/last call */
+			}
+			
+			mutex_lock(&nuc980_crdev.sha_lock);
+
+			crpt_regs->CRPT_HMAC_DMACNT = ctx->sha_buffer_cnt;
+			crpt_regs->CRPT_HMAC_SADDR = nuc980_crdev.hmac_inbuf_dma_addr;
+
+			crpt_regs->CRPT_HMAC_CTL |= HMAC_START | HMAC_DMAEN;
+
+			timeout = jiffies+100;
+			while ((crpt_regs->CRPT_HMAC_STS & HMAC_BUSY) && time_before(jiffies, timeout))
+			{
+			}
+			
+			mutex_unlock(&nuc980_crdev.sha_lock);
+			
+			if (!time_before(jiffies, timeout))
+			{
+				printk("keylen=%d, dma_len = %d, req_len = %d\n", ctx->hmac_key_len, ctx->sha_buffer_cnt, req_len);
+				printk("Crypto SHA/HMAC engine failed!\n");
+				return -1;
+			}
+			ctx->sha_buffer_cnt = 0;
+		}
+		in_sg = sg_next(in_sg);
+	}
+			
 	return 0;
 }
 
@@ -571,7 +598,7 @@ static int nuc980_sha_update(struct ahash_request *req)
 
 static int nuc980_sha_final(struct ahash_request *req)
 {
-	struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
+	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
 
 	//printk("nuc980_sha_final - %d bytes\n", req->nbytes);
 
@@ -594,9 +621,8 @@ static int nuc980_sha_final(struct ahash_request *req)
 static int nuc980_hmac_sha_init(struct ahash_request *req, int is_hmac)
 {
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
-	struct nuc980_ctx *ctx = crypto_tfm_ctx(req->base.tfm);
-	struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
-
+	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
+	
 	crpt_regs->CRPT_HMAC_CTL = HMAC_STOP;
 	//printk("nuc980_sha_init: digest size: %d %s\n", crypto_ahash_digestsize(tfm), is_hmac ? "(HMAC)" : "");
 	crpt_regs->CRPT_HMAC_CTL = HMAC_INSWAP | HMAC_OUTSWAP;
@@ -605,8 +631,6 @@ static int nuc980_hmac_sha_init(struct ahash_request *req, int is_hmac)
 		crpt_regs->CRPT_HMAC_CTL |= HMAC_EN;
 	else
 		crpt_regs->CRPT_HMAC_KEYCNT = 0;
-
-	ctx->is_first_block = 1;
 
 	switch (crypto_ahash_digestsize(tfm))
 	{
@@ -652,14 +676,14 @@ static int nuc980_hmac_init(struct ahash_request *req)
 static int nuc980_hmac_setkey(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen)
 {
 	struct nuc980_ctx *ctx = crypto_ahash_ctx(tfm);
-	struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
+	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
 
 	//printk("[%s],keylen=%d\n", __func__, keylen);
 
-	memcpy(nuc980_crdev.hmac_inbuf, key, keylen);
+	memcpy((u8 *)nuc980_crdev.hmac_inbuf, key, keylen);
+	ctx->sha_buffer_cnt = keylen;
 
 	ctx->hmac_key_len = keylen;
-
 	crpt_regs->CRPT_HMAC_KEYCNT = keylen;
 
 	return 0;
@@ -701,19 +725,12 @@ static int nuc980_hmac_digest(struct ahash_request *req)
 static int nuc980_sha_cra_init(struct crypto_tfm *tfm)
 {
 	struct nuc980_ctx  *ctx = crypto_tfm_ctx(tfm);
-
-	ctx->hmac_key_len = 0;
-
-	//printk("nuc980_sha_cra_init.\n");
-
-	//mutex_lock(&nuc980_crdev.sha_lock);
+	ctx->sha_buffer_cnt = 0;
 	return 0;
 }
 
 static void nuc980_sha_cra_exit(struct crypto_tfm *tfm)
 {
-	//printk("nuc980_sha_cra_exit.\n");
-	//mutex_unlock(&nuc980_crdev.sha_lock);
 }
 
 
@@ -989,17 +1006,15 @@ static int nuc980_crypto_probe(struct platform_device *pdev)
 
 	//printk("nuc980_crdev.regs = 0x%x\n", (u32)nuc980_crdev.regs);
 
-	nuc980_crdev.aes_inbuf = dma_alloc_coherent(dev, DMA_BUFSZ * 2, &nuc980_crdev.aes_inbuf_dma_addr, GFP_KERNEL);
+	nuc980_crdev.aes_inbuf = dma_alloc_coherent(dev, DMA_BUFSZ, &nuc980_crdev.aes_inbuf_dma_addr, GFP_KERNEL);
+	nuc980_crdev.aes_outbuf = dma_alloc_coherent(dev, DMA_BUFSZ, &nuc980_crdev.aes_outbuf_dma_addr, GFP_KERNEL);
 	nuc980_crdev.hmac_inbuf = dma_alloc_coherent(dev, DMA_BUFSZ, &nuc980_crdev.hmac_inbuf_dma_addr, GFP_KERNEL);
 
-	if (!nuc980_crdev.aes_inbuf || !nuc980_crdev.hmac_inbuf)
+	if (!nuc980_crdev.aes_inbuf || !nuc980_crdev.aes_outbuf || !nuc980_crdev.hmac_inbuf)
 	{
 		ret = -ENOMEM;
 		goto failed;
 	}
-
-	nuc980_crdev.aes_outbuf = (u32 *)((u32)nuc980_crdev.aes_inbuf + DMA_BUFSZ);
-	nuc980_crdev.aes_outbuf_dma_addr = nuc980_crdev.aes_inbuf_dma_addr + DMA_BUFSZ;
 
 	nuc980_crdev.aes_inbuf_size  = DMA_BUFSZ;
 	nuc980_crdev.aes_outbuf_size = DMA_BUFSZ;
@@ -1069,14 +1084,14 @@ static int nuc980_crypto_remove(struct platform_device *pdev)
 
 static int nuc980_crypto_suspend(struct platform_device *pdev,pm_message_t state)
 {
-	struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
+	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
 	unsigned long  timeout;
 
 	timeout = jiffies+200;   // 2 seconds time out
 
 	while (time_before(jiffies, timeout))
 	{
-		if (crpt_regs->CRPT_AES_CTL & AES_START)
+		if (crpt_regs->CRPT_AES_STS & AES_BUSY)
 			continue;
 
 		if (crpt_regs->CRPT_HMAC_STS & HMAC_BUSY)

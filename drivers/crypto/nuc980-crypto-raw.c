@@ -161,7 +161,7 @@ static long nvt_aes_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		break;
 
 	case AES_IOC_UPDATE_IV:
-		copy_to_user((unsigned char *)arg, (unsigned char *)&(crpt_regs->CRPT_AES_FDBCK[0]), 32);
+		copy_to_user((u8 *)arg, (u8 *)&(crpt_regs->CRPT_AES_FDBCK[0]), 16);
 		break;
 
 	default:

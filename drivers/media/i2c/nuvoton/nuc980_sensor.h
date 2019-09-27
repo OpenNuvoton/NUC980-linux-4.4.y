@@ -12,6 +12,7 @@ struct nuvoton_vin_sensor;
 #define NUVOTON_V4L2_CID_GREEN_BALANCE  (V4L2_CID_PRIVATE_BASE + 1)
 
 struct nuvoton_vin_sensor {
+	int i2c_id;
 	char name[32];
 
 #if 0

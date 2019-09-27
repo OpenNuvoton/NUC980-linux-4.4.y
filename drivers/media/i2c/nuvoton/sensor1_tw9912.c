@@ -12,7 +12,7 @@
 #include <linux/module.h>
 #include "nuc980_cap.h"
 
-#define DISALBE_READ_ID
+//#define DISALBE_READ_ID
 
 static struct nuvoton_vin_sensor cap1_tw9912;
 
@@ -141,6 +141,8 @@ static int32_t sensor_write_tw9912(__u8 uRegAddr, __u8 uData)
 static int sensor1_probe(struct i2c_client *client,const struct i2c_device_id *did)
 {
 	ENTRY();
+	if(i2c_adapter_id(client->adapter) != cap1_tw9912.i2c_id)
+		return -ENODEV;
 	sensor1_inited = 1;
 	client->flags = I2C_CLIENT_SCCB;
 	save_client1 = client;
@@ -167,6 +169,7 @@ static int cap1_tw9912_init(struct nuvoton_vin_device* cam)
 #define CROP_START_Y    0x28
 #endif
 static struct nuvoton_vin_sensor cap1_tw9912 = {
+	.i2c_id = 1,
 	.name = "cap1_tw9912",
 	.init = &cap1_tw9912_init,
 	.infmtord = (INORD_YVYU | INFMT_YCbCr | INTYPE_CCIR601),

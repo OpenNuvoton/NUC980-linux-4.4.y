@@ -1627,24 +1627,44 @@ struct platform_device nuc980_device_pinctrl = {
 #if defined(CONFIG_GPIO_NUC980) || defined(CONFIG_GPIO_NUC980_MODULE)
 #if defined(CONFIG_I2C_ALGOBIT) || defined(CONFIG_I2C_ALGOBIT_MODULE)
 static struct i2c_board_info __initdata nuc980_i2c_clients4[] = {
-#if defined(CONFIG_SENSOR0_OV7725) || defined(CONFIG_SENSOR1_OV7725)
-	{I2C_BOARD_INFO("ov7725", 0x21),},
+
+#if defined(CONFIG_SENSOR0_OV7725)
+        {I2C_BOARD_INFO("cap0_ov7725", 0x21),},
 #endif
-#if defined(CONFIG_SENSOR0_OV5640) || defined(CONFIG_SENSOR1_OV5640)
-	{I2C_BOARD_INFO("ov5640", 0x3c),},
+#if defined(CONFIG_SENSOR0_OV5640)
+        {I2C_BOARD_INFO("cap0_ov5640", 0x3c),},
 #endif
-#if defined(CONFIG_SENSOR0_NT99141) || defined(CONFIG_SENSOR1_NT99141)
-	{I2C_BOARD_INFO("nt99141", 0x2a),},
+#if defined(CONFIG_SENSOR0_NT99141)
+        {I2C_BOARD_INFO("cap0_nt99141", 0x2a),},
 #endif
-#if defined(CONFIG_SENSOR0_NT99050) || defined(CONFIG_SENSOR1_NT99050)
-	{I2C_BOARD_INFO("nt99050", 0x21),},
+#if defined(CONFIG_SENSOR0_NT99050)
+        {I2C_BOARD_INFO("cap0_nt99050", 0x21),},
+#endif
+#if defined(CONFIG_SENSOR0_GC0308)
+        {I2C_BOARD_INFO("cap0_gc0308", 0x21),},
+#endif
+
+#if defined(CONFIG_SENSOR1_OV7725)
+        {I2C_BOARD_INFO("cap1_ov7725", 0x21),},
+#endif
+#if defined(CONFIG_SENSOR1_OV5640)
+        {I2C_BOARD_INFO("cap1_ov5640", 0x3c),},
+#endif
+#if defined(CONFIG_SENSOR1_NT99141)
+        {I2C_BOARD_INFO("cap1_nt99141", 0x2a),},
+#endif
+#if defined(CONFIG_SENSOR1_NT99050)
+        {I2C_BOARD_INFO("cap1_nt99050", 0x21),},
+#endif
+#if defined(CONFIG_SENSOR1_GC0308)
+        {I2C_BOARD_INFO("cap1_gc0308", 0x21),},
 #endif
 
 };
 
 static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {
-	.sda_pin = NUC980_PA0,
-	.scl_pin = NUC980_PA1,
+	.sda_pin = NUC980_PB7,
+	.scl_pin = NUC980_PB5,
 	.udelay = 1,
 	.timeout = 100,
 	.sda_is_open_drain = 0,	//not support open drain mode

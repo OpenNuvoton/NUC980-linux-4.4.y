@@ -527,12 +527,12 @@ config NUC980_ETIMER
 
 config NUC980_TIMER_WKUP
 	tristate "NUC980 Enhance Timer (ETIMER) wake-up support"
-        depends on NUC980_TIMER
+        depends on NUC980_ETIMER
 
 choice
 	prompt "NUC980 ETIMER channel 0 event count pin"
 	default NUC980_TIMER0_ECNT_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 0 event count pin.
 
@@ -549,7 +549,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 0 toggle output pin"
 	default NUC980_TIMER0_TGL_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 0 toggle output pin.
 
@@ -566,7 +566,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 0 capture input pin"
 	default NUC980_TIMER0_CAP_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 0 capture input pin.
 
@@ -583,7 +583,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 1 event count pin"
 	default NUC980_TIMER1_ECNT_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 1 event count pin.
 
@@ -600,7 +600,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 1 toggle output pin"
 	default NUC980_TIMER1_TGL_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 1 toggle output pin.
 
@@ -619,7 +619,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 1 capture input pin"
 	default NUC980_TIMER1_CAP_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 1 capture input pin.
 
@@ -638,7 +638,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 2 event count pin"
 	default NUC980_TIMER2_ECNT_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 2 event count pin.
 
@@ -655,7 +655,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 2 toggle output pin"
 	default NUC980_TIMER2_TGL_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 2 toggle output pin.
 
@@ -672,7 +672,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 2 capture input pin"
 	default NUC980_TIMER2_CAP_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 2 capture input pin.
 
@@ -689,7 +689,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 3 event count pin"
 	default NUC980_TIMER3_ECNT_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 3 event count pin.
 
@@ -706,7 +706,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 3 toggle output pin"
 	default NUC980_TIMER3_TGL_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 3 toggle output pin.
 
@@ -721,7 +721,7 @@ endchoice
 choice
 	prompt "NUC980 ETIMER channel 3 capture input pin"
 	default NUC980_TIMER3_CAP_NONE
-	depends on NUC980_TIMER
+	depends on NUC980_ETIMER
 	help
 	  Select ETIMER channel 3 capture input pin.
 

@@ -159,6 +159,8 @@ static inline void nuc980_slave_select(struct spi_device *spi, unsigned int ssr)
 			val |= SELECTSLAVE1;
 	}
 
+	while (__raw_readl(hw->regs + REG_STATUS) & 1); //wait busy
+
 	__raw_writel(val, hw->regs + REG_SSCTL);
 
 	spin_unlock_irqrestore(&hw->lock, flags);

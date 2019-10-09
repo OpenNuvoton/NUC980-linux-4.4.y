@@ -155,6 +155,33 @@ struct spinand_ops spinand_dev[] = {
 };
 
 
+#ifdef CONFIG_WINBOND_MULTIDIE
+/**
+ * WB_spinand_die_select- send command 0xc2 to select die
+ * Description:
+ *   Select die function.
+ *   Select die #1, set the bit to 1
+ *   Select die #0, clear the bit to 0
+ */
+static int WB_spinand_die_select(struct spi_device *spi_nand, u8 dieid)
+{
+	int retval;
+	struct spinand_cmd cmd = {0};
+
+	cmd.cmd = WB_MULTI_DIESELECT,
+	    cmd.n_addr = 1,
+	        cmd.addr[0] = dieid,
+
+
+	                      retval = spinand_cmd(spi_nand, &cmd);
+	if (retval < 0)
+		dev_err(&spi_nand->dev, "error %d set otp\n", retval);
+
+	return retval;
+}
+#endif
+
+
 void mt29f_read_page_to_cache(struct spinand_cmd *cmd, u32 page_id)
 {
 	cmd->addr[1] = (u8)((page_id & 0xff00) >> 8);
@@ -216,8 +243,7 @@ struct spinand_ops mt29f_spinand_ops = {
 };
 
 
-static inline struct spinand_ops *get_dev_ops(struct spi_device *spi_nand)
-{
+static inline struct spinand_ops *get_dev_ops(struct spi_device *spi_nand) {
 	struct mtd_info *mtd = (struct mtd_info *)dev_get_drvdata
 	                       (&spi_nand->dev);
 	struct nand_chip *chip = (struct nand_chip *)mtd->priv;
@@ -252,8 +278,7 @@ void spinand_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
  * OOB area specification layout:  Total 32 available free bytes.
  */
 
-static inline struct spinand_state *mtd_to_state(struct mtd_info *mtd)
-{
+static inline struct spinand_state *mtd_to_state(struct mtd_info *mtd) {
 	struct nand_chip *chip = (struct nand_chip *)mtd->priv;
 	struct spinand_info *info = (struct spinand_info *)chip->priv;
 	struct spinand_state *state = (struct spinand_state *)info->priv;
@@ -488,6 +513,10 @@ static int spinand_enable_ecc(struct spi_device *spi_nand)
 	int retval;
 	u8 otp = 0;
 
+#ifdef CONFIG_WINBOND_MULTIDIE
+	WB_spinand_die_select(spi_nand, 0);
+#endif
+
 	retval = spinand_get_otp(spi_nand, &otp);
 	if (retval < 0)
 		return retval;
@@ -501,6 +530,10 @@ static int spinand_enable_ecc(struct spi_device *spi_nand)
 			return retval;
 		return spinand_get_otp(spi_nand, &otp);
 	}
+
+#ifdef CONFIG_WINBOND_MULTIDIE
+	WB_spinand_die_select(spi_nand, 1);
+#endif
 
 	retval = spinand_get_otp(spi_nand, &otp);
 	if (retval < 0)
@@ -525,6 +558,10 @@ static int spinand_disable_ecc(struct spi_device *spi_nand)
 	u8 otp = 0;
 
 
+#ifdef CONFIG_WINBOND_MULTIDIE
+	WB_spinand_die_select(spi_nand, 0);
+#endif
+
 	retval = spinand_get_otp(spi_nand, &otp);
 	if (retval < 0)
 		return retval;
@@ -538,6 +575,10 @@ static int spinand_disable_ecc(struct spi_device *spi_nand)
 	} else {
 		//return 0;
 	}
+
+#ifdef CONFIG_WINBOND_MULTIDIE
+	WB_spinand_die_select(spi_nand, 1);
+#endif
 
 	retval = spinand_get_otp(spi_nand, &otp);
 	if (retval < 0)
@@ -568,9 +609,17 @@ static int spinand_write_enable(struct spi_device *spi_nand)
 {
 	struct spinand_cmd cmd = {0};
 
+#ifdef CONFIG_WINBOND_MULTIDIE
+	WB_spinand_die_select(spi_nand, 0);
+#endif
+
 	cmd.cmd = CMD_WR_ENABLE;
 
 	spinand_cmd(spi_nand, &cmd);
+
+#ifdef CONFIG_WINBOND_MULTIDIE
+	WB_spinand_die_select(spi_nand, 1);
+#endif
 
 	return spinand_cmd(spi_nand, &cmd);
 }
@@ -597,6 +646,12 @@ static int spinand_read_page_to_cache(struct spi_device *spi_nand, u32 page_id)
 	struct spinand_cmd cmd = {0};
 	u16 row;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
+
+#ifdef CONFIG_WINBOND_MULTIDIE
+	u8 dieid;
+	dieid = (int)(page_id>>16);
+	WB_spinand_die_select(spi_nand, dieid);
+#endif
 
 	row = page_id;
 	cmd.cmd = CMD_READ;
@@ -700,6 +755,13 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 //		dev_err(&spi_nand->dev, "WAIT timedout!!!\n");
 
 	while (1) {
+
+#ifdef CONFIG_WINBOND_MULTIDIE
+		u8 dieid;
+		dieid = (int)(page_id>>16);
+		WB_spinand_die_select(spi_nand, dieid);
+#endif
+
 		ret = spinand_read_status(spi_nand, &status);
 		if (ret < 0) {
 			dev_err(&spi_nand->dev,
@@ -772,11 +834,17 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
  *   Since it is writing the data to cache, there is no tPROG time.
  */
 static int spinand_program_data_to_cache(struct spi_device *spi_nand,
-        u32 page_id, u16 byte_id, u16 len, u8 *wbuf)
+                u32 page_id, u16 byte_id, u16 len, u8 *wbuf)
 {
 	struct spinand_cmd cmd = {0};
 	u16 column;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
+
+#ifdef CONFIG_WINBOND_MULTIDIE
+	u8 dieid;
+	dieid = (int)(page_id>>16);
+	WB_spinand_die_select(spi_nand, dieid);
+#endif
 
 	column = byte_id;
 	cmd.cmd = CMD_PROG_PAGE_CLRCACHE;
@@ -802,6 +870,12 @@ static int spinand_program_execute(struct spi_device *spi_nand, u32 page_id)
 	struct spinand_cmd cmd = {0};
 	u16 row;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
+
+#ifdef CONFIG_WINBOND_MULTIDIE
+	u8 dieid;
+	dieid = (int)(page_id>>16);
+	WB_spinand_die_select(spi_nand, dieid);
+#endif
 
 	row = page_id;
 	cmd.cmd = CMD_PROG_PAGE_EXC;
@@ -872,6 +946,13 @@ static int spinand_program_page(struct spi_device *spi_nand,
 		goto exit;
 
 	while (1) {
+
+#ifdef CONFIG_WINBOND_MULTIDIE
+		u8 dieid;
+		dieid = (int)(page_id>>16);
+		WB_spinand_die_select(spi_nand, dieid);
+#endif
+
 		retval = spinand_read_status(spi_nand, &status);
 		if (retval < 0) {
 			dev_err(&spi_nand->dev,
@@ -930,6 +1011,12 @@ static int spinand_erase_block_erase(struct spi_device *spi_nand, u16 block_id)
 	u16 row;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
 
+#ifdef CONFIG_WINBOND_MULTIDIE
+	u8 dieid;
+	dieid = (int)(block_id>>10);
+	WB_spinand_die_select(spi_nand, dieid);
+#endif
+
 	row = block_id;
 	cmd.cmd = CMD_ERASE_BLK;
 	cmd.n_addr = 3;
@@ -964,6 +1051,13 @@ static int spinand_erase_block(struct spi_device *spi_nand, u16 block_id)
 
 	retval = spinand_erase_block_erase(spi_nand, block_id);
 	while (1) {
+
+#ifdef CONFIG_WINBOND_MULTIDIE
+		u8 dieid;
+		dieid = (int)(block_id>>10);
+		WB_spinand_die_select(spi_nand, dieid);
+#endif
+
 		retval = spinand_read_status(spi_nand, &status);
 		if (retval < 0) {
 			dev_err(&spi_nand->dev,
@@ -1123,16 +1217,16 @@ static void spinand_cmdfunc(struct mtd_info *mtd, unsigned int command,
 	struct spinand_state *state = (struct spinand_state *)info->priv;
 
 	switch (command) {
-	/*
-	 * READ0 - read in first  0x800 bytes
-	 */
+		/*
+		 * READ0 - read in first  0x800 bytes
+		 */
 	case NAND_CMD_READ1:
 	case NAND_CMD_READ0:
 		state->buf_ptr = 0;
 		spinand_read_page(info->spi, page, 0x0,
 		                  (mtd->writesize + mtd->oobsize), state->buf);
 		break;
-	/* READOOB reads only the OOB because no ECC is performed. */
+		/* READOOB reads only the OOB because no ECC is performed. */
 	case NAND_CMD_READOOB:
 		state->buf_ptr = 0;
 		spinand_read_page(info->spi, page,
@@ -1148,20 +1242,20 @@ static void spinand_cmdfunc(struct mtd_info *mtd, unsigned int command,
 	case NAND_CMD_PARAM:
 		state->buf_ptr = 0;
 		break;
-	/* ERASE1 stores the block and page address */
+		/* ERASE1 stores the block and page address */
 	case NAND_CMD_ERASE1:
 		spinand_erase_block(info->spi, page);
 		break;
-	/* ERASE2 uses the block and page address from ERASE1 */
+		/* ERASE2 uses the block and page address from ERASE1 */
 	case NAND_CMD_ERASE2:
 		break;
-	/* SEQIN sets up the addr buffer and all registers except the length */
+		/* SEQIN sets up the addr buffer and all registers except the length */
 	case NAND_CMD_SEQIN:
 		state->col = column;
 		state->row = page;
 		state->buf_ptr = 0;
 		break;
-	/* PAGEPROG reuses all of the setup from SEQIN and adds the length */
+		/* PAGEPROG reuses all of the setup from SEQIN and adds the length */
 	case NAND_CMD_PAGEPROG:
 		spinand_program_page(info->spi, state->row, state->col,
 		                     state->buf_ptr, state->buf);
@@ -1172,7 +1266,7 @@ static void spinand_cmdfunc(struct mtd_info *mtd, unsigned int command,
 			state->buf[0] = 0x80;
 		state->buf_ptr = 0;
 		break;
-	/* RESET command */
+		/* RESET command */
 	case NAND_CMD_RESET:
 		if (wait_till_ready(info->spi))
 			dev_err(&info->spi->dev, "WAIT timedout!!!\n");
@@ -1198,6 +1292,10 @@ static int spinand_lock_block(struct spi_device *spi_nand, u8 lock)
 	int ret;
 	u8 otp = 0;
 
+#ifdef CONFIG_WINBOND_MULTIDIE
+	WB_spinand_die_select(spi_nand, 0);
+#endif
+
 	ret = spinand_get_otp(spi_nand, &otp);
 
 	cmd.cmd = CMD_WRITE_REG;
@@ -1209,6 +1307,10 @@ static int spinand_lock_block(struct spi_device *spi_nand, u8 lock)
 	ret = spinand_cmd(spi_nand, &cmd);
 	if (ret < 0)
 		dev_err(&spi_nand->dev, "error %d lock block\n", ret);
+
+#ifdef CONFIG_WINBOND_MULTIDIE
+	WB_spinand_die_select(spi_nand, 1);
+#endif
 
 	ret = spinand_get_otp(spi_nand, &otp);
 

@@ -15,3 +15,11 @@ config MTD_SPINAND_ONDIEECC
 config MTD_SPINAND_GIGADEVICE
 	bool
 	default y if MTD_SPINAND_MT29F
+
+
+config WINBOND_MULTIDIE
+	tristate "Winbond Multi-Die SPI NAND Support"
+	depends on MTD_SPINAND_MT29F
+	help
+	  This enables support for Winbond multi-die SPI NAND flash.
+	  For instance, Winbond W25N02GV SPI NAND flash.

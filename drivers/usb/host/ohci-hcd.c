@@ -102,7 +102,7 @@ static void io_watchdog_func(unsigned long _ohci);
 static bool distrust_firmware = 1;
 module_param (distrust_firmware, bool, 0);
 MODULE_PARM_DESC (distrust_firmware,
-	"true to distrust firmware power/overcurrent setup");
+                  "true to distrust firmware power/overcurrent setup");
 
 /* Some boards leave IR set wrongly, since they fail BIOS/SMM handshakes */
 static bool no_handshake = 0;
@@ -142,10 +142,11 @@ static int number_of_tds(struct urb *urb)
  * queue up an urb for anything except the root hub
  */
 static int ohci_urb_enqueue (
-	struct usb_hcd	*hcd,
-	struct urb	*urb,
-	gfp_t		mem_flags
-) {
+    struct usb_hcd	*hcd,
+    struct urb	*urb,
+    gfp_t		mem_flags
+)
+{
 	struct ohci_hcd	*ohci = hcd_to_ohci (hcd);
 	struct ed	*ed;
 	urb_priv_t	*urb_priv;
@@ -153,6 +154,15 @@ static int ohci_urb_enqueue (
 	int		i, size = 0;
 	unsigned long	flags;
 	int		retval = 0;
+	struct usb_device   *parent_hub = urb->dev->parent;
+
+	if (((ohci_readl(ohci, &ohci->regs->roothub.portstatus[0]) & 0x103) != 0x103) &&
+	    (parent_hub->parent == NULL) && (urb->dev->portnum == 1))
+		return -ENODEV;
+
+	if (((ohci_readl(ohci, &ohci->regs->roothub.portstatus[1]) & 0x103) != 0x103) &&
+	    (parent_hub->parent == NULL) && (urb->dev->portnum == 2))
+		return -ENODEV;
 
 	/* every endpoint has a ed, locate and maybe (re)initialize it */
 	ed = ed_get(ohci, urb->ep, urb->dev, pipe, urb->interval);
@@ -161,35 +171,35 @@ static int ohci_urb_enqueue (
 
 	/* for the private part of the URB we need the number of TDs (size) */
 	switch (ed->type) {
-		case PIPE_CONTROL:
-			/* td_submit_urb() doesn't yet handle these */
-			if (urb->transfer_buffer_length > 4096)
-				return -EMSGSIZE;
+	case PIPE_CONTROL:
+		/* td_submit_urb() doesn't yet handle these */
+		if (urb->transfer_buffer_length > 4096)
+			return -EMSGSIZE;
 
-			/* 1 TD for setup, 1 for ACK, plus ... */
-			size = 2;
-			/* FALLTHROUGH */
-		// case PIPE_INTERRUPT:
-		// case PIPE_BULK:
-		default:
-			size += number_of_tds(urb);
-			/* maybe a zero-length packet to wrap it up */
-			if (size == 0)
-				size++;
-			else if ((urb->transfer_flags & URB_ZERO_PACKET) != 0
-				&& (urb->transfer_buffer_length
-					% usb_maxpacket (urb->dev, pipe,
-						usb_pipeout (pipe))) == 0)
-				size++;
-			break;
-		case PIPE_ISOCHRONOUS: /* number of packets from URB */
-			size = urb->number_of_packets;
-			break;
+		/* 1 TD for setup, 1 for ACK, plus ... */
+		size = 2;
+	/* FALLTHROUGH */
+	// case PIPE_INTERRUPT:
+	// case PIPE_BULK:
+	default:
+		size += number_of_tds(urb);
+		/* maybe a zero-length packet to wrap it up */
+		if (size == 0)
+			size++;
+		else if ((urb->transfer_flags & URB_ZERO_PACKET) != 0
+		         && (urb->transfer_buffer_length
+		             % usb_maxpacket (urb->dev, pipe,
+		                              usb_pipeout (pipe))) == 0)
+			size++;
+		break;
+	case PIPE_ISOCHRONOUS: /* number of packets from URB */
+		size = urb->number_of_packets;
+		break;
 	}
 
 	/* allocate the private part of the URB */
 	urb_priv = kzalloc (sizeof (urb_priv_t) + size * sizeof (struct td *),
-			mem_flags);
+	                    mem_flags);
 	if (!urb_priv)
 		return -ENOMEM;
 	INIT_LIST_HEAD (&urb_priv->pending);
@@ -231,10 +241,10 @@ static int ohci_urb_enqueue (
 
 		/* Start up the I/O watchdog timer, if it's not running */
 		if (!timer_pending(&ohci->io_watchdog) &&
-				list_empty(&ohci->eds_in_use)) {
+		    list_empty(&ohci->eds_in_use)) {
 			ohci->prev_frame_no = ohci_frame_no(ohci);
 			mod_timer(&ohci->io_watchdog,
-					jiffies + IO_WATCHDOG_DELAY);
+			          jiffies + IO_WATCHDOG_DELAY);
 		}
 		list_add(&ed->in_use_list, &ohci->eds_in_use);
 
@@ -259,12 +269,12 @@ static int ohci_urb_enqueue (
 			/* URB_ISO_ASAP: Round up to the first available slot */
 			if (urb->transfer_flags & URB_ISO_ASAP) {
 				frame += (next - frame + ed->interval - 1) &
-						-ed->interval;
+				         -ed->interval;
 
-			/*
-			 * Not ASAP: Use the next slot in the stream,
-			 * no matter what.
-			 */
+				/*
+				 * Not ASAP: Use the next slot in the stream,
+				 * no matter what.
+				 */
 			} else {
 				/*
 				 * Some OHCI hardware doesn't handle late TDs
@@ -274,13 +284,13 @@ static int ohci_urb_enqueue (
 				 * entirely.
 				 */
 				urb_priv->td_cnt = DIV_ROUND_UP(
-						(u16) (next - frame),
-						ed->interval);
+				                       (u16) (next - frame),
+				                       ed->interval);
 				if (urb_priv->td_cnt >= urb_priv->length) {
 					++urb_priv->td_cnt;	/* Mark it */
 					ohci_dbg(ohci, "iso underrun %p (%u+%u < %u)\n",
-							urb, frame, length,
-							next);
+					         urb, frame, length,
+					         next);
 				}
 			}
 		}
@@ -381,14 +391,14 @@ sanitize:
 			ed_free (ohci, ed);
 			break;
 		}
-		/* else FALL THROUGH */
+	/* else FALL THROUGH */
 	default:
 		/* caller was supposed to have unlinked any requests;
 		 * that's not our job.  can't recover; must leak ed.
 		 */
 		ohci_err (ohci, "leak ed %p (#%02x) state %d%s\n",
-			ed, ep->desc.bEndpointAddress, ed->state,
-			list_empty (&ed->td_list) ? "" : " (has tds)");
+		          ed, ep->desc.bEndpointAddress, ed->state,
+		          list_empty (&ed->td_list) ? "" : " (has tds)");
 		td_free (ohci, ed->dummy);
 		break;
 	}
@@ -460,7 +470,7 @@ static int ohci_init (struct ohci_hcd *ohci)
 #ifndef IR_DISABLE
 	/* SMM owns the HC?  not for long! */
 	if (!no_handshake && ohci_readl (ohci,
-					&ohci->regs->control) & OHCI_CTRL_IR) {
+	                                 &ohci->regs->control) & OHCI_CTRL_IR) {
 		u32 temp;
 
 		ohci_dbg (ohci, "USB HC TakeOver from BIOS/SMM\n");
@@ -477,7 +487,7 @@ static int ohci_init (struct ohci_hcd *ohci)
 			msleep (10);
 			if (--temp == 0) {
 				ohci_err (ohci, "USB HC takeover failed!"
-					"  (BIOS/SMM bug)\n");
+				          "  (BIOS/SMM bug)\n");
 				return -EBUSY;
 			}
 		}
@@ -500,11 +510,11 @@ static int ohci_init (struct ohci_hcd *ohci)
 		return 0;
 
 	setup_timer(&ohci->io_watchdog, io_watchdog_func,
-			(unsigned long) ohci);
+	            (unsigned long) ohci);
 	set_timer_slack(&ohci->io_watchdog, msecs_to_jiffies(20));
 
 	ohci->hcca = dma_alloc_coherent (hcd->self.controller,
-			sizeof(*ohci->hcca), &ohci->hcca_dma, GFP_KERNEL);
+	                                 sizeof(*ohci->hcca), &ohci->hcca_dma, GFP_KERNEL);
 	if (!ohci->hcca)
 		return -ENOMEM;
 
@@ -538,7 +548,7 @@ static int ohci_run (struct ohci_hcd *ohci)
 		ohci->fminterval = val & 0x3fff;
 		if (ohci->fminterval != FI)
 			ohci_dbg (ohci, "fminterval delta %d\n",
-				ohci->fminterval - FI);
+			          ohci->fminterval - FI);
 		ohci->fminterval |= FSMP (ohci->fminterval) << 16;
 		/* also: power/overcurrent flags in roothub.a */
 	}
@@ -621,7 +631,7 @@ retry:
 	 * bogus values here mean not even enumeration could work.
 	 */
 	if ((ohci_readl (ohci, &ohci->regs->fminterval) & 0x3fff0000) == 0
-			|| !ohci_readl (ohci, &ohci->regs->periodicstart)) {
+	    || !ohci_readl (ohci, &ohci->regs->periodicstart)) {
 		if (!(ohci->flags & OHCI_QUIRK_INITRESET)) {
 			ohci->flags |= OHCI_QUIRK_INITRESET;
 			ohci_dbg (ohci, "enabling initreset quirk\n");
@@ -629,8 +639,8 @@ retry:
 		}
 		spin_unlock_irq (&ohci->lock);
 		ohci_err (ohci, "init err (%08x %04x)\n",
-			ohci_readl (ohci, &ohci->regs->fminterval),
-			ohci_readl (ohci, &ohci->regs->periodicstart));
+		          ohci_readl (ohci, &ohci->regs->fminterval),
+		          ohci_readl (ohci, &ohci->regs->periodicstart));
 		return -EOVERFLOW;
 	}
 
@@ -661,7 +671,7 @@ retry:
 		val &= ~(RH_A_POTPGT | RH_A_NPS);
 		ohci_writel (ohci, val, &ohci->regs->roothub.a);
 	} else if ((ohci->flags & OHCI_QUIRK_AMD756) ||
-			(ohci->flags & OHCI_QUIRK_HUB_POWER)) {
+	           (ohci->flags & OHCI_QUIRK_HUB_POWER)) {
 		/* hub power always on; required for AMD-756 and some
 		 * Mac platforms.  ganged overcurrent reporting, if any.
 		 */
@@ -670,7 +680,7 @@ retry:
 	}
 	ohci_writel (ohci, RH_HS_LPSC, &ohci->regs->roothub.status);
 	ohci_writel (ohci, (val & RH_A_NPS) ? 0 : RH_B_PPCM,
-						&ohci->regs->roothub.b);
+	             &ohci->regs->roothub.b);
 	// flush those writes
 	(void) ohci_readl (ohci, &ohci->regs->control);
 
@@ -692,7 +702,7 @@ int ohci_setup(struct usb_hcd *hcd)
 	struct ohci_hcd		*ohci = hcd_to_ohci(hcd);
 
 	ohci_hcd_init(ohci);
-	
+
 	return ohci_init(ohci);
 }
 EXPORT_SYMBOL_GPL(ohci_setup);
@@ -747,7 +757,7 @@ static void io_watchdog_func(unsigned long _ohci)
 	if (!(status & OHCI_INTR_WDH) && ohci->wdh_cnt == ohci->prev_wdh_cnt) {
 		if (ohci->prev_donehead) {
 			ohci_err(ohci, "HcDoneHead not written back; disabled\n");
- died:
+died:
 			usb_hc_died(ohci_to_hcd(ohci));
 			ohci_dump(ohci);
 			ohci_shutdown(ohci_to_hcd(ohci));
@@ -762,13 +772,13 @@ static void io_watchdog_func(unsigned long _ohci)
 	list_for_each_entry(ed, &ohci->eds_in_use, in_use_list) {
 		if (ed->pending_td) {
 			if (takeback_all_pending ||
-					OKAY_TO_TAKEBACK(ohci, ed)) {
+			    OKAY_TO_TAKEBACK(ohci, ed)) {
 				unsigned tmp = hc32_to_cpu(ohci, ed->hwINFO);
 
 				ohci_dbg(ohci, "takeback pending TD for dev %d ep 0x%x\n",
-						0x007f & tmp,
-						(0x000f & (tmp >> 7)) +
-							((tmp & ED_IN) >> 5));
+				         0x007f & tmp,
+				         (0x000f & (tmp >> 7)) +
+				         ((tmp & ED_IN) >> 5));
 				add_to_done_list(ohci, ed->pending_td);
 			}
 		}
@@ -839,13 +849,13 @@ static void io_watchdog_func(unsigned long _ohci)
 			ohci->prev_frame_no = frame_no;
 			ohci->prev_wdh_cnt = ohci->wdh_cnt;
 			ohci->prev_donehead = ohci_readl(ohci,
-					&ohci->regs->donehead);
+			                                 &ohci->regs->donehead);
 			mod_timer(&ohci->io_watchdog,
-					jiffies + IO_WATCHDOG_DELAY);
+			          jiffies + IO_WATCHDOG_DELAY);
 		}
 	}
 
- done:
+done:
 	spin_unlock_irqrestore(&ohci->lock, flags);
 }
 
@@ -905,7 +915,7 @@ static irqreturn_t ohci_irq (struct usb_hcd *hcd)
 		ohci_dbg(ohci, "rhsc\n");
 		ohci->next_statechange = jiffies + STATECHANGE_DELAY;
 		ohci_writel(ohci, OHCI_INTR_RD | OHCI_INTR_RHSC,
-				&regs->intrstatus);
+		            &regs->intrstatus);
 
 		/* NOTE: Vendors didn't always make the same implementation
 		 * choices for RHSC.  Many followed the spec; RHSC triggers
@@ -946,7 +956,7 @@ static irqreturn_t ohci_irq (struct usb_hcd *hcd)
 	 */
 	ohci_work(ohci);
 	if ((ints & OHCI_INTR_SF) != 0 && !ohci->ed_rm_list
-			&& ohci->rh_state == OHCI_RH_RUNNING)
+	    && ohci->rh_state == OHCI_RH_RUNNING)
 		ohci_writel (ohci, OHCI_INTR_SF, &regs->intrdisable);
 
 	if (ohci->rh_state == OHCI_RH_RUNNING) {
@@ -987,8 +997,8 @@ static void ohci_stop (struct usb_hcd *hcd)
 	ohci_mem_cleanup (ohci);
 	if (ohci->hcca) {
 		dma_free_coherent (hcd->self.controller,
-				sizeof *ohci->hcca,
-				ohci->hcca, ohci->hcca_dma);
+		                   sizeof *ohci->hcca,
+		                   ohci->hcca, ohci->hcca_dma);
 		ohci->hcca = NULL;
 		ohci->hcca_dma = 0;
 	}
@@ -1025,12 +1035,12 @@ int ohci_restart(struct ohci_hcd *ohci)
 			ed->ed_next = ohci->ed_rm_list;
 			ed->ed_prev = NULL;
 			ohci->ed_rm_list = ed;
-			/* FALLTHROUGH */
+		/* FALLTHROUGH */
 		case ED_UNLINK:
 			break;
 		default:
 			ohci_dbg(ohci, "bogus ed %p state %d\n",
-					ed, ed->state);
+			         ed, ed->state);
 		}
 
 		if (!urb->unlinked)
@@ -1130,7 +1140,7 @@ int ohci_resume(struct usb_hcd *hcd, bool hibernated)
 		ohci_dbg(ohci, "powerup ports\n");
 		for (port = 0; port < ohci->num_ports; port++)
 			ohci_writel(ohci, RH_PS_PPS,
-					&ohci->regs->roothub.portstatus[port]);
+			            &ohci->regs->roothub.portstatus[port]);
 
 		ohci_writel(ohci, OHCI_INTR_MIE, &ohci->regs->intrenable);
 		ohci_readl(ohci, &ohci->regs->intrenable);
@@ -1196,7 +1206,7 @@ static const struct hc_driver ohci_hc_driver = {
 };
 
 void ohci_init_driver(struct hc_driver *drv,
-		const struct ohci_driver_overrides *over)
+                      const struct ohci_driver_overrides *over)
 {
 	/* Copy the generic table to drv and then apply the overrides */
 	*drv = ohci_hc_driver;
@@ -1270,7 +1280,7 @@ static int __init ohci_hcd_mod_init(void)
 
 	printk(KERN_INFO "%s: " DRIVER_DESC "\n", hcd_name);
 	pr_debug ("%s: block sizes: ed %Zd td %Zd\n", hcd_name,
-		sizeof (struct ed), sizeof (struct td));
+	          sizeof (struct ed), sizeof (struct td));
 	set_bit(USB_OHCI_LOADED, &usb_hcds_loaded);
 
 	ohci_debug_root = debugfs_create_dir("ohci", usb_debug_root);
@@ -1326,35 +1336,35 @@ static int __init ohci_hcd_mod_init(void)
 	/* Error path */
 #ifdef DAVINCI_PLATFORM_DRIVER
 	platform_driver_unregister(&DAVINCI_PLATFORM_DRIVER);
- error_davinci:
+error_davinci:
 #endif
 #ifdef TMIO_OHCI_DRIVER
 	platform_driver_unregister(&TMIO_OHCI_DRIVER);
- error_tmio:
+error_tmio:
 #endif
 #ifdef SM501_OHCI_DRIVER
 	platform_driver_unregister(&SM501_OHCI_DRIVER);
- error_sm501:
+error_sm501:
 #endif
 #ifdef SA1111_DRIVER
 	sa1111_driver_unregister(&SA1111_DRIVER);
- error_sa1111:
+error_sa1111:
 #endif
 #ifdef OF_PLATFORM_DRIVER
 	platform_driver_unregister(&OF_PLATFORM_DRIVER);
- error_of_platform:
+error_of_platform:
 #endif
 #ifdef PLATFORM_DRIVER
 	platform_driver_unregister(&PLATFORM_DRIVER);
- error_platform:
+error_platform:
 #endif
 #ifdef PS3_SYSTEM_BUS_DRIVER
 	ps3_ohci_driver_unregister(&PS3_SYSTEM_BUS_DRIVER);
- error_ps3:
+error_ps3:
 #endif
 	debugfs_remove(ohci_debug_root);
 	ohci_debug_root = NULL;
- error_debug:
+error_debug:
 
 	clear_bit(USB_OHCI_LOADED, &usb_hcds_loaded);
 	return retval;

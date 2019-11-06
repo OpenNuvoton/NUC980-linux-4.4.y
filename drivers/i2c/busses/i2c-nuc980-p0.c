@@ -186,6 +186,7 @@ static inline void nuc980_i2c0_enable_irq(struct nuc980_i2c *i2c)
 
 static void nuc980_i2c0_message_start(struct nuc980_i2c *i2c)
 {
+	writel(((readl(i2c->regs+CTL0) &~ (0x3C))|I2C_CTL_SI), i2c->regs + CTL0);
 	writel(((readl(i2c->regs+CTL0) &~ (0x3C))|I2C_CTL_STA), i2c->regs + CTL0);
 }
 
@@ -194,7 +195,9 @@ static inline void nuc980_i2c0_stop(struct nuc980_i2c *i2c, int ret)
 	dev_dbg(i2c->dev, "STOP\n");
 
 	writel(((readl(i2c->regs+CTL0) &~ (0x3C))|(I2C_CTL_STO | I2C_CTL_SI | I2C_CTL_AA)), (i2c->regs+CTL0));
-	while(readl(i2c->regs+CTL0) & I2C_CTL_STO);
+	while(readl(i2c->regs+CTL0) & I2C_CTL_STO){
+		writel(((readl(i2c->regs+CTL0) &~ (0x3C))|(I2C_CTL_SI)), (i2c->regs+CTL0));
+	}
 
 	nuc980_i2c0_master_complete(i2c, ret);
 }
@@ -428,10 +431,13 @@ static irqreturn_t nuc980_i2c_irq(int irqno, void *dev_id)
 
 	status = readl(i2c->regs + STATUS0);
 
-	if (status == M_ARB_LOST) {
+	if (status == M_ARB_LOST){
 		/* deal with arbitration loss */
 		dev_err(i2c->dev, "deal with arbitration loss\n");
 		i2c->arblost = 1;
+		
+		nuc980_i2c0_disable_irq(i2c);
+		nuc980_i2c0_stop(i2c, 0);
 		goto out;
 	}
 
@@ -485,6 +491,8 @@ static int nuc980_i2c0_doxfer(struct nuc980_i2c *i2c,
 	int ret;
 
 	spin_lock_irq(&i2c->lock);
+
+	nuc980_i2c0_enable_irq(i2c);
 
 	i2c->msg     = msgs;
 	i2c->msg_num = num;
@@ -550,8 +558,6 @@ static int nuc980_i2c0_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int 
 	struct nuc980_i2c *i2c = (struct nuc980_i2c *)adap->algo_data;
 	int retry;
 	int ret;
-
-	nuc980_i2c0_enable_irq(i2c);
 
 	for (retry = 0; retry < adap->retries; retry++) {
 
@@ -732,8 +738,6 @@ static int nuc980_i2c0_probe(struct platform_device *pdev)
 	writel(ret & 0xffff, i2c->regs + CLKDIV);
 
 	writel((readl(i2c->regs+CTL0)|(0x1 << 6)), i2c->regs + CTL0);
-
-	//printk("\n i2c busfreq = %d, CLKDIV = 0x%x, i2c_clk = %d \n", busfreq, ret, clk_get_rate(i2c->clk));
 
 	/* find the IRQ for this unit (note, this relies on the init call to
 	 * ensure no current IRQs pending

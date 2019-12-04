@@ -192,12 +192,44 @@ static void nuc980_i2c1_message_start(struct nuc980_i2c *i2c)
 
 static inline void nuc980_i2c1_stop(struct nuc980_i2c *i2c, int ret)
 {
+	unsigned int tmp, i = 0;
+
 	dev_dbg(i2c->dev, "STOP\n");
 
-	writel(((readl(i2c->regs+CTL0) &~ (0x3C))|(I2C_CTL_STO | I2C_CTL_SI | I2C_CTL_AA)), (i2c->regs+CTL0));
-	while(readl(i2c->regs+CTL0) & I2C_CTL_STO){
-		writel(((readl(i2c->regs+CTL0) &~ (0x3C))|(I2C_CTL_SI)), (i2c->regs+CTL0));
+	if(readl(i2c->regs+CTL0) & 0x4){
+		writel((readl(i2c->regs+CTL0) &~ (0x4)), (i2c->regs+CTL0));
+		mdelay(1);
 	}
+
+	writel(((readl(i2c->regs+CTL0) &~ (0x3C))|(I2C_CTL_STO | I2C_CTL_SI)), (i2c->regs+CTL0));
+
+	while(readl(i2c->regs+CTL0) & I2C_CTL_STO){
+
+		i++;
+
+		if(i > 100000){
+			tmp = readl(i2c->regs+CLKDIV);
+
+			writel(0x59, REG_WRPRTR);
+			writel(0x16, REG_WRPRTR);
+			writel(0x88, REG_WRPRTR);
+
+			writel((readl(REG_APBIPRST1) |  (0x1 << 1)), REG_APBIPRST1);
+			udelay(1);
+			writel((readl(REG_APBIPRST1) &~ (0x1 << 1)), REG_APBIPRST1);
+                 
+			writel(0x1, REG_WRPRTR);
+
+			writel(tmp, (i2c->regs+CLKDIV));
+
+			mdelay(1);
+			writel((readl(i2c->regs+CTL0) | (0x40)), (i2c->regs+CTL0));
+		}
+	}
+
+	#if defined(CONFIG_ENABLE_I2C_P1_SLAVE_MODE)
+	writel(((readl(i2c->regs+CTL0) &~ (0x3C))|(I2C_CTL_SI | I2C_CTL_AA)), (i2c->regs+CTL0));
+	#endif
 
 	nuc980_i2c1_master_complete(i2c, ret);
 }

@@ -328,11 +328,6 @@ static void nuc980_fmi_send_command(struct nuc980_fmi_host *host, struct mmc_com
 	if (nuc980_fmi_read(REG_NAND_FMICSR) != FMICSR_EMMCEN)
 		nuc980_fmi_write(REG_NAND_FMICSR, FMICSR_EMMCEN);
 
-	if(cmd->opcode==53) {
-		nuc980_fmi_write(REG_NAND_DMACCSR, nuc980_fmi_read(REG_NAND_DMACCSR) | (1<<1));
-		while(nuc980_fmi_read(REG_NAND_DMACCSR)&0x2);
-	}
-
 	csr = (nuc980_fmi_read(REG_EMMCCSR) & 0xff00c080) | 0x09010000; //schung20170811
 
 	clock_free_run_status = csr | 0x80; /* clock keep */
@@ -362,11 +357,7 @@ static void nuc980_fmi_send_command(struct nuc980_fmi_host *host, struct mmc_com
 		nuc980_fmi_write(REG_EMMCIER, nuc980_fmi_read(REG_EMMCIER) | EMMCIER_BLKD_IE);  //Enable SD interrupt & select GPIO detect
 		block_length = data->blksz;
 		blocks = data->blocks;
-		if(cmd->opcode==53)
-			nuc980_fmi_write(REG_EMMCBLEN, block_length);
-		else
-			nuc980_fmi_write(REG_EMMCBLEN, block_length-1);
-//        nuc980_fmi_write(REG_EMMCBLEN, block_length-1);
+		nuc980_fmi_write(REG_EMMCBLEN, block_length-1);
 		if ((block_length > 512) || (blocks >= 256))
 			printk("ERROR: don't support read/write 256 blocks in on CMD\n");
 		else
@@ -545,7 +536,25 @@ static void nuc980_fmi_completed_command(struct nuc980_fmi_host *host, unsigned 
 			data->bytes_xfered = 0;
 			host->transfer_index = 0;
 			host->in_use_index = 0;
-			wait_event_interruptible(fmi_wq_xfer, (fmi_state_xfer != 0));
+			if(host->request->cmd->data->flags ==MMC_DATA_WRITE &&
+			    host->request->cmd->opcode == 53 &&
+			    host->request->cmd->data->blksz  <=64) {
+				/* To Avoid CMD53 reading data than less 64 bytes will be worng */
+				while((nuc980_fmi_read(REG_EMMCISR)&0x70)!=0x20);
+				udelay(2);
+				nuc980_fmi_write(REG_NAND_DMACCSR, nuc980_fmi_read(REG_NAND_DMACCSR) | DMACCSR_SWRST);
+				while(nuc980_fmi_read(REG_NAND_DMACCSR)&0x2);
+				nuc980_fmi_write(REG_EMMCCSR, nuc980_fmi_read(REG_EMMCCSR) | (1<<14));
+				while(nuc980_fmi_read(REG_EMMCCSR)&(1<<14));
+			} else {
+				if (wait_event_interruptible_timeout(fmi_wq_xfer, (fmi_state_xfer != 0), 20000) == 0) {
+					printk("SD time-out cmd=%d blksz=%d\n",host->request->cmd->opcode,host->request->cmd->data->blksz);
+					nuc980_fmi_write(REG_NAND_DMACCSR, nuc980_fmi_read(REG_NAND_DMACCSR) | DMACCSR_SWRST);
+					while(nuc980_fmi_read(REG_NAND_DMACCSR)&0x2);
+					nuc980_fmi_write(REG_EMMCCSR, nuc980_fmi_read(REG_EMMCCSR) | (1<<14));
+					while(nuc980_fmi_read(REG_EMMCCSR)&(1<<14));
+				}
+			}
 		}
 	}
 

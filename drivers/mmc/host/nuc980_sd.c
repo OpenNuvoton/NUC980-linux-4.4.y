@@ -580,14 +580,19 @@ static void nuc980_sd_completed_command(struct nuc980_sd_host *host, unsigned in
 			    host->request->cmd->opcode == 53 &&
 			    host->request->cmd->data->blksz  <=64) {
 				/* To Avoid CMD53 reading data than less 64 bytes will be worng */
-				udelay(1);
+				while((nuc980_sd_read(REG_SDISR)&0x70)!=0x20);
+				udelay(2);
 				nuc980_sd_write(REG_DMACCSR, nuc980_sd_read(REG_DMACCSR) | DMACCSR_SW_RST);
 				while(nuc980_sd_read(REG_DMACCSR)&0x2);
 				nuc980_sd_write(REG_SDCSR, nuc980_sd_read(REG_SDCSR) | (1<<14));
 				while(nuc980_sd_read(REG_SDCSR)&(1<<14));
 			} else {
 				if (wait_event_interruptible_timeout(sd_wq_xfer, (sd_state_xfer != 0), 20000) == 0) {
-					printk("SD time-out\n");
+					printk("SD time-out cmd=%d blksz=%d\n",host->request->cmd->opcode,host->request->cmd->data->blksz);
+					nuc980_sd_write(REG_DMACCSR, nuc980_sd_read(REG_DMACCSR) | DMACCSR_SW_RST);
+					while(nuc980_sd_read(REG_DMACCSR)&0x2);
+					nuc980_sd_write(REG_SDCSR, nuc980_sd_read(REG_SDCSR) | (1<<14));
+					while(nuc980_sd_read(REG_SDCSR)&(1<<14));
 				}
 			}
 		}

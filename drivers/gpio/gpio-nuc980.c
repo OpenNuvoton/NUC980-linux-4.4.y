@@ -605,6 +605,8 @@ static int nuc980_gpio_probe(struct platform_device *pdev)
 
 #ifndef CONFIG_USE_OF
 	if(pdev->id == 0)
+#else
+	struct device_node *np = pdev->dev.of_node;
 #endif
 	{
 		printk("%s - pdev = %s\n", __func__, pdev->name);
@@ -617,7 +619,9 @@ static int nuc980_gpio_probe(struct platform_device *pdev)
 		}
 		clk_prepare(clk);
 		clk_enable(clk);
-
+#ifdef CONFIG_USE_OF
+		irq_domain_add_legacy(np, IRQ_GPIO_END-IRQ_GPIO_START, IRQ_GPIO_START, 0,&irq_domain_simple_ops, NULL);
+#endif
 		nuc980_gpio_port.dev = &pdev->dev;
 		err = gpiochip_add(&nuc980_gpio_port);
 		if (err < 0) {

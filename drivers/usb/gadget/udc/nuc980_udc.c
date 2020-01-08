@@ -56,6 +56,7 @@
 #define DRIVER_VERSION  "16 March 2018"
 #define DRIVER_AUTHOR   "shirley <clyu2@nuvoton.com>"
 
+#define USBD_TIMEOUT	(10000)
 u32 volatile usb_vaddr, usb_paddr;
 
 static const char gadget_name [] = "nuc980-usbdev";
@@ -159,6 +160,7 @@ static inline int write_packet(struct nuc980_ep *ep, struct nuc980_request *req)
 	unsigned total, len;
 	u8  *buf;
 	u32 i;
+	unsigned int volatile timeout;
 
 	buf = req->req.buf + req->req.actual;
 	prefetch(buf);
@@ -182,7 +184,6 @@ static inline int write_packet(struct nuc980_ep *ep, struct nuc980_request *req)
 		usb_gadget_map_request(&udc->gadget, &req->req, ep->ep_dir);
 		buf = req->req.buf + req->req.actual;
 
-//printk("%s: len=%d, %d\n", ep->ep.name, len, total);
 		if (len == 0)
 		{
 			__raw_writel(USB_EP_RSPCTL_ZEROLEN, udc->base + REG_USBD_EPA_EPRSPCTL+0x28*(ep->index-1));
@@ -194,20 +195,30 @@ static inline int write_packet(struct nuc980_ep *ep, struct nuc980_request *req)
 						 udc->base + REG_USBD_DMACTL);// bulk in, write
 			__raw_writel(0, udc->base + REG_USBD_EPA_EPINTEN + (0x28* (ep->index-1)));
 			__raw_writel((USBD_BUSINTEN_DMADONEIEN | USBD_BUSINTEN_RSTIEN | USBD_BUSINTEN_SUSPENDIEN | USBD_BUSINTEN_VBUSDETIEN), udc->base + REG_USBD_BUSINTEN);
+			//__raw_writel((u32)(req->req.dma + req->req.actual), udc->base + REG_USBD_DMAADDR);
 			__raw_writel((u32)usb_paddr, udc->base + REG_USBD_DMAADDR);//Tell DMA the memory physcal address
 			__raw_writel(len, udc->base + REG_USBD_DMACNT);
 			__raw_writel(0x20, udc->base + REG_USBD_BUSINTSTS);
 
-//			udc->usb_dma_trigger = 1;
-//			udc->usb_dma_cnt = len;
-//			udc->usb_dma_owner = ep->index;
-//			udc->usb_less_mps = 1;
-
 			__raw_writel(__raw_readl(udc->base + REG_USBD_DMACTL)|0x00000020, udc->base + REG_USBD_DMACTL);
+			timeout = 0;
 			while (!(__raw_readl(udc->base + REG_USBD_BUSINTSTS) & 0x20))
 			{
-				if (!(__raw_readl(__raw_readl + REG_USBD_PHYCTL) &  0x80000000))			/* Exit when USB Un-Plug */
+				if (!(__raw_readl(udc->base + REG_USBD_PHYCTL) &  0x80000000))			/* Exit when USB Un-Plug */
+				{
+					//printk("unplug-1  0x%x\n", __raw_readl(udc->base + REG_USBD_PHYCTL));
 					break;
+				}
+				if (timeout > USBD_TIMEOUT)
+				{
+					__raw_writel(0x80, udc->base + REG_USBD_DMACTL);
+					__raw_writel(0x00, udc->base + REG_USBD_DMACTL);
+					__raw_writel(__raw_readl(udc->base + REG_USBD_CEPCTL)|USB_CEPCTL_FLUSH, udc->base + REG_USBD_CEPCTL);
+					__raw_writel(USB_EP_RSPCTL_FLUSH|USB_EP_RSPCTL_TOGGLE, udc->base + REG_USBD_EPA_EPRSPCTL + 0x28*(ep->index-1));
+					//printk("tout-1 0x%x, 0x%x\n", __raw_readl(udc->base + REG_USBD_DMACTL), __raw_readl(udc->base + REG_USBD_PHYCTL));
+					break;
+				}
+				timeout++;
 			}
 			__raw_writel(0x20, udc->base + REG_USBD_BUSINTSTS);
 		}
@@ -233,13 +244,11 @@ static int write_fifo(struct nuc980_ep *ep, struct nuc980_request *req)
 
 	if (req->req.length == req->req.actual/* && !req->req.zero*/)
 	{
-//printk("done\n");
 		done(ep, req, 0);
 		return 1;
 	}
 	else
 	{
-//printk("%s: %d, %d\n", ep->ep.name, req->req.length, req->req.actual);
 		return 0;
 	}
 }
@@ -248,6 +257,7 @@ static inline int read_packet(struct nuc980_ep *ep,u8 *buf, struct nuc980_reques
 {
 	struct nuc980_udc *udc = ep->dev;
 	unsigned int data, i;
+	unsigned int volatile timeout;
 
 	if (ep->ep_num == 0)
 	{ //ctrl pipe don't use DMA
@@ -262,22 +272,35 @@ static inline int read_packet(struct nuc980_ep *ep,u8 *buf, struct nuc980_reques
 	else
 	{
 		usb_gadget_map_request(&udc->gadget, &req->req, ep->ep_dir);
-//printk("%s: len=%d", ep->ep.name, cnt);
 
 		__raw_writel((__raw_readl(udc->base + REG_USBD_DMACTL) & 0xe0)|ep->ep_num, udc->base + REG_USBD_DMACTL);   //read
+//		__raw_writel((u32)(req->req.dma + req->req.actual), udc->base + REG_USBD_DMAADDR);
 		__raw_writel((u32)usb_paddr, udc->base + REG_USBD_DMAADDR);
 		__raw_writel(cnt, udc->base + REG_USBD_DMACNT);
 		__raw_writel(0x20, udc->base + REG_USBD_BUSINTSTS);
 		__raw_writel(__raw_readl(udc->base + REG_USBD_DMACTL)|0x00000020, udc->base + REG_USBD_DMACTL);
+		timeout = 0;
 		while (!(__raw_readl(udc->base + REG_USBD_BUSINTSTS) & 0x20))
 		{
-			if (!(__raw_readl(__raw_readl + REG_USBD_PHYCTL) &  0x80000000))			/* Exit when USB Un-Plug */
+			if (!(__raw_readl(udc->base + REG_USBD_PHYCTL) &  0x80000000))			/* Exit when USB Un-Plug */
+			{
+				//printk("unplug-2  0x%x\n", __raw_readl(udc->base + REG_USBD_PHYCTL));
 				break;
+			}
+			if (timeout > USBD_TIMEOUT)
+			{
+				__raw_writel(0x80, udc->base + REG_USBD_DMACTL);
+				__raw_writel(0x00, udc->base + REG_USBD_DMACTL);
+				__raw_writel(__raw_readl(udc->base + REG_USBD_CEPCTL)|USB_CEPCTL_FLUSH, udc->base + REG_USBD_CEPCTL);
+				__raw_writel(USB_EP_RSPCTL_FLUSH|USB_EP_RSPCTL_TOGGLE, udc->base + REG_USBD_EPA_EPRSPCTL + 0x28*(ep->index-1));
+				//printk("tout-2  0x%x, 0x%x\n", __raw_readl(udc->base + REG_USBD_DMACTL), __raw_readl(udc->base + REG_USBD_PHYCTL));
+				break;
+			}
+			timeout++;
 		}
 		__raw_writel(0x20, udc->base + REG_USBD_BUSINTSTS);
 		memcpy((char *)buf, (char *)usb_vaddr, cnt);
 		req->req.actual += cnt;
-//printk(" 0x%x\n", __raw_readl(udc->base + REG_USBD_EPA_EPDATCNT + 0x28));
 	}
 
 	return cnt;
@@ -357,13 +380,13 @@ void paser_usb_irq(struct nuc980_udc *udc, int irq)
 	{
 		if (__raw_readl(udc->base + REG_USBD_PHYCTL) & USBD_PHYCTL_VBUSDET)
 		{
-printk("plug-in\n");
+//printk("plug-in\n");
 			__raw_writel(__raw_readl(udc->base + REG_USBD_CEPCTL)|USB_CEPCTL_FLUSH, udc->base + REG_USBD_CEPCTL);
 			nuc980_udc_enable(udc);
 		}
 		else
 		{
-printk("plug-out\n");
+//printk("plug-out\n");
 			nuc980_udc_disable(udc);
 			nuke(udc, &udc->ep[0], -ESHUTDOWN);
 		}
@@ -377,6 +400,7 @@ void paser_irq_cep(struct nuc980_udc *udc, u32 irq)
 	struct nuc980_ep *ep = &udc->ep[0];
 	struct nuc980_request *req;
 	int is_last = 1;
+	unsigned int volatile timeout;
 
 	if (list_empty(&ep->queue))
 		req = 0;
@@ -415,6 +439,18 @@ void paser_irq_cep(struct nuc980_udc *udc, u32 irq)
 	{
 		if (udc->ep0state == EP0_IN_DATA_PHASE)
 		{
+			timeout = 0;
+			while (1)
+			{
+				if (__raw_readl(udc->base + REG_USBD_CEPINTSTS) & 0x1000)	/* buffer empty */
+					break;
+				if (timeout > USBD_TIMEOUT)
+				{
+					printk("timeout!!\n");
+					return;
+				}
+				timeout++;
+			}
 			if (req)
 				is_last = write_fifo(ep,req);
 
@@ -450,6 +486,7 @@ void paser_irq_nep(struct nuc980_ep *ep, u32 irq)
 {
 	struct nuc980_udc *udc = ep->dev;
 	struct nuc980_request *req;
+	unsigned int volatile timeout;
 
 	if (list_empty(&ep->queue))
 	{
@@ -460,8 +497,6 @@ void paser_irq_nep(struct nuc980_ep *ep, u32 irq)
 	{
 		req = list_entry(ep->queue.next, struct nuc980_request, queue);
 	}
-
-//printk("%s: A[0x%x / 0x%x], B[0x%x / 0x%x / 0x%x]\n", ep->ep.name, __raw_readl(udc->base + REG_USBD_EPA_EPINTEN), __raw_readl(udc->base + REG_USBD_EPA_EPINTSTS), __raw_readl(udc->base + REG_USBD_EPA_EPINTEN + 0x28), __raw_readl(udc->base + REG_USBD_EPA_EPINTSTS + 0x28), __raw_readl(udc->base + REG_USBD_EPA_EPDATCNT + 0x28));
 
 	if (irq & USBD_EPINTSTS_INTKIF)
 	{
@@ -481,13 +516,24 @@ void paser_irq_nep(struct nuc980_ep *ep, u32 irq)
 			return;
 		}
 
+		timeout = 0;
 		while (__raw_readl(udc->base + REG_USBD_DMACTL) & 0x20) //wait DMA complete
 		{
 			if (!(__raw_readl(udc->base + REG_USBD_PHYCTL) & USBD_PHYCTL_VBUSDET))
 			{
-				printk("unplug!\n");
+				//printk("unplug-3 0x%x\n", __raw_readl(udc->base + REG_USBD_PHYCTL));
 				return;
 			}
+			if (timeout > USBD_TIMEOUT)
+			{
+				__raw_writel(0x80, udc->base + REG_USBD_DMACTL);
+				__raw_writel(0x00, udc->base + REG_USBD_DMACTL);
+				__raw_writel(__raw_readl(udc->base + REG_USBD_CEPCTL)|USB_CEPCTL_FLUSH, udc->base + REG_USBD_CEPCTL);
+				__raw_writel(USB_EP_RSPCTL_FLUSH|USB_EP_RSPCTL_TOGGLE, udc->base + REG_USBD_EPA_EPRSPCTL + 0x28*(ep->index-1));
+				//printk("tout-3 0x%x, 0x%x\n", __raw_readl(udc->base + REG_USBD_DMACTL), __raw_readl(udc->base + REG_USBD_PHYCTL));
+				return;
+			}
+			timeout++;
 		}
 		if (!write_fifo(ep, req))
 			__raw_writel(0x40, udc->base + REG_USBD_EPA_EPINTEN + 0x28*(ep->index-1));
@@ -496,13 +542,6 @@ void paser_irq_nep(struct nuc980_ep *ep, u32 irq)
 	if (irq & USBD_EPINTSTS_TXPKIF)
 	{
 		__raw_writel(USBD_EPINTSTS_TXPKIF, udc->base + REG_USBD_EPA_EPINTSTS + 0x28*(ep->index-1));
-//		if (req)
-//		{
-//			if (!write_fifo(ep, req))
-//				__raw_writel(0x48, udc->base + REG_USBD_EPA_EPINTEN + 0x28*(ep->index-1));
-//		}
-//		else
-//			__raw_writel(0, udc->base + REG_USBD_EPA_EPINTEN + 0x28*(ep->index-1));
 	}
 
 	if ((irq & USBD_EPINTSTS_RXPKIF) || (irq & USBD_EPINTSTS_SHORTRXIF))
@@ -515,7 +554,6 @@ void paser_irq_nep(struct nuc980_ep *ep, u32 irq)
 			return;
 		}
 		read_fifo(ep, req, __raw_readl(udc->base + REG_USBD_EPA_EPDATCNT + 0x28*(ep->index-1)));
-//printk("@@ 0x%x\n", __raw_readl(udc->base + REG_USBD_EPA_EPDATCNT + 0x28*(ep->index-1)));
 	}
 
 	return ;
@@ -534,7 +572,6 @@ static irqreturn_t nuc980_udc_irq(int irq, void *_dev)
 	udc = (struct nuc980_udc *)(_dev);
 
 	IrqStL = __raw_readl(udc->base + REG_USBD_GINTSTS) & __raw_readl(udc->base + REG_USBD_GINTEN);
-//printk("0x%x/ 0x%x / 0x%x\n", __raw_readl(udc->base + REG_USBD_GINTSTS), __raw_readl(udc->base + REG_USBD_GINTEN), __raw_readl(udc->base + REG_USBD_PHYCTL));
 	if (!IrqStL)
 	{
 		pr_err("Not our interrupt !\n");
@@ -543,7 +580,6 @@ static irqreturn_t nuc980_udc_irq(int irq, void *_dev)
 
 	if (IrqStL & USBD_GINTSTS_USBIF)
 	{
-//printk("1. 0x%x / 0x%x\n", __raw_readl(udc->base + REG_USBD_BUSINTSTS), __raw_readl(udc->base + REG_USBD_BUSINTEN));
 		IrqSt = __raw_readl(udc->base + REG_USBD_BUSINTSTS) & __raw_readl(udc->base + REG_USBD_BUSINTEN);
 		__raw_writel(IrqSt, udc->base + REG_USBD_BUSINTSTS);
 		if (IrqSt && udc->driver)
@@ -713,9 +749,6 @@ static int nuc980_ep_enable (struct usb_ep *_ep, const struct usb_endpoint_descr
 			else
 			{
 				ep->irq_enb = 0x1010;
-//				__raw_writel((__raw_readl(udc->base + REG_USBD_EPA_EPRSPCTL+0x28*(ep->index-1))&0xF7)|0x80,
-//							 udc->base + REG_USBD_EPA_EPRSPCTL + 0x28*(ep->index-1));//disable buffer when short packet
-//				ep->buffer_disabled = 1;
 			}
 		}
 		else if (ep->ep_type == USB_EP_CFG_TYPE_INT)
@@ -879,7 +912,7 @@ static int nuc980_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_
             udc->ep0state = EP0_IN_DATA_PHASE;
             __raw_writel(0x0a, udc->base + REG_USBD_CEPINTEN);
 		}
-		if ((udc->setup_ret > 1000) || ((req->req.length==0)&&(udc->ep0state == EP0_OUT_DATA_PHASE)))
+		if ((udc->setup_ret > 1000) || ((req->req.length==0) && (udc->ep0state == EP0_OUT_DATA_PHASE)))
 		{
 			__raw_writel(USB_CEPCTL_NAKCLR, udc->base + REG_USBD_CEPCTL);
 			__raw_writel(0x402, udc->base + REG_USBD_CEPINTEN);
@@ -1092,7 +1125,7 @@ static int nuc980_set_selfpowered (struct usb_gadget *_gadget, int value)
 static int nuc980_pullup (struct usb_gadget *g, int is_on)
 {
 	struct nuc980_udc *udc = to_nuc980_udc(g);
-printk("pullup\n");
+//printk("pullup\n");
 
 	if (is_on)
 		nuc980_udc_enable(udc);
@@ -1123,14 +1156,14 @@ static const struct usb_gadget_ops nuc980_ops =
 static void nuc980_udc_enable(struct nuc980_udc *udc)
 {
 //    udc->gadget.speed = USB_SPEED_HIGH;
-printk("enable: 0x%x\n", __raw_readl(udc->base + REG_USBD_PHYCTL));
+//printk("enable: 0x%x\n", __raw_readl(udc->base + REG_USBD_PHYCTL));
 	__raw_writel(__raw_readl(udc->base + REG_USBD_PHYCTL) | 0x100, udc->base + REG_USBD_PHYCTL);
 }
 
 static void nuc980_udc_disable(struct nuc980_udc *udc)
 {
 	unsigned int i;
-printk("disable: 0x%x\n", __raw_readl(udc->base + REG_USBD_PHYCTL));
+//printk("disable: 0x%x\n", __raw_readl(udc->base + REG_USBD_PHYCTL));
 	__raw_writel(0, udc->base + REG_USBD_CEPINTEN);
 	__raw_writel(0xffff, udc->base + REG_USBD_CEPINTSTS);
 	__raw_writel(__raw_readl(udc->base + REG_USBD_CEPCTL)|USB_CEPCTL_FLUSH, udc->base + REG_USBD_CEPCTL);
@@ -1201,6 +1234,8 @@ static int nuc980_udc_stop(struct usb_gadget *g, struct usb_gadget_driver *drive
 static void udc_isr_reset(struct nuc980_udc *udc)
 {
 	int i;
+
+	nuke(udc, &udc->ep[0], -ECONNRESET);
 
 	udc->usb_address = 0;
 	udc->usb_less_mps = 0;

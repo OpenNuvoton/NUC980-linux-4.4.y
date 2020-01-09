@@ -63,6 +63,12 @@ void winbond_read_data(struct spinand_cmd *cmd, u16 column, u32 page_id)
 	cmd->addr[1] = (u8)(column);
 }
 
+void micron_read_data(struct spinand_cmd *cmd, u16 column, u32 page_id)
+{
+	cmd->addr[0] = (u8)(column >> 8) | (page_id & (1 << 6) ? (1 << 4) : 0);
+	cmd->addr[1] = (u8)(column);
+}
+
 void gigadevice_write_cmd(struct spinand_cmd *cmd, u32 page_id)
 {
 	cmd->addr[0] = (u8)(page_id >> 16);
@@ -85,6 +91,12 @@ void macronix_write_data(struct spinand_cmd *cmd, u16 column, u32 page_id)
 void winbond_write_data(struct spinand_cmd *cmd, u16 column, u32 page_id)
 {
 	cmd->addr[0] = (u8)(column >> 8);
+	cmd->addr[1] = (u8)(column);
+}
+
+void micron_write_data(struct spinand_cmd *cmd, u16 column, u32 page_id)
+{
+	cmd->addr[0] = (u8)(column >> 8) | (page_id & (1 << 6) ? (1 << 4) : 0);
 	cmd->addr[1] = (u8)(column);
 }
 
@@ -113,6 +125,18 @@ int macronix_verify_ecc(u8 status)
 
 	if ((ecc_status == STATUS_ECC_ERROR_MACRONIX) ||
 	    (ecc_status == STATUS_ECC_MASK_MACRONIX))
+		return SPINAND_ECC_ERROR;
+	else if (ecc_status)
+		return SPINAND_ECC_CORRECTED;
+	else
+		return 0;
+}
+
+int micron_verify_ecc(u8 status)
+{
+	int ecc_status = (status & STATUS_ECC_MASK_MICRON);
+
+	if (ecc_status == STATUS_ECC_ERROR_MICRON)
 		return SPINAND_ECC_ERROR;
 	else if (ecc_status)
 		return SPINAND_ECC_CORRECTED;
@@ -172,5 +196,12 @@ int winbond_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 	return 0;
 }
 
+int micron_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
+{
+	if (nand_id[1] != NAND_MFR_MICRON)
+		return -EINVAL;
+
+	return 0;
+}
 
 MODULE_DESCRIPTION("SPI NAND driver for Gigadevice and Macronix");

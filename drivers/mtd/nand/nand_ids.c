@@ -70,6 +70,10 @@ struct nand_flash_dev nand_flash_ids[] = {
 		{ .id = {0x9b, 0x12} }, SZ_2K, 128, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
 	},
 	{
+		"MT29F2G01 2G 3.3V",
+		{ .id = {0x2c, 0x24} }, SZ_2K, 256, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
+	},
+	{
 		"TC58NVG0S3E 1G 3.3V 8-bit",
 		{ .id = {0x98, 0xd1, 0x90, 0x15, 0x76, 0x14, 0x01, 0x00} },
 		SZ_2K, SZ_128, SZ_128K, 0, 8, 64, NAND_ECC_INFO(1, SZ_512),

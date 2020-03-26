@@ -656,7 +656,7 @@ static int spinand_write_enable(struct spi_device *spi_nand)
 static int spinand_read_page_to_cache(struct spi_device *spi_nand, u32 page_id)
 {
 	struct spinand_cmd cmd = {0};
-	u16 row;
+	u32 row;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
 
 #ifdef CONFIG_WINBOND_MULTIDIE
@@ -880,7 +880,7 @@ static int spinand_program_data_to_cache(struct spi_device *spi_nand,
 static int spinand_program_execute(struct spi_device *spi_nand, u32 page_id)
 {
 	struct spinand_cmd cmd = {0};
-	u16 row;
+	u32 row;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
 
 #ifdef CONFIG_WINBOND_MULTIDIE
@@ -1017,10 +1017,10 @@ exit:
  *   one block--64 pages
  *   Need to wait for tERS.
  */
-static int spinand_erase_block_erase(struct spi_device *spi_nand, u16 block_id)
+static int spinand_erase_block_erase(struct spi_device *spi_nand, u32 block_id)
 {
 	struct spinand_cmd cmd = {0};
-	u16 row;
+	u32 row;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
 
 #ifdef CONFIG_WINBOND_MULTIDIE
@@ -1048,7 +1048,7 @@ static int spinand_erase_block_erase(struct spi_device *spi_nand, u16 block_id)
  *   and then send the 0xd8 erase command
  *   Poll to wait for the tERS time to complete the tranaction.
  */
-static int spinand_erase_block(struct spi_device *spi_nand, u16 block_id)
+static int spinand_erase_block(struct spi_device *spi_nand, u32 block_id)
 {
 	int retval;
 	u8 status = 0;

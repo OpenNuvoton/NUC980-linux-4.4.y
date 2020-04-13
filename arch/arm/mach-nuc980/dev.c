@@ -824,7 +824,7 @@ static struct mtd_partition nuc980_qspi0_flash_partitions[] = {
 };
 
 static struct flash_platform_data nuc980_qspi0_flash_data = {
-#ifdef CONFIG_BOARD_IOT
+#if defined(CONFIG_BOARD_IOT) || defined(CONFIG_BOARD_ETH2UART)
 	.name = "mt29f",
 #else
 	.name = "m25p80",

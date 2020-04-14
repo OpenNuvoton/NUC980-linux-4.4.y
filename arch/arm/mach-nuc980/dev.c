@@ -1540,7 +1540,7 @@ struct platform_device nuc980_device_sc1 = {
 
 #endif
 
-#if defined(CONFIG_NUC980_TIMER) || defined(CONFIG_NUC980_TIMER_MODULE)
+#if defined(CONFIG_NUC980_ETIMER) || defined(CONFIG_NUC980_ETIMER_MODULE)
 static struct resource nuc980_timer_resource[] = {
 	[0] = {
 		.start = IRQ_TIMER0,
@@ -1912,7 +1912,7 @@ static struct platform_device *nuc980_public_dev[] __initdata = {
 	&nuc980_device_nadc,
 #endif
 
-#if defined(CONFIG_NUC980_TIMER) || defined(CONFIG_NUC980_TIMER_MODULE)
+#if defined(CONFIG_NUC980_ETIMER) || defined(CONFIG_NUC980_ETIMER_MODULE)
 	&nuc980_device_timer0,
 	&nuc980_device_timer1,
 	&nuc980_device_timer2,

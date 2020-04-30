@@ -730,7 +730,7 @@ static int nuc980_poll(struct napi_struct *napi, int budget)
 		status = rxbd->sl;
 		length = status & 0xFFFF;
 
-		if (likely(status & RXDS_RXGD)) {
+		if (likely((status & RXDS_RXGD) && (length <= 1514))) {
 
 			skb = dev_alloc_skb(1520);
 			if (!skb) {

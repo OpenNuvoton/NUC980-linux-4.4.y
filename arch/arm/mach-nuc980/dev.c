@@ -803,11 +803,22 @@ struct platform_device nuc980_device_i2c3 = {
 /* spi device, spi flash info */
 #ifdef CONFIG_MTD_M25P80
 static struct mtd_partition nuc980_qspi0_flash_partitions[] = {
-#ifdef CONFIG_BOARD_ETH2UART
+#if defined(CONFIG_BOARD_ETH2UART)
 	{
 		.name = "lighttpd",
 		.size = 0x0200000,
 		.offset = 0x0C00000,
+	},
+#elif defined(CONFIG_BOARD_CHILI)    /* chili board spi flash total 32Mbyte*/
+	{
+		.name = "kernel",    /* uboot, kernel 8Mbyte*/
+		.size = 0x0800000,
+		.offset = 0,
+	},
+	{
+		.name = "rootfs",    /* kernel 24Mbyte*/
+		.size = 0x01800000,
+		.offset = 0x0800000,
 	},
 #else
 	{

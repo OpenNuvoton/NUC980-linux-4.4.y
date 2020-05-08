@@ -1510,7 +1510,7 @@ static int nuc980serial_pinctrl(struct platform_device *pdev)
 		p = devm_pinctrl_get_select(&pdev->dev, "uart8-PC");
 #elif defined (CONFIG_NUC980_UART8_FC_PA_PG)
 		p = devm_pinctrl_get_select(&pdev->dev, "uart8-fc-PA_PG");
-#elif defined (CONFIG_NUC980_UART8_FC_PC)
+#elif defined (CONFIG_NUC980_UART8_FC_PC) || defined (CONFIG_NUC980_UART8_FC_PC_CHILI)
 		p = devm_pinctrl_get_select(&pdev->dev, "uart8-fc-PC");
 #endif
 

@@ -252,8 +252,11 @@ static const unsigned uart8_0_pins[] = {0x0C, 0x0B}; // tx, rx
 static const unsigned uart8_1_pins[] = {0x68, 0x69}; // rts, cts
 static const unsigned uart8_2_pins[] = {0x18, 0x20}; // tx, rx
 static const unsigned uart8_3_pins[] = {0x2C, 0x2D}; // tx, rx
+#if defined(CONFIG_BOARD_CHILI)
+static const unsigned uart8_4_pins[] = {0x2E}; // rts
+#else
 static const unsigned uart8_4_pins[] = {0x2E, 0x2F}; // cts, rts
-
+#endif
 static const unsigned uart9_0_pins[] = {0x11, 0x13}; // tx, rx
 //static const unsigned uart9_1_pins[] = {0x12, 0x44}; // rts, cts
 static const unsigned uart9_2_pins[] = {0x45, 0x44}; // rts, cts

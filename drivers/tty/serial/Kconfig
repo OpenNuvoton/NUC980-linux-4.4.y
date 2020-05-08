@@ -324,7 +324,7 @@ choice
 endchoice
 
 config NUC980_UART8
-	bool "NUC970 UART8 support"
+	bool "NUC980 UART8 support"
 	depends on SERIAL_NUC980=y
 	help
 	  This selects NUC980 uart8 driver
@@ -347,6 +347,7 @@ choice
 	default NUC980_UART8_PA
 	depends on NUC980_UART8
 	depends on !USE_OF
+	
 	help
 	  Select UART8 multi-function pin.
 
@@ -359,7 +360,11 @@ choice
 	config NUC980_UART8_FC_PA_PG
 		bool "Rx:PA11, Tx:PA12, RTS:PG8, CTS:PG9"
 	config NUC980_UART8_FC_PC
+		depends on !BOARD_CHILI
 		bool "Rx:PC13, Tx:PC12, RTS:PC14, CTS:PC15"
+	config NUC980_UART8_FC_PC_CHILI
+		depends on BOARD_CHILI
+		bool "Rx:PC13, Tx:PC12, RTS:PC14"
 endchoice
 
 config NUC980_UART9

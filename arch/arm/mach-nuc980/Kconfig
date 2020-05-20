@@ -34,6 +34,10 @@ config BOARD_IOT
 	depends on !USE_OF
 	bool "NUC980 IoT Board"
 
+config BOARD_LORAG
+	depends on !USE_OF
+	bool "NUC980 LoRaG Board"	
+	
 config BOARD_CHILI
 	depends on !USE_OF
 	bool "NUC980 Chili Board"

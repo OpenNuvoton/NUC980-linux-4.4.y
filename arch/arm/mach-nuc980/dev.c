@@ -835,7 +835,7 @@ static struct mtd_partition nuc980_qspi0_flash_partitions[] = {
 };
 
 static struct flash_platform_data nuc980_qspi0_flash_data = {
-#if defined(CONFIG_BOARD_IOT) || defined(CONFIG_BOARD_ETH2UART)
+#if defined(CONFIG_BOARD_IOT) || defined(CONFIG_BOARD_ETH2UART) || defined(CONFIG_BOARD_LORAG)
 	.name = "mt29f",
 #else
 	.name = "m25p80",
@@ -851,7 +851,7 @@ static struct flash_platform_data nuc980_qspi0_flash_data = {
 static struct spi_board_info nuc980_qspi0_board_info[] __initdata = {
 #ifdef CONFIG_MTD_M25P80
 	{
-#ifdef CONFIG_BOARD_IOT
+#if defined(CONFIG_BOARD_IOT) || defined(CONFIG_BOARD_LORAG)
 		.modalias = "mt29f",
 #else
 		.modalias = "m25p80",
@@ -946,7 +946,7 @@ static struct spi_board_info nuc980_spi0_board_info[] __initdata = {
 		.modalias = "m25p80",
 		.max_speed_hz = 30000000,
 		.bus_num = 1,
-		#if defined(CONFIG_BOARD_IOT)
+		#if defined(CONFIG_BOARD_IOT) || defined(CONFIG_BOARD_LORAG)
 		.chip_select = 1,	//use SS1
 		#else
 		.chip_select = 0,       //use SS0
@@ -960,7 +960,7 @@ static struct spi_board_info nuc980_spi0_board_info[] __initdata = {
 		.modalias = "spidev",
 		.max_speed_hz = 75000000,
 		.bus_num = 1,
-		#if defined(CONFIG_BOARD_IOT)
+		#if defined(CONFIG_BOARD_IOT) || defined(CONFIG_BOARD_LORAG)
 		.chip_select = 0,	//use SS0
 		#else
 		.chip_select = 1,	//use SS1

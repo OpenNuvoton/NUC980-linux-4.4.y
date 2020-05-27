@@ -36,7 +36,7 @@
 
 #define RESET_FMI   0x01
 #define NAND_EN     0x08
-#define READYBUSY   (0x01 << 18)
+#define READYBUSY   0x400
 
 #define SWRST       0x01
 #define PSIZE       (0x01 << 3)
@@ -789,11 +789,11 @@ static void nuc980_write_buf_dma(struct mtd_info *mtd, const u_char *buf, int le
  */
 static int nuc980_check_rb(struct nuc980_nand_info *nand)
 {
-	unsigned int val;
+	unsigned int volatile val;
 
 	ENTER();
 	spin_lock(&nand->lock);
-	val = readl(REG_SMISR) & READYBUSY;
+	val = (readl(REG_SMISR) & READYBUSY) ? 1 : 0;
 	spin_unlock(&nand->lock);
 	LEAVE();
 
@@ -830,9 +830,11 @@ static void nuc980_nand_command_lp(struct mtd_info *mtd, unsigned int command, i
 
 	write_cmd_reg(nand, command & 0xff);
 
+	writel(0x400, REG_SMISR);
 	if (command == NAND_CMD_READID)
 	{
 		write_addr_reg(nand, ENDADDR);
+		return;
 	}
 	else
 	{
@@ -902,8 +904,11 @@ static void nuc980_nand_command_lp(struct mtd_info *mtd, unsigned int command, i
 		}
 	}
 
-	while (!nuc980_check_rb(nand)) ;
-
+	while (1)
+	{
+		if (nuc980_check_rb(nand) == 1)
+			break;
+	}
 	LEAVE();
 }
 

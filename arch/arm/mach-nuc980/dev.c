@@ -811,14 +811,14 @@ static struct mtd_partition nuc980_qspi0_flash_partitions[] = {
 	},
 #elif defined(CONFIG_BOARD_CHILI)    /* chili board spi flash total 32Mbyte*/
 	{
-		.name = "kernel",    /* uboot, kernel 8Mbyte*/
-		.size = 0x0800000,
+		.name = "kernel",    /* uboot, kernel 20Mbyte*/
+		.size = 0x1400000,
 		.offset = 0,
 	},
 	{
-		.name = "rootfs",    /* kernel 24Mbyte*/
-		.size = 0x01800000,
-		.offset = 0x0800000,
+		.name = "rootfs",    /* kernel 12Mbyte*/
+		.size = 0x0c00000,
+		.offset = 0x1400000,
 	},
 #else
 	{

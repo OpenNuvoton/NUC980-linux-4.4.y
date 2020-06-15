@@ -714,7 +714,7 @@ static void nuc980_sd_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	LEAVE();
 }
 
-
+#define SD_TIMEOUT	10000000
 /*
  * Handle CO, RI, and R2 event
  */
@@ -722,22 +722,28 @@ static int nuc980_sd_event_thread(struct nuc980_sd_host *sd_host)
 {
 	int event = 0;
 	int completed = 0;
+	unsigned int timeout = 0;
 	ENTRY();
 
 	completed = 0;
 	event = sd_event;
 	sd_event = SD_EVENT_NONE;
 	if (event & SD_EVENT_CMD_OUT) {
-		while (1) {
+		while (timeout < SD_TIMEOUT)
+		{
 			if (!(nuc980_sd_read(REG_SDCSR) & SDCSR_CO_EN)) {
 				completed = 1;
 				break;
+			}else{
+				ndelay(100);
+				timeout++;
 			}
 		}
 	}
 
 	if (event & SD_EVENT_RSP_IN) {
-		while (1) {
+		timeout=0;
+		while (timeout < SD_TIMEOUT){
 			if (!(nuc980_sd_read(REG_SDCSR) & SDCSR_RI_EN)) {
 				completed = 1;
 				break;
@@ -751,16 +757,26 @@ static int nuc980_sd_event_thread(struct nuc980_sd_host *sd_host)
 				sd_host->cmd->error = -ETIMEDOUT;
 				break;
 			}
+			timeout++;
+			ndelay(100);
 		}
 	}
 
 	if (event & SD_EVENT_RSP2_IN) {
-		while (1) {
+		timeout = 0;
+		while (timeout < SD_TIMEOUT) {
 			if (!(nuc980_sd_read(REG_SDCSR) & SDCSR_R2_EN)) {
 				completed = 1;
 				break;
+			}else{
+				ndelay(100);
+				timeout++;
 			}
 		}
+	}
+	if(timeout >= SD_TIMEOUT) {
+		completed = 1;
+		sd_host->cmd->error = -ETIMEDOUT;
 	}
 	if (completed) {
 		nuc980_sd_completed_command(sd_host, event);

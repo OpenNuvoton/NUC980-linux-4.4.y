@@ -393,9 +393,9 @@ static void nuc980_irq_ext_mask(struct irq_data *d)
 		__raw_writel(1<<IRQ_EXT0, REG_AIC_INTDIS0);
 	else if(d->irq==IRQ_EXT1_A1 || d->irq==IRQ_EXT1_A14)
 		__raw_writel(1 <<IRQ_EXT1, REG_AIC_INTDIS0);
-	else if(d->irq==IRQ_EXT2_D0 || d->irq==IRQ_EXT2_E10 || IRQ_EXT2_B3 || IRQ_EXT2_B13)
+	else if(d->irq==IRQ_EXT2_D0 || d->irq==IRQ_EXT2_E10 || d->irq==IRQ_EXT2_B3 || d->irq==IRQ_EXT2_B13)
 		__raw_writel(1 <<IRQ_EXT2, REG_AIC_INTDIS0);
-	else if(d->irq==IRQ_EXT3_D1 || d->irq==IRQ_EXT3_E12 || IRQ_EXT3_G15)
+	else if(d->irq==IRQ_EXT3_D1 || d->irq==IRQ_EXT3_E12 || d->irq==IRQ_EXT3_G15)
 		__raw_writel(1 <<IRQ_EXT3, REG_AIC_INTDIS0);
 	LEAVE();
 }
@@ -414,9 +414,9 @@ static void nuc980_irq_ext_unmask(struct irq_data *d)
 		__raw_writel(1<<IRQ_EXT0, REG_AIC_INTEN0);
 	else if(d->irq==IRQ_EXT1_A1 || d->irq==IRQ_EXT1_A14)
 		__raw_writel(1 <<IRQ_EXT1, REG_AIC_INTEN0);
-	else if(d->irq==IRQ_EXT2_D0 || d->irq==IRQ_EXT2_E10 || IRQ_EXT2_B3 || IRQ_EXT2_B13)
+	else if(d->irq==IRQ_EXT2_D0 || d->irq==IRQ_EXT2_E10 || d->irq==IRQ_EXT2_B3 || d->irq==IRQ_EXT2_B13)
 		__raw_writel(1 <<IRQ_EXT2, REG_AIC_INTEN0);
-	else if(d->irq==IRQ_EXT3_D1 || d->irq==IRQ_EXT3_E12 || IRQ_EXT3_G15)
+	else if(d->irq==IRQ_EXT3_D1 || d->irq==IRQ_EXT3_E12 || d->irq==IRQ_EXT3_G15)
 		__raw_writel(1 <<IRQ_EXT3, REG_AIC_INTEN0);
 	LEAVE();
 }

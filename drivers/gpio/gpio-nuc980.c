@@ -585,7 +585,7 @@ static int nuc980_enable_eint(uint32_t flag,struct platform_device *pdev)
 			irqnum = IRQ_EXT3_G15;
 
 		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
-		if(flag==3) {
+		if(flag==1) {
 			__raw_writel((1<<7) | __raw_readl(REG_WKUPSER0),REG_WKUPSER0);
 			enable_irq_wake(irqnum);
 		}

@@ -232,7 +232,7 @@ static int nuc980_spi1_txrx(struct spi_device *spi, struct spi_transfer *t)
 	struct nuc980_dma_config dma_crx,dma_ctx;
 	dma_cookie_t            cookie;
 #elif defined(CONFIG_SPI_NUC980_SPI1_NO_PDMA)
-	unsigned int    i;
+	unsigned int    i,j;
 
 	hw->tx = t->tx_buf;
 	hw->rx = t->rx_buf;
@@ -369,10 +369,27 @@ static int nuc980_spi1_txrx(struct spi_device *spi, struct spi_transfer *t)
 
 #elif defined(CONFIG_SPI_NUC980_SPI1_NO_PDMA)
 	if (hw->rx) {
-		for(i = 0; i < t->len; i++) {
-			__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
-			while (((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x100)); //RXEMPTY
-			hw_rx(hw, __raw_readl(hw->regs + REG_RX), i);
+		j = 0;
+
+		for(i = 0; i < t->len; ) {
+			if(((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x00000)) //TX NOT FULL
+			{
+				__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
+				i++;
+			}
+			if(((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) //RX NOT EMPTY
+			{
+				hw_rx(hw, __raw_readl(hw->regs + REG_RX), j);
+				j++;
+			}
+		}
+		while(j < t->len)
+		{
+			if(((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) //RX NOT EMPTY
+			{
+				hw_rx(hw, __raw_readl(hw->regs + REG_RX), j);
+				j++;
+			}
 		}
 	} else {
 		for(i = 0; i < t->len; i++) {

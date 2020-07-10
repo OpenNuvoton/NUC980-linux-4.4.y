@@ -1038,7 +1038,11 @@ static struct spi_board_info nuc980_spi1_board_info[] __initdata = {
 		.modalias = "m25p80",
 		.max_speed_hz = 30000000,
 		.bus_num = 2,
-		.chip_select = 0,	//use SS0
+		#if defined(CONFIG_BOARD_IOT) || defined(CONFIG_BOARD_LORAG)
+		.chip_select = 1,	//use SS1
+		#else
+		.chip_select = 0,       //use SS0
+		#endif
 		.platform_data = &nuc980_spi1_flash_data,
 		.mode = SPI_MODE_0,
 	},
@@ -1048,7 +1052,11 @@ static struct spi_board_info nuc980_spi1_board_info[] __initdata = {
 		.modalias = "spidev",
 		.max_speed_hz = 75000000,
 		.bus_num = 2,
+		#if defined(CONFIG_BOARD_IOT) || defined(CONFIG_BOARD_LORAG)
+		.chip_select = 0,	//use SS0
+		#else
 		.chip_select = 1,	//use SS1
+		#endif
 		.mode = SPI_MODE_0,
 	},
 #endif

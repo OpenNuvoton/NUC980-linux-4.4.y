@@ -47,7 +47,11 @@
 
 #define RESET_COUNTER		0x00005AA5
 
-static int heartbeat = 2;	// default 2 second
+#ifdef CONFIG_NUC980_WDT_WKUP
+static int heartbeat = 8;
+#else
+static int heartbeat = 11;
+#endif
 module_param(heartbeat, int, 0);
 MODULE_PARM_DESC(heartbeat, "Watchdog heartbeats in seconds. "
 	"(default = " __MODULE_STRING(WDT_HEARTBEAT) ")");
@@ -103,7 +107,11 @@ static int nuc980wdt_start(struct watchdog_device *wdd)
 
 	if(wdd->timeout < 2) {
 		val |= 0x5 << 8;
+#ifdef CONFIG_NUC980_WDT_WKUP
 	} else if (wdd->timeout < 8) {
+#else
+	} else if (wdd->timeout < 11) {
+#endif
 		val |= 0x6 << 8;
 	} else {
 		val |= 0x7 << 8;
@@ -265,11 +273,11 @@ static int nuc980wdt_probe(struct platform_device *pdev)
 	clk_prepare(nuc980_wdt->eclk);
 	clk_enable(nuc980_wdt->eclk);
 #ifdef CONFIG_NUC980_WDT_WKUP
-	nuc980_wdd.timeout = 2;		// default time out = 2 sec
+	nuc980_wdd.timeout = 8;		// default time out = 2 sec
 	nuc980_wdd.min_timeout = 1;	// min time out = 1 sec
 	nuc980_wdd.max_timeout = 8;	// max time out = 8 sec
 #else
-	nuc980_wdd.timeout = 2;		// default time out = 2.8 sec
+	nuc980_wdd.timeout = 11;	// default time out = 11.2 sec
 	nuc980_wdd.min_timeout = 1;	// min time out = 1.4 sec
 	nuc980_wdd.max_timeout = 11;	// max time out = 11.2 sec
 #endif

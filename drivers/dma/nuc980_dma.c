@@ -132,6 +132,7 @@ struct nuc980_dma_chan {
 	u32             id;
 	struct tasklet_struct       tasklet;
 	struct tasklet_struct       tasklet_sc;
+	int sc_flag;
 	/* protects the fields following */
 	spinlock_t          lock;
 	spinlock_t      wklock;
@@ -847,6 +848,7 @@ static void nuc980_dma_sc_tasklet(unsigned long data)
 	//spin_unlock_irq(&edmac->lock);
 	if (callback) {
 		callback(callback_param);
+		edmac->sc_flag = 0;
 	}
 	LEAVE();
 
@@ -943,6 +945,7 @@ void nuc980_dma_emac_interrupt(struct nuc980_dma_chan *edmac,int status)
 			else
 				done->remain = (PDMA1->DSCT[edmac->id].CTL & PDMA_DSCT_CTL_TXCNT_Msk)>>PDMA_DSCT_CTL_TXCNT_Pos;
 		}
+
 		tasklet_schedule(&edmac->tasklet);
 		//spin_unlock(&edmac->lock);
 		return;
@@ -961,7 +964,10 @@ void nuc980_dma_emac_interrupt(struct nuc980_dma_chan *edmac,int status)
 		if(desc->config.en_sc==0) {
 			tasklet_schedule(&edmac->tasklet);
 		} else {
-			tasklet_schedule(&edmac->tasklet_sc);
+			if(edmac->sc_flag==0){
+				tasklet_schedule(&edmac->tasklet_sc);
+				edmac->sc_flag = 1;
+			}
 		}
 	}
 	break;
@@ -1545,6 +1551,7 @@ static int nuc980_dma_probe(struct platform_device *pdev)
 		edmac->chan.private = 0;
 		edmac->regs = cdata->base;
 		edmac->irq = cdata->irq;
+		edmac->sc_flag = 0;
 		edmac->edma = edma;
 		edmac->id = (((unsigned int)(edmac->regs)&0xF0)>>4);
 		spin_lock_init(&edmac->lock);

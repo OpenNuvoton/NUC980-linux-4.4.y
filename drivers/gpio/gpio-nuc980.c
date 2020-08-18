@@ -108,15 +108,16 @@ static int nuc980_gpio_core_direction_in(struct gpio_chip *gc,
 {
 	int port_num,group_num;
 	unsigned long value;
+	unsigned long flags;
 	const struct gpio_port *port =
 	        nuc980_gpio_cla_port(gpio_num, &group_num, &port_num);
 	ENTRY();
-	spin_lock(&gpio_lock);
+	spin_lock_irqsave(&gpio_lock, flags);
 	value = __raw_readl(port->dir);
 	value &= ~GPIO_PMD_MODE(port_num,GPIO_PMD_QUASI);
 	value |= GPIO_PMD_MODE(port_num,GPIO_PMD_INPUT);
 	__raw_writel(value, port->dir);
-	spin_unlock(&gpio_lock);
+	spin_unlock_irqrestore(&gpio_lock, flags);
 	LEAVE();
 	return 0;
 }
@@ -147,15 +148,16 @@ static int nuc980_gpio_core_direction_out(struct gpio_chip *gc,
 {
 	int port_num,group_num;
 	unsigned long value;
+	unsigned long flags;
 	const struct gpio_port *port =
 	        nuc980_gpio_cla_port(gpio_num, &group_num, &port_num);
 	ENTRY();
-	spin_lock(&gpio_lock);
+	spin_lock_irqsave(&gpio_lock, flags);
 	value = __raw_readl(port->dir);
 	value &= ~GPIO_PMD_MODE(port_num,GPIO_PMD_QUASI);
 	value |= GPIO_PMD_MODE(port_num,GPIO_PMD_OUTPUT);
 	__raw_writel(value, port->dir);
-	spin_unlock(&gpio_lock);
+	spin_unlock_irqrestore(&gpio_lock, flags);
 	nuc980_gpio_core_set(gc, gpio_num, val);
 	LEAVE();
 	return 0;

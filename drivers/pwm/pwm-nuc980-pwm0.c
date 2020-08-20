@@ -118,6 +118,42 @@ static void nuc980_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 #endif
 }
 
+static int nuc980_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm, enum pwm_polarity polarity)
+{
+	//struct nuc980_chip *nuc980 = to_nuc980_chip(chip);
+	int ch = pwm->hwpwm + chip->base;
+	unsigned long flags;
+
+	local_irq_save(flags);
+
+	if(ch == 0) {
+		if (polarity == PWM_POLARITY_NORMAL)
+			__raw_writel(__raw_readl(REG_PWM_PCR) & ~(4), REG_PWM_PCR);
+		else
+			__raw_writel(__raw_readl(REG_PWM_PCR) | (4), REG_PWM_PCR);
+	} else if(ch == 1) {
+		if (polarity == PWM_POLARITY_NORMAL)
+			__raw_writel(__raw_readl(REG_PWM_PCR) & ~(4 << 8), REG_PWM_PCR);
+		else
+			__raw_writel(__raw_readl(REG_PWM_PCR) | (4 << 8), REG_PWM_PCR);
+	} else if (ch == 2) {
+		if (polarity == PWM_POLARITY_NORMAL)
+			__raw_writel(__raw_readl(REG_PWM_PCR) & ~(4 << 12), REG_PWM_PCR);
+		else
+			__raw_writel(__raw_readl(REG_PWM_PCR) | (4 << 12), REG_PWM_PCR);
+	} else {	/* ch 3 */
+		if (polarity == PWM_POLARITY_NORMAL)
+			__raw_writel(__raw_readl(REG_PWM_PCR) & ~(4 << 16), REG_PWM_PCR);
+		else
+			__raw_writel(__raw_readl(REG_PWM_PCR) | (4 << 16), REG_PWM_PCR);
+	}
+
+	local_irq_restore(flags);
+#ifdef DEBUG_PWM
+	pwm_dbg();
+#endif
+	return 0;
+}
 
 
 static int nuc980_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
@@ -172,6 +208,7 @@ static struct pwm_ops nuc980_pwm_ops = {
 	.enable = nuc980_pwm_enable,
 	.disable = nuc980_pwm_disable,
 	.config = nuc980_pwm_config,
+	.set_polarity = nuc980_pwm_set_polarity,
 	.owner = THIS_MODULE,
 };
 

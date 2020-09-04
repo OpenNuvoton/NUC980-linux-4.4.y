@@ -68,11 +68,11 @@
 #define REG_BCH_ECC_ADDR11	(FMI_BA+0x92C)	/* BCH error byte address 11 */
 
 /* NAND-type Flash BCH Error Data Registers */
-#define REG_BCH_ECC_DATA0	(FMI_BA+0x980)	/* BCH error byte data 0 */
+#define REG_BCH_ECC_DATA0	(FMI_BA+0x960)	/* BCH error byte data 0 */
 #define REG_BCH_ECC_DATA1	(FMI_BA+0x964)	/* BCH error byte data 1 */
 #define REG_BCH_ECC_DATA2	(FMI_BA+0x968)	/* BCH error byte data 2 */
 #define REG_BCH_ECC_DATA3	(FMI_BA+0x96C)	/* BCH error byte data 3 */
-#define REG_BCH_ECC_DATA4	(FMI_BA+0x980)	/* BCH error byte data 4 */
+#define REG_BCH_ECC_DATA4	(FMI_BA+0x970)	/* BCH error byte data 4 */
 #define REG_BCH_ECC_DATA5	(FMI_BA+0x974)	/* BCH error byte data 5 */
 
 /* NAND-type Flash Redundant Area Registers */

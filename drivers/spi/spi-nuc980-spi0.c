@@ -829,8 +829,14 @@ static int nuc980_spi0_probe(struct platform_device *pdev)
 	p = devm_pinctrl_get_select(&pdev->dev, "spi0-ss1-PG15");
 #elif defined(CONFIG_SPI_NUC980_SPI0_PC) && !defined(CONFIG_SPI_NUC980_SPI0_SS1)
 	p = devm_pinctrl_get_select(&pdev->dev, "spi0-PC");
-#elif defined(CONFIG_SPI_NUC980_SPI0_PD) && defined(CONFIG_SPI_NUC980_SPI0_SS1_PC0)
+#if defined(CONFIG_BOARD_CHILI)
+	p = devm_pinctrl_get_select(&pdev->dev, "spi0-PC1");
+#endif
+#elif defined(CONFIG_SPI_NUC980_SPI0_PC) && defined(CONFIG_SPI_NUC980_SPI0_SS1_PC0)
 	p = devm_pinctrl_get_select(&pdev->dev, "spi0-ss1-PC0");
+#if defined(CONFIG_BOARD_CHILI)
+	p = devm_pinctrl_get_select(&pdev->dev, "spi0-ss1-PC0_1");
+#endif
 #endif
 #endif
 	if(IS_ERR(p)) {

@@ -80,7 +80,7 @@ struct nuc980_fmi_host {
 	int irq;
 
 	int present;
-	struct clk *fmi_clk, *upll_clk;
+	struct clk *fmi_clk, *upll_clk, *xin_clk, *div_clk, *mux_clk;
 	/*
 	 * Flag indicating when the command has been sent. This is used to
 	 * work out whether or not to send the stop
@@ -624,12 +624,13 @@ static void nuc980_fmi_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		}
 		//printk("ios->clock=%d\n",ios->clock);
 		if (ios->clock <= 400000) {
-			clk_set_rate(host->upll_clk, 100000000);
-			clk_set_rate(host->fmi_clk, ios->clock);
+			clk_set_parent(host->mux_clk, host->xin_clk);
+			clk_set_rate(host->div_clk, ios->clock);
 			nuc980_fmi_write(REG_EMMCCSR, nuc980_fmi_read(REG_EMMCCSR) | EMMCCSR_CLK74_OE);
 			while (nuc980_fmi_read(REG_EMMCCSR) & EMMCCSR_CLK74_OE);
 		} else {
-			clk_set_rate(host->fmi_clk, ios->clock);
+			clk_set_parent(host->mux_clk, host->upll_clk);
+			clk_set_rate(host->div_clk, ios->clock);
 		}
 		break;
 	default:
@@ -811,6 +812,7 @@ static int nuc980_fmi_probe(struct platform_device *pdev)
 	struct clk *clkmux;
 	struct pinctrl *p;
 	struct clk *fmi_clk,*upll_clk;
+	struct clk *xin_clk=NULL,*div_clk=NULL;
 	ENTRY();
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res)
@@ -846,15 +848,24 @@ static int nuc980_fmi_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	upll_clk = clk_get(NULL, "sdh0_eclk_div");
+	xin_clk = clk_get(NULL, "xin");
+	if (IS_ERR(upll_clk)) {
+		printk(KERN_ERR "nuc980-fmi:failed to get sd0 clock source\n");
+		ret = PTR_ERR(upll_clk);
+		return ret;
+	}
+
+	upll_clk = clk_get(NULL, "upll");
 	if (IS_ERR(upll_clk)) {
 		printk(KERN_ERR "nuc980-fmi:failed to get sd0 clock source\n");
 		ret = PTR_ERR(upll_clk);
 		return ret;
 	}
 	clk_set_parent(clkmux, upll_clk);
-	//clk_set_rate(upll_clk, 33000000);
-	clk_set_rate(upll_clk, 10000000);
+
+	div_clk = clk_get(NULL, "sdh0_eclk_div");
+
+	clk_set_rate(div_clk, 10000000);
 
 	mmc = mmc_alloc_host(sizeof(struct nuc980_fmi_host), &pdev->dev);
 	if (!mmc) {
@@ -888,6 +899,9 @@ static int nuc980_fmi_probe(struct platform_device *pdev)
 
 	host->fmi_clk = fmi_clk;
 	host->upll_clk = upll_clk;
+	host->xin_clk= xin_clk;
+	host->div_clk = div_clk;
+	host->mux_clk = clkmux;
 
 	nuc980_fmi_disable(host);
 	nuc980_fmi_enable(host);

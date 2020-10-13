@@ -282,8 +282,15 @@ static const unsigned qspi0_5_pins[] = {0x30, 0x32, 0x33, 0x34, 0x35,0x36, 0x37}
 static const unsigned spi0_0_pins[] = {0x38, 0x39, 0x3A, 0x3B};
 static const unsigned spi0_1_pins[] = {0x31, 0x38, 0x39, 0x3A, 0x3B}; // ss1: PD1
 static const unsigned spi0_2_pins[] = {0x6F, 0x38, 0x39, 0x3A, 0x3B}; // ss1: PG15
+#if defined(CONFIG_BOARD_CHILI)
+static const unsigned spi0_3_pins[] = {0x25, 0x26, 0x28};
+static const unsigned spi0_4_pins[] = {0x20, 0x25, 0x26, 0x28}; // ss1: PC0
+#else
 static const unsigned spi0_3_pins[] = {0x25, 0x26, 0x27, 0x28};
 static const unsigned spi0_4_pins[] = {0x20, 0x25, 0x26, 0x27, 0x28}; // ss1: PC0
+#endif
+static const unsigned spi0_3_1pins[] = {0x24};
+static const unsigned spi0_4_1pins[] = {0x24}; 
 
 static const unsigned spi1_0_pins[] = {0x19, 0x1A, 0x1B, 0x1C};
 static const unsigned spi1_1_pins[] = {0x6B, 0x6C, 0x6D, 0x6E};
@@ -1053,10 +1060,22 @@ static const struct nuc980_pinctrl_group nuc980_pinctrl_groups[] = {
 		.func = 0x5,
 	},
 	{
+		.name = "spi0_3_1grp",
+		.pins = spi0_3_1pins,
+		.num_pins = ARRAY_SIZE(spi0_3_1pins),
+		.func = 0x6,
+	},
+	{
 		.name = "spi0_4_grp",
 		.pins = spi0_4_pins,
 		.num_pins = ARRAY_SIZE(spi0_4_pins),
 		.func = 0x5,
+	},
+	{
+		.name = "spi0_4_1grp",
+		.pins = spi0_4_1pins,
+		.num_pins = ARRAY_SIZE(spi0_4_1pins),
+		.func = 0x6,
 	},
 	{
 		.name = "spi1_0_grp",
@@ -2064,8 +2083,8 @@ static const char * const qspi0_groups[] = {"qspi0_3_grp"};
 static const char * const qspi0_quad_groups[] = {"qspi0_2_grp"};
 static const char * const qspi0_ss1_groups[] = {"qspi0_0_grp", "qspi0_1_grp"};
 static const char * const qspi0_quad_ss1_groups[] = {"qspi0_4_grp","qspi0_5_grp"};
-static const char * const spi0_groups[] = {"spi0_0_grp","spi0_3_grp"};
-static const char * const spi0_ss1_groups[] = {"spi0_1_grp","spi0_2_grp","spi0_4_grp"};
+static const char * const spi0_groups[] = {"spi0_0_grp","spi0_3_grp","spi0_3_1grp"};
+static const char * const spi0_ss1_groups[] = {"spi0_1_grp","spi0_2_grp","spi0_4_grp","spi0_4_1grp"};
 static const char * const spi1_groups[] = {"spi1_0_grp", "spi1_1_grp", "spi1_3_grp"};
 static const char * const spi1_ss1_groups[] = {"spi1_2_grp", "spi1_4_grp"};
 static const char * const can0_groups[] = {"can0_0_grp", "can0_1_grp", "can0_2_grp", "can0_3_grp"};
@@ -3573,11 +3592,27 @@ static const struct pinctrl_map nuc980_pinmap[] = {
 	},
 	{
 		.dev_name = "nuc980-spi0.0",
+		.name = "spi0-PC1",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc980",
+		.data.mux.function = "spi0",
+		.data.mux.group = "spi0_3_1grp",
+	},
+	{
+		.dev_name = "nuc980-spi0.0",
 		.name = "spi0-ss1-PC0",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc980",
 		.data.mux.function = "spi0_ss1",
 		.data.mux.group = "spi0_4_grp",
+	},
+	{
+		.dev_name = "nuc980-spi0.0",
+		.name = "spi0-ss1-PC0_1",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc980",
+		.data.mux.function = "spi0_ss1",
+		.data.mux.group = "spi0_4_1grp",
 	},
 	{
 		.dev_name = "nuc980-spi1.0",

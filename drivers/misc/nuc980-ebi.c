@@ -133,10 +133,10 @@ static int ebi_open(struct inode *inode, struct file *filp)
 		s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-0");  //ebi 16bit cs0
 		break;
 	case 1:
-		s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-4");  //ebi 16bit cs1
+		s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-2");  //ebi 16bit cs1
 		break;
 	case 2:
-		s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-8");  //ebi 16bit cs2
+		s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-4");  //ebi 16bit cs2
 		break;
 	};
 	if (IS_ERR(s)) {

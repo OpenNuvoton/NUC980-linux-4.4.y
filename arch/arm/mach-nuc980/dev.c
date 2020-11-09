@@ -851,7 +851,7 @@ static struct flash_platform_data nuc980_qspi0_flash_data = {
 static struct spi_board_info nuc980_qspi0_board_info[] __initdata = {
 #ifdef CONFIG_MTD_M25P80
 	{
-#if defined(CONFIG_BOARD_IOT) || defined(CONFIG_BOARD_LORAG)
+#if defined(CONFIG_BOARD_IOT) || defined(CONFIG_BOARD_ETH2UART) || defined(CONFIG_BOARD_LORAG)
 		.modalias = "mt29f",
 #else
 		.modalias = "m25p80",

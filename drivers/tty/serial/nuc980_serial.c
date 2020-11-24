@@ -96,6 +96,7 @@ struct uart_nuc980_port {
 	unsigned int tx_dma_len;
 
 	unsigned char uart_pdma_enable_flag;
+	unsigned char pdma_baud_rate_set_flag;
 	unsigned char Tx_pdma_busy_flag;
 
 	unsigned int pdma_time_out_prescaler;
@@ -206,6 +207,7 @@ static void set_pdma_flag(struct uart_nuc980_port *p, int id)
 #if defined(CONFIG_ENABLE_UART1_PDMA) || defined(CONFIG_USE_OF)
 	if(id == 1) {
 		p->uart_pdma_enable_flag = 1;
+		p->pdma_baud_rate_set_flag = 0;
 		p->PDMA_UARTx_RX = PDMA_UART1_RX;
 		p->PDMA_UARTx_TX = PDMA_UART1_TX;
 	}
@@ -214,6 +216,7 @@ static void set_pdma_flag(struct uart_nuc980_port *p, int id)
 #if defined(CONFIG_ENABLE_UART2_PDMA) || defined(CONFIG_USE_OF)
 	if(id == 2) {
 		p->uart_pdma_enable_flag = 1;
+		p->pdma_baud_rate_set_flag = 0;
 		p->PDMA_UARTx_RX = PDMA_UART2_RX;
 		p->PDMA_UARTx_TX = PDMA_UART2_TX;
 	}
@@ -222,6 +225,7 @@ static void set_pdma_flag(struct uart_nuc980_port *p, int id)
 #if defined(CONFIG_ENABLE_UART3_PDMA) || defined(CONFIG_USE_OF)
 	if(id == 3) {
 		p->uart_pdma_enable_flag = 1;
+		p->pdma_baud_rate_set_flag = 0;
 		p->PDMA_UARTx_RX = PDMA_UART3_RX;
 		p->PDMA_UARTx_TX = PDMA_UART3_TX;
 	}
@@ -230,6 +234,7 @@ static void set_pdma_flag(struct uart_nuc980_port *p, int id)
 #if defined(CONFIG_ENABLE_UART4_PDMA) || defined(CONFIG_USE_OF)
 	if(id == 4) {
 		p->uart_pdma_enable_flag = 1;
+		p->pdma_baud_rate_set_flag = 0;
 		p->PDMA_UARTx_RX = PDMA_UART4_RX;
 		p->PDMA_UARTx_TX = PDMA_UART4_TX;
 	}
@@ -238,6 +243,7 @@ static void set_pdma_flag(struct uart_nuc980_port *p, int id)
 #if defined(CONFIG_ENABLE_UART5_PDMA) || defined(CONFIG_USE_OF)
 	if(id == 5) {
 		p->uart_pdma_enable_flag = 1;
+		p->pdma_baud_rate_set_flag = 0;
 		p->PDMA_UARTx_RX = PDMA_UART5_RX;
 		p->PDMA_UARTx_TX = PDMA_UART5_TX;
 	}
@@ -246,6 +252,7 @@ static void set_pdma_flag(struct uart_nuc980_port *p, int id)
 #if defined(CONFIG_ENABLE_UART6_PDMA) || defined(CONFIG_USE_OF)
 	if(id == 6) {
 		p->uart_pdma_enable_flag = 1;
+		p->pdma_baud_rate_set_flag = 0;
 		p->PDMA_UARTx_RX = PDMA_UART6_RX;
 		p->PDMA_UARTx_TX = PDMA_UART6_TX;
 	}
@@ -254,6 +261,7 @@ static void set_pdma_flag(struct uart_nuc980_port *p, int id)
 #if defined(CONFIG_ENABLE_UART7_PDMA) || defined(CONFIG_USE_OF)
 	if(id == 7) {
 		p->uart_pdma_enable_flag = 1;
+		p->pdma_baud_rate_set_flag = 0;
 		p->PDMA_UARTx_RX = PDMA_UART7_RX;
 		p->PDMA_UARTx_TX = PDMA_UART7_TX;
 	}
@@ -262,6 +270,7 @@ static void set_pdma_flag(struct uart_nuc980_port *p, int id)
 #if defined(CONFIG_ENABLE_UART8_PDMA) || defined(CONFIG_USE_OF)
 	if(id == 8) {
 		p->uart_pdma_enable_flag = 1;
+		p->pdma_baud_rate_set_flag = 0;
 		p->PDMA_UARTx_RX = PDMA_UART8_RX;
 		p->PDMA_UARTx_TX = PDMA_UART8_TX;
 	}
@@ -270,6 +279,7 @@ static void set_pdma_flag(struct uart_nuc980_port *p, int id)
 #if defined(CONFIG_ENABLE_UART9_PDMA) || defined(CONFIG_USE_OF)
 	if(id == 9) {
 		p->uart_pdma_enable_flag = 1;
+		p->pdma_baud_rate_set_flag = 0;
 		p->PDMA_UARTx_RX = PDMA_UART9_RX;
 		p->PDMA_UARTx_TX = PDMA_UART9_TX;
 	}
@@ -1055,8 +1065,9 @@ nuc980serial_set_termios(struct uart_port *port, struct ktermios *termios, struc
 	spin_unlock_irqrestore(&up->port.lock, flags);
 
 #if defined(CONFIG_ENABLE_UART_PDMA) || defined(CONFIG_USE_OF)
-	if(up->uart_pdma_enable_flag == 1) {
+	if(up->uart_pdma_enable_flag == 1) && (up->pdma_baud_rate_set_flag != 1) {
 		if(up->baud_rate != baud){
+			up->pdma_baud_rate_set_flag = 1;
 			up->baud_rate = baud;
 
 			nuc980_uart_cal_pdma_time_out(up, baud);

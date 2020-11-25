@@ -1065,7 +1065,7 @@ nuc980serial_set_termios(struct uart_port *port, struct ktermios *termios, struc
 	spin_unlock_irqrestore(&up->port.lock, flags);
 
 #if defined(CONFIG_ENABLE_UART_PDMA) || defined(CONFIG_USE_OF)
-	if(up->uart_pdma_enable_flag == 1) && (up->pdma_baud_rate_set_flag != 1) {
+	if((up->uart_pdma_enable_flag == 1) && (up->pdma_baud_rate_set_flag != 1)) {
 		if(up->baud_rate != baud){
 			up->pdma_baud_rate_set_flag = 1;
 			up->baud_rate = baud;

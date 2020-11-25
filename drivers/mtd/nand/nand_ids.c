@@ -29,18 +29,26 @@ struct nand_flash_dev nand_flash_ids[] = {
 	 * listed by full ID. We list them first so that we can easily identify
 	 * the most specific match.
 	 */
+#ifndef CONFIG_WINBOND_W25N02KV
 	{
 		"W25N01GV 1G 3.3V",
 		{ .id = {0xef, 0xaa, 0x21} }, SZ_2K, 128, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
 	},
+#else
 	{
 		"W25N02KV 2G 3.3V",
 		{ .id = {0xef, 0xaa, 0x22} }, SZ_2K, 256, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
 	},
+#endif
 	{
 		"W25M02GV 2G 3.3V",
 		{ .id = {0xef, 0xab} }, SZ_2K, 256, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
 	},
+	{
+		"GD5FGQ4UExxG 1G 3.3V",
+		{ .id = {0xc8, 0xd1} }, SZ_2K, 128, SZ_128K, 0, 2, 128, NAND_ECC_INFO(1, SZ_512)
+	},
+
 	{
 		"MX35LF1GE4AB 1G 3.3V",
 		{ .id = {0xc2, 0x12} }, SZ_2K, 128, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
@@ -246,6 +254,7 @@ struct nand_manufacturers nand_manuf_ids[] = {
 	{NAND_MFR_WINBOND, "Winbond"},
 	{NAND_MFR_XTX, "XTX"},
 	{NAND_MFR_MK, "MK"},
+	{NAND_MFR_GIGA, "Giga Device"},
 	{0x0, "Unknown"}
 };
 

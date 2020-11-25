@@ -163,6 +163,20 @@ struct spinand_ops spinand_dev[] = {
 		micron_parse_id,
 		micron_verify_ecc,
 	},
+	{
+		NAND_MFR_GIGA,		//GD5FGQ4UExxG
+		0xd1,
+		gigadevice_set_defaults,
+		gigadevice_read_cmd,
+		//winbond_read_data,
+		macronix_read_data,
+		gigadevice_write_cmd,
+		//winbond_write_data,
+		macronix_write_data,
+		gigadevice_erase_blk,
+		gigadevice_parse_id_D1,	//GD5FGQ4UExxG
+		macronix_verify_ecc,
+	},
 	{ },
 };
 
@@ -798,7 +812,9 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 
 #ifdef CONFIG_SPI_NUC980_QSPI0_QUAD
 	if (!is_set_spinand_quad) {
-		if ((nand_id[1] == NAND_MFR_MACRONIX) || (nand_id[1] == NAND_MFR_XTX) || (nand_id[1] == NAND_MFR_MK)) {
+		if ((nand_id[1] == NAND_MFR_MACRONIX) || (nand_id[1] == NAND_MFR_XTX)
+		 || (nand_id[1] == NAND_MFR_MK) || (nand_id[1] == NAND_MFR_GIGA)) //GD5FGQ4UExxG QUAD mode SPI
+		 {
 			ret = spinand_set_quad_mode(spi_nand, 1);
 			if (ret < 0) {
 				dev_err(&spi_nand->dev, "enable quad mode failed!!\n");

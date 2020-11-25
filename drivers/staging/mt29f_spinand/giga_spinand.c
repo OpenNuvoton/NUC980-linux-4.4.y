@@ -204,4 +204,13 @@ int micron_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 	return 0;
 }
 
+//GD5FGQ4UExxG device ID==C8D1
+int gigadevice_parse_id_D1(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
+{
+	if (nand_id[1] != NAND_MFR_GIGA)
+		return -EINVAL;
+
+	return 0;
+}
+
 MODULE_DESCRIPTION("SPI NAND driver for Gigadevice and Macronix");

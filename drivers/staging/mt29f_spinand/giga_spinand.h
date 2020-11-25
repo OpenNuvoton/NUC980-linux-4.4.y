@@ -34,6 +34,9 @@ void gigadevice_erase_blk(struct spinand_cmd *cmd, u32 page_id);
 
 int gigadevice_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id);
 
+//GD5FGQ4UExxG device ID=C8D1
+int gigadevice_parse_id_D1(struct spi_device *spi_nand, u8 *nand_id, u8 *id);
+
 int gigadevice_verify_ecc(u8 status);
 
 int dummy_verify_ecc(u8 status);

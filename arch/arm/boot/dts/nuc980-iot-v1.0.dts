@@ -99,12 +99,26 @@
 		pwm1: pwm1@b0059000 {
 			status = "disabled";
 		};
-
+		pinctrl: pinctrl@b0000000 {
+			qspi0 {
+				pinctrl_qspi0_quad: qspi0_quad {
+					nuvoton,pins =
+						<3 0x2 0x1 0
+						 3 0x3 0x1 0
+						 3 0x4 0x1 0
+						 3 0x5 0x1 0
+						 3 0x6 0x1 0
+						 3 0x7 0x1 0
+						>;
+				};
+			};
+		};
 		qspi0: qspi0@b0060000 {
 			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
-
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_qspi0_quad>;
 			num_cs  = <2>;
 			lsb	 = <0>;
 			txneg   = <1>;
@@ -117,19 +131,24 @@
 			bus_num	= <0>;
 
 			flash: mt29f@0 {
-				compatible = "mt29f";
+				compatible = "spinand,mt29f";
 				#address-cells = <1>;
 				#size-cells = <1>;
 				reg = <0>;
 				spi-max-frequency = <12000000>;
-
+				spi-rx-bus-width = <4>;
+				spi-tx-bus-width = <4>;
 				partition@0 {
-					label = "kernel";
-					reg = <0x00000000 0x0800000>;
+					label = "u-boot";
+					reg = <0x00000000 0x00200000>;
 				};
 				partition@1 {
-					label = "rootfs";
-					reg = <0x0800000 0x0800000>;
+					label = "kernel";
+					reg = <0x00200000 0x01600000>;
+				};
+				partition@2 {
+					label = "user";
+					reg = <0x01600000 0x06A00000>;
 				};
 			};
 		};
@@ -150,11 +169,6 @@
 			txbitlen = <8>;
 			bus_num	= <1>;
 
-			spidev@0x01 {
-				compatible = "spidev";
-				spi-max-frequency = <30000000>;
-				reg = <0>;
-			};
 		};
 
 		spi1: spi1@b0062000 {
@@ -173,11 +187,6 @@
 			txbitlen = <8>;
 			bus_num	= <2>;
 
-			spidev@0x01 {
-				compatible = "spidev";
-				spi-max-frequency = <30000000>;
-				reg = <0>;
-			};
 		};
 
 		etimer0: etimer0@b0050000 {

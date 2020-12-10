@@ -205,6 +205,7 @@ int micron_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 }
 
 //GD5FGQ4UExxG device ID==C8D1
+//GD5FGQ5UExxG device ID==C851
 int gigadevice_parse_id_D1(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 {
 	if (nand_id[1] != NAND_MFR_GIGA)
@@ -212,5 +213,15 @@ int gigadevice_parse_id_D1(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 
 	return 0;
 }
+
+//ID == 98 E2 40
+int kioxia_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
+{
+	if (nand_id[1] != NAND_MFR_TOSHIBA)
+		return -EINVAL;
+
+	return 0;
+}
+
 
 MODULE_DESCRIPTION("SPI NAND driver for Gigadevice and Macronix");

@@ -177,6 +177,32 @@ struct spinand_ops spinand_dev[] = {
 		gigadevice_parse_id_D1,	//GD5FGQ4UExxG
 		macronix_verify_ecc,
 	},
+	{
+		NAND_MFR_GIGA,		//GD5FGQ5UExxG
+		0x51,
+		gigadevice_set_defaults,
+		gigadevice_read_cmd,
+		//winbond_read_data,
+		macronix_read_data,
+		gigadevice_write_cmd,
+		//winbond_write_data,
+		macronix_write_data,
+		gigadevice_erase_blk,
+		gigadevice_parse_id_D1,	//GD5FGQ5UExxG
+		macronix_verify_ecc,
+	},
+	{
+		NAND_MFR_TOSHIBA,
+		0xe2,
+		gigadevice_set_defaults,
+		gigadevice_read_cmd,
+		winbond_read_data,
+		gigadevice_write_cmd,
+		winbond_write_data,
+		gigadevice_erase_blk,
+		kioxia_parse_id,	//TC58CVG0S3HRAIJ
+		macronix_verify_ecc,
+	},
 	{ },
 };
 
@@ -813,7 +839,8 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 #ifdef CONFIG_SPI_NUC980_QSPI0_QUAD
 	if (!is_set_spinand_quad) {
 		if ((nand_id[1] == NAND_MFR_MACRONIX) || (nand_id[1] == NAND_MFR_XTX)
-		 || (nand_id[1] == NAND_MFR_MK) || (nand_id[1] == NAND_MFR_GIGA)) //GD5FGQ4UExxG QUAD mode SPI
+		 || (nand_id[1] == NAND_MFR_MK) || (nand_id[1] == NAND_MFR_GIGA) //GD5FGQ4UExxG QUAD mode SPI
+		 || (nand_id[1] == NAND_MFR_TOSHIBA)) 				 //TC58CVG0S3HRAIJ QUAD mode SPI
 		 {
 			ret = spinand_set_quad_mode(spi_nand, 1);
 			if (ret < 0) {

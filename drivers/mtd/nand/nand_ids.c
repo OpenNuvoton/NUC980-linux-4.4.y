@@ -29,7 +29,7 @@ struct nand_flash_dev nand_flash_ids[] = {
 	 * listed by full ID. We list them first so that we can easily identify
 	 * the most specific match.
 	 */
-#ifndef CONFIG_WINBOND_W25N02KV
+#ifndef CONFIG_WINBOND_W25N02
 	{
 		"W25N01GV 1G 3.3V",
 		{ .id = {0xef, 0xaa, 0x21} }, SZ_2K, 128, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)

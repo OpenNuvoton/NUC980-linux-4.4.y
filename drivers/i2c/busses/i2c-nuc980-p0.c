@@ -372,7 +372,6 @@ static void i2c_nuc980_irq_master_TRx(struct nuc980_i2c *i2c, unsigned long iics
 
 		if (!(i2c->msg->flags & I2C_M_IGNORE_NAK))
 		{
-			printk("\n i2c_0: ack was not received\n");
 			//writel((I2C_CTL_STA | I2C_CTL_STO | I2C_CTL_SI), (i2c->regs+CTL0));
 			nuc980_i2c0_stop(i2c, -ENXIO);
 		}

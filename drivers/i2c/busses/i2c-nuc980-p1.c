@@ -765,7 +765,7 @@ static int nuc980_i2c1_probe(struct platform_device *pdev)
 	}
 
 	// Set Clock divider
-	ret = clk_get_rate(i2c->clk)/(busfreq * 4) - 1;
+	ret = (clk_get_rate(i2c->clk) * 10) / (busfreq * 4) + 5) / 10 - 1);
 	writel(ret & 0xffff, i2c->regs + CLKDIV);
 
 	writel((readl(i2c->regs+CTL0)|(0x1 << 6)), i2c->regs + CTL0);

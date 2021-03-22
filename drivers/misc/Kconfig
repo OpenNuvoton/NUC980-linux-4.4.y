@@ -798,7 +798,7 @@ choice
 	help
 	  Select SC0 multi function pin.
 
-	config NUC980_SC0_PG
+	config NUC980_SC0_PA
 		bool "Use port A"
 	config NUC980_SC0_PC
 		bool "Use port C"

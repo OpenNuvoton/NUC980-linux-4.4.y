@@ -395,6 +395,10 @@ static void i2c_nuc980_irq_master_TRx(struct nuc980_i2c *i2c, unsigned long iics
 			nuc980_i2c3_stop(i2c, 0);
 			//return;
 		}
+		else if(is_lastmsg(i2c) && (i2c->msg->len == 1))
+		{
+			writel(((readl(i2c->regs+CTL0) &~ (0x3C))|I2C_CTL_SI), (i2c->regs+CTL0));
+		}
 		else
 			writel(((readl(i2c->regs+CTL0) &~ (0x3C))|I2C_CTL_SI_AA), (i2c->regs+CTL0));
 	}

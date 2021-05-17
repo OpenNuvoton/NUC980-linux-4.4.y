@@ -946,6 +946,8 @@ static void nuc980serial_shutdown(struct uart_port *port)
 
 #if defined(CONFIG_ENABLE_UART_PDMA) || defined(CONFIG_USE_OF)
 	if(up->uart_pdma_enable_flag == 1) {
+		up->pdma_baud_rate_set_flag = 0;
+
 		dma_release_channel(pdma_rx->chan_rx);
 		dma_release_channel(pdma_tx->chan_tx);
 
@@ -1066,19 +1068,17 @@ nuc980serial_set_termios(struct uart_port *port, struct ktermios *termios, struc
 
 #if defined(CONFIG_ENABLE_UART_PDMA) || defined(CONFIG_USE_OF)
 	if((up->uart_pdma_enable_flag == 1) && (up->pdma_baud_rate_set_flag != 1)) {
-		if(up->baud_rate != baud){
-			up->pdma_baud_rate_set_flag = 1;
-			up->baud_rate = baud;
+		up->pdma_baud_rate_set_flag = 1;
+		up->baud_rate = baud;
 
-			nuc980_uart_cal_pdma_time_out(up, baud);
+		nuc980_uart_cal_pdma_time_out(up, baud);
 
-			nuc980_prepare_RX_dma(up);
+		nuc980_prepare_RX_dma(up);
 
-			nuc980_prepare_TX_dma(up);
+		nuc980_prepare_TX_dma(up);
 
-			// trigger pdma
-			serial_out(up, UART_REG_IER, (serial_in(up, UART_REG_IER)|RXPDMAEN));
-		}
+		// trigger pdma
+		serial_out(up, UART_REG_IER, (serial_in(up, UART_REG_IER)|RXPDMAEN));
 	}
 #endif
 }

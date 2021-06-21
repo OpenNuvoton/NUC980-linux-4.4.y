@@ -482,7 +482,8 @@ int fmiSMCorrectData (struct mtd_info *mtd, unsigned long uDAddr )
 #endif
 					fmiSM_CorrectData_BCH(jj*4+ii, uErrorCnt, (char*)uDAddr);
 					uReportErrCnt += uErrorCnt;
-					break;
+					uStatus >>= 8;
+					continue;
 				} else // uncorrectable error or ECC error
 				{
 #ifdef NUC980_NAND_DEBUG

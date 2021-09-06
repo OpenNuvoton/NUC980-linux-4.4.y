@@ -148,8 +148,8 @@ struct nuc980_dma_chan {
 	u32             runtime_ctrl;
 };
 
-struct mutex pdma0_mutex; /* shared between the threads */
-struct mutex pdma1_mutex; /* shared between the threads */
+DEFINE_SPINLOCK(pdma0_lock); /* shared between the threads */
+DEFINE_SPINLOCK(pdma1_lock); /* shared between the threads */
 
 /**
  * struct nuc980_dma_engine - the NUC980 DMA engine instance
@@ -351,10 +351,8 @@ void nuc980_dma_SetTimeOut(struct nuc980_dma_chan *edmac,u32 prescaler,u32 count
 	}
 
 	if(edmac->irq==IRQ_PDMA0) {
-		mutex_lock(&pdma0_mutex);
 		pdma=PDMA0;
 	} else {
-		mutex_lock(&pdma1_mutex);
 		pdma=PDMA1;
 	}
 	ch =edmac->id ;
@@ -362,11 +360,6 @@ void nuc980_dma_SetTimeOut(struct nuc980_dma_chan *edmac,u32 prescaler,u32 count
 	if(prescaler ==0 && counter ==0) {
 		pdma->TOUTIEN &=~(1 << ch);
 		pdma->TOUTEN &=~(1 << ch);  /* Enable time-out funciton */
-
-		if(edmac->irq==IRQ_PDMA0)
-			mutex_unlock(&pdma0_mutex);
-		else
-			mutex_unlock(&pdma1_mutex);
 
 		return;
 	}
@@ -399,11 +392,6 @@ void nuc980_dma_SetTimeOut(struct nuc980_dma_chan *edmac,u32 prescaler,u32 count
 
 	pdma->TOUTEN |= (1 << ch);  /* Enable time-out funciton */
 	pdma->TOUTIEN |= (1 << ch); /* Enable time-out interrupt */
-	if(edmac->irq==IRQ_PDMA0)
-		mutex_unlock(&pdma0_mutex);
-	else
-		mutex_unlock(&pdma1_mutex);
-
 	LEAVE();
 }
 
@@ -465,7 +453,6 @@ static void fill_desc(struct nuc980_dma_chan *edmac)
 	DMA_DEBUG("edmac->runtime_ctrl=0x%08x\n",edmac->runtime_ctrl);
 	DMA_DEBUG("desc->ctl=0x%08x\n",desc->ctl);
 	if(edmac->irq==IRQ_PDMA0) {
-		mutex_lock(&pdma0_mutex);
 		DMA_DEBUG("PDMA0[%d] CTL=0x%08x\n",edmac->id,PDMA0->DSCT[edmac->id].CTL);
 		if((PDMA0->DSCT[edmac->id].CTL & 0x3)!=0) {
 			regT=PDMA0->CHCTL;
@@ -478,10 +465,8 @@ static void fill_desc(struct nuc980_dma_chan *edmac)
 		}
 		PDMA0->INTEN |= (1<<edmac->id);
 		nuc980_set_transfer_mode(PDMA0,edmac->id,desc->config.reqsel);
-		mutex_unlock(&pdma0_mutex);
 		pdma = PDMA0;
 	} else {
-		mutex_lock(&pdma1_mutex);
 		DMA_DEBUG("PDMA1[%d] CTL=0x%08x\n",edmac->id,PDMA1->DSCT[edmac->id].CTL);
 		if((PDMA1->DSCT[edmac->id].CTL & 0x3)!=0) {
 			regT=PDMA1->CHCTL;
@@ -494,7 +479,6 @@ static void fill_desc(struct nuc980_dma_chan *edmac)
 		}
 		PDMA1->INTEN |= (1<<edmac->id);
 		nuc980_set_transfer_mode(PDMA1,edmac->id,desc->config.reqsel);
-		mutex_unlock(&pdma1_mutex);
 		pdma = PDMA1;
 	}
 	pdma->DSCT[edmac->id].CTL |= (edmac->runtime_ctrl | ((desc->size - 1UL) << PDMA_DSCT_CTL_TXCNT_Pos));
@@ -523,7 +507,6 @@ static void fill_desc_sc(struct nuc980_dma_chan *edmac)
 	desc = nuc980_dma_get_active(edmac);
 
 	if(edmac->irq==IRQ_PDMA0) {
-		mutex_lock(&pdma0_mutex);
 		DMA_DEBUG("SC PDMA0[%d] CTL=0x%08x\n",edmac->id,PDMA0->DSCT[edmac->id].CTL);
 		if((PDMA0->DSCT[edmac->id].CTL & 0x3)!=0) {
 			regT=PDMA0->CHCTL;
@@ -536,9 +519,7 @@ static void fill_desc_sc(struct nuc980_dma_chan *edmac)
 		}
 		nuc980_set_transfer_mode(PDMA0,edmac->id,desc->config.reqsel);
 		PDMA0->INTEN |= (1<<edmac->id);
-		mutex_unlock(&pdma0_mutex);
 	} else {
-		mutex_lock(&pdma1_mutex);
 		DMA_DEBUG("SC PDMA1[%d] CTL=0x%08x\n",edmac->id,PDMA1->DSCT[edmac->id].CTL);
 		if((PDMA1->DSCT[edmac->id].CTL & 0x3)!=0) {
 			regT=PDMA1->CHCTL;
@@ -551,7 +532,6 @@ static void fill_desc_sc(struct nuc980_dma_chan *edmac)
 		}
 		nuc980_set_transfer_mode(PDMA1,edmac->id,desc->config.reqsel);
 		PDMA1->INTEN |= (1<<edmac->id);
-		mutex_unlock(&pdma1_mutex);
 	}
 
 	if(desc->dir ==DMA_DEV_TO_MEM) {
@@ -594,6 +574,12 @@ static void hw_submit(struct nuc980_dma_chan *edmac)
 	struct nuc980_dma_desc *desc;
 	ENTRY();
 	desc = nuc980_dma_get_active(edmac);
+
+	if(edmac->irq==IRQ_PDMA0)
+		spin_lock(&pdma0_lock);
+	else
+		spin_lock(&pdma1_lock);
+
 	/*
 	 * Since we allow clients to configure PW (peripheral width) we always
 	 * clear PW bits here and then set them according what is given in
@@ -650,6 +636,10 @@ static void hw_submit(struct nuc980_dma_chan *edmac)
 		}
 	}
 
+	if(edmac->irq==IRQ_PDMA0)
+		spin_unlock(&pdma0_lock);
+	else
+		spin_unlock(&pdma1_lock);
 	LEAVE();
 }
 
@@ -926,12 +916,10 @@ void nuc980_dma_emac_interrupt(struct nuc980_dma_chan *edmac,int status)
 	struct nuc980_dma_desc *desc=NULL;
 	struct nuc980_dma_done * done=NULL;
 	ENTRY();
-	//spin_lock(&edmac->lock);
 	desc = nuc980_dma_get_active(edmac);
 	if (!desc) {
 		dev_warn(chan2dev(edmac),
 		         "got interrupt while active list is empty\n");
-		//spin_unlock(&edmac->lock);
 		LEAVE();
 		return;
 	}
@@ -947,7 +935,6 @@ void nuc980_dma_emac_interrupt(struct nuc980_dma_chan *edmac,int status)
 		}
 
 		tasklet_schedule(&edmac->tasklet);
-		//spin_unlock(&edmac->lock);
 		return;
 	}
 
@@ -982,7 +969,6 @@ void nuc980_dma_emac_interrupt(struct nuc980_dma_chan *edmac,int status)
 		dev_warn(chan2dev(edmac), "unknown interrupt!\n");
 		break;
 	}
-	//spin_unlock(&edmac->lock);
 	LEAVE();
 }
 static irqreturn_t nuc980_dma_interrupt(int irq, void *dev_id)
@@ -1602,8 +1588,8 @@ static int nuc980_dma_probe(struct platform_device *pdev)
 	edma->hw_submit = hw_submit;
 	edma->hw_interrupt = hw_interrupt;
 	dma_cap_set(DMA_PRIVATE, dma_dev->cap_mask);
-	mutex_init(&pdma0_mutex);
-	mutex_init(&pdma1_mutex);
+	spin_lock_init(&pdma0_lock);
+	spin_lock_init(&pdma1_lock);
 
 	platform_set_drvdata(pdev, edma);
 

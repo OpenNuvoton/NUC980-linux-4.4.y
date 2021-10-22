@@ -69,6 +69,8 @@
 #define SSINAIEN	(0x01 << 13)
 #define SSACTIF		(0x01 << 2)
 #define SSINAIF		(0x01 << 3)
+#define SLVBEIF		(0x01 << 6)
+#define SLVURIF		(0x01 << 7)
 #define RXTHIF		(0x01 << 10)
 #define TXTHIF		(0x01 << 18)
 #define TXUFIF		(0x01 << 19)
@@ -81,8 +83,10 @@ static volatile int slave_done_state=0;
 static DECLARE_WAIT_QUEUE_HEAD(slave_done);
 
 static int SPI0_SlaveDataLen = 256;
-static int SPI0_SlaveData[256];
+static int SPI0_SlaveTxData[256];
+static int SPI0_SlaveRxData[256];
 static int TransmittedCnt = 0;
+static int ReceivedCnt = 0;
 static int InTransmitted = 0;
 
 struct nuc980_spi {
@@ -105,7 +109,8 @@ struct nuc980_spi {
 };
 
 
-static inline struct nuc980_spi0 *to_hw(struct spi_device *sdev) {
+static inline struct nuc980_spi0 *to_hw(struct spi_device *sdev)
+{
 	return spi_master_get_devdata(sdev->master);
 }
 
@@ -156,7 +161,7 @@ static inline void nuc980_spi0_chipsel(struct spi_device *spi, int value)
 }
 
 static inline void nuc980_spi0_setup_txbitlen(struct nuc980_spi *hw,
-                unsigned int txbitlen)
+        unsigned int txbitlen)
 {
 	unsigned int val;
 	unsigned long flags;
@@ -287,7 +292,7 @@ static inline void nuc980_set_divider(struct nuc980_spi *hw)
 }
 
 static int nuc980_spi0_update_state(struct spi_device *spi,
-                                    struct spi_transfer *t)
+                                     struct spi_transfer *t)
 {
 	struct nuc980_spi *hw = (struct nuc980_spi *)to_hw(spi);
 	unsigned int clk;
@@ -337,7 +342,7 @@ static int nuc980_spi0_update_state(struct spi_device *spi,
 }
 
 static int nuc980_spi0_setupxfer(struct spi_device *spi,
-                                 struct spi_transfer *t)
+                                  struct spi_transfer *t)
 {
 	struct nuc980_spi *hw = (struct nuc980_spi *)to_hw(spi);
 	int ret;
@@ -365,12 +370,12 @@ static int nuc980_spi0_setup(struct spi_device *spi)
 	if (ret)
 		return ret;
 
-	spin_lock(&hw->bitbang.lock);
+	spin_lock((spinlock_t *)&hw->bitbang.lock);
 	if (!hw->bitbang.busy) {
 		nuc980_set_divider(hw);
 		nuc980_slave_select(spi, 0);
 	}
-	spin_unlock(&hw->bitbang.lock);
+	spin_unlock((spinlock_t *)&hw->bitbang.lock);
 
 	return 0;
 }
@@ -460,12 +465,37 @@ static inline void nuc980_enable_ssinact_int(struct nuc980_spi *hw)
 static irqreturn_t nuc980_spi0_irq(int irq, void *dev)
 {
 	struct nuc980_spi *hw = dev;
-	unsigned int val, status;
+	unsigned int status;
 
 	status = __raw_readl(hw->regs + REG_STATUS);
 	__raw_writel(status, hw->regs + REG_STATUS);
 
+	if (status & (SLVBEIF|SLVURIF)) {
+		unsigned int i;
+		__raw_writel(__raw_readl(hw->regs + REG_FIFOCTL) | 0x3, hw->regs + REG_FIFOCTL); //CWWeng : RXRST & TXRST
+		while (__raw_readl(hw->regs + REG_STATUS) & (1<<23)); //TXRXRST
+
+		for (i=0; i<6; i++)
+			__raw_writel(0x5a, hw->regs + REG_TX); /* fill dummy data */
+
+	}
+
 	if (status & RXTHIF) {
+		while(!(__raw_readl(hw->regs + REG_STATUS) & 0x100)) {//RXEMPTY
+			SPI0_SlaveRxData[ReceivedCnt++] = __raw_readl(hw->regs + REG_RX);
+
+			if (!(__raw_readl(hw->regs + REG_STATUS) & 0x20000)) {//TXFULL
+				__raw_writel(SPI0_SlaveTxData[TransmittedCnt++], hw->regs + REG_TX);
+				if (TransmittedCnt >= SPI0_SlaveDataLen) {
+					nuc980_disable_txth_int(hw);
+					InTransmitted = 0;
+					TransmittedCnt = 0;
+					break;
+				}
+			}
+
+		}
+
 		if (InTransmitted == 0) {
 			nuc980_disable_rxth_int(hw);
 			slave_done_state = 1;
@@ -475,7 +505,7 @@ static irqreturn_t nuc980_spi0_irq(int irq, void *dev)
 	}
 	if (status & TXTHIF) {
 		while(!(__raw_readl(hw->regs + REG_STATUS) & 0x20000)) {//TXFULL
-			__raw_writel(SPI0_SlaveData[TransmittedCnt++], hw->regs + REG_TX);
+			__raw_writel(SPI0_SlaveTxData[TransmittedCnt++], hw->regs + REG_TX);
 			if (TransmittedCnt >= SPI0_SlaveDataLen) {
 				nuc980_disable_txth_int(hw);
 				InTransmitted = 0;
@@ -495,9 +525,10 @@ static irqreturn_t nuc980_spi0_irq(int irq, void *dev)
 			InTransmitted = 0;
 			TransmittedCnt = 0;
 			for (i = 0; i < SPI0_SlaveDataLen; i++)
-				SPI0_SlaveData[i] = 0;
+				SPI0_SlaveTxData[i] = 0;
 		}
 	}
+
 
 	return IRQ_HANDLED;
 }
@@ -510,6 +541,7 @@ static void nuc980_init_spi(struct nuc980_spi *hw)
 
 	spin_lock_init(&hw->lock);
 
+	__raw_writel(0, hw->regs + REG_SSCTL);
 	nuc980_tx_edge(hw, hw->pdata->txneg);
 	nuc980_rx_edge(hw, hw->pdata->rxneg);
 	nuc980_send_first(hw, hw->pdata->lsb);
@@ -523,7 +555,8 @@ static void nuc980_init_spi(struct nuc980_spi *hw)
 }
 
 #ifdef CONFIG_OF
-static struct nuc980_spi_info *nuc980_spi0_parse_dt(struct device *dev) {
+static struct nuc980_spi_info *nuc980_spi0_parse_dt(struct device *dev)
+{
 	struct nuc980_spi_info *sci;
 	u32 temp;
 
@@ -599,7 +632,8 @@ static struct nuc980_spi_info *nuc980_spi0_parse_dt(struct device *dev) {
 	return sci;
 }
 #else
-static struct nuc980_spi_info *nuc980_spi0_parse_dt(struct device *dev) {
+static struct nuc980_spi_info *nuc980_spi0_parse_dt(struct device *dev)
+{
 	return dev->platform_data;
 }
 #endif
@@ -609,20 +643,25 @@ static struct nuc980_spi_info *nuc980_spi0_parse_dt(struct device *dev) {
  */
 static int SPI0_Slave_Thread_TXRX(struct nuc980_spi *hw)
 {
-	unsigned char rx;
-	unsigned long flags;
 	int i;
+
+	__raw_writel(__raw_readl(hw->regs + REG_FIFOCTL) | 0x3, hw->regs + REG_FIFOCTL); //CWWeng : RXRST & TXRST
+	while (__raw_readl(hw->regs + REG_STATUS) & (1<<23)); //TXRXRST
+
+	for (i=0; i<8; i++)
+		__raw_writel(0x5a, hw->regs + REG_TX); /* fill dummy data to prevent Tx uderrun */
+
+	for (i = 0; i < SPI0_SlaveDataLen; i++)
+		SPI0_SlaveTxData[i] = i;
 
 	while(1) {
 
 		wait_event_interruptible(slave_done, (slave_done_state != 0));
-		rx = __raw_readl(hw->regs + REG_RX);
-		//printk("Receive [0x%x] \n", rx);
 
-		switch (rx) {
+		switch (SPI0_SlaveRxData[0]) {
 		case 0x9f:
 			for (i = 0; i < SPI0_SlaveDataLen; i++)
-				SPI0_SlaveData[i] = i;
+				SPI0_SlaveTxData[i] = i;
 
 			nuc980_enable_txth_int(hw);
 			break;
@@ -768,7 +807,7 @@ static int nuc980_spi0_slave_probe(struct platform_device *pdev)
 	__raw_writel(__raw_readl(hw->regs + REG_CTL) | SPIEN, hw->regs + REG_CTL); /* enable SPI */
 	while ((__raw_readl(hw->regs + REG_STATUS) & (1<<15)) == 0); //SPIENSTS
 
-	kthread_run(SPI0_Slave_Thread_TXRX, hw, "SPI0_SLAVE_THread_TXRX");
+	kthread_run((int (*)(void *))SPI0_Slave_Thread_TXRX, hw, "SPI0_SLAVE_THread_TXRX");
 
 	return 0;
 

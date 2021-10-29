@@ -67,7 +67,8 @@
 #define STATUS_ECC_ERROR_MICRON		0x20
 #define SPINAND_ECC_ERROR		0x1
 #define SPINAND_ECC_CORRECTED		0x2
-
+#define STATUS_ECC_MASK_XTX_8bit	0xF0
+#define STATUS_ECC_ERROR_XTX_8bit	0xF0
 
 /*ECC enable defines*/
 #define OTP_ECC_MASK			0x10

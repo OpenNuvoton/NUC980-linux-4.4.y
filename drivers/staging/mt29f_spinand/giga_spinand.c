@@ -190,7 +190,8 @@ int mk_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 
 int winbond_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 {
-	if (nand_id[1] != NAND_MFR_WINBOND)
+	//if (nand_id[1] != NAND_MFR_WINBOND)
+	if (nand_id[1] != NAND_MFR_WINBOND && nand_id[1] != NAND_MFR_AMD)
 		return -EINVAL;
 
 	return 0;
@@ -223,5 +224,29 @@ int kioxia_parse_id(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 	return 0;
 }
 
+
+int xtx_parse_id_8bit_ecc(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
+{
+	if (nand_id[1] != NAND_MFR_XTX)
+		return -EINVAL;
+
+	if (id[1] != 0x12 && id[1] != 0x13 )
+		return -EINVAL;
+
+ 	return 0;
+ }
+
+int xtx_verify_ecc_8bit(u8 status)
+{
+	int ecc_status = (status & STATUS_ECC_MASK_XTX_8bit);
+	
+	if ((ecc_status == STATUS_ECC_ERROR_XTX_8bit) ||
+	    (ecc_status == STATUS_ECC_MASK_XTX_8bit))
+		return SPINAND_ECC_ERROR;
+	else if (ecc_status)
+		return SPINAND_ECC_CORRECTED;
+	else
+		return 0;
+}
 
 MODULE_DESCRIPTION("SPI NAND driver for Gigadevice and Macronix");

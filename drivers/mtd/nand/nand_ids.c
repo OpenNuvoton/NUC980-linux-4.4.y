@@ -142,6 +142,26 @@ struct nand_flash_dev nand_flash_ids[] = {
 		{ .id = {0x98, 0xd7, 0xa0, 0x32} },
 		SZ_8K, SZ_4K, SZ_1M, 0, 4, 368, NAND_ECC_INFO(24, SZ_1K)
 	},
+	{
+		"FM25S01A 1G 3.3V",
+		{ .id = {0xa1, 0xe4, 0x7f} }, SZ_2K, 128, SZ_128K, 0, 2, 64, NAND_ECC_INFO(1, SZ_512)
+	},
+	{
+		"XT26G11C 1G 3.3V",
+		{ .id = {0x0b, 0x15} }, SZ_2K, 128, SZ_128K, 0, 2, 64, NAND_ECC_INFO(8, SZ_512)
+	},
+	{
+		"XT26G02C 2G 3.3V",
+		{ .id = {0x0b, 0x12} }, SZ_2K, 256, SZ_128K, 0, 2, 128, NAND_ECC_INFO(8, SZ_512)
+	},
+	{
+		"XT26G04C 4G 3.3V",
+		{ .id = {0x0b, 0x13} }, SZ_4K, SZ_512, SZ_256K, 0, 2, 128, NAND_ECC_INFO(8, SZ_512)
+	},
+	{
+		"MKSV4GIL-DE 4G 3.3V",
+		{ .id = {0xd5, 0x0b} }, SZ_4K, SZ_512, SZ_256K, 0, 2, 128, NAND_ECC_INFO(1, SZ_512)
+	},
 
 	LEGACY_ID_NAND("NAND 4MiB 5V 8-bit",   0x6B, 4, SZ_8K, SP_OPTIONS),
 	LEGACY_ID_NAND("NAND 4MiB 3,3V 8-bit", 0xE3, 4, SZ_8K, SP_OPTIONS),
@@ -275,6 +295,7 @@ struct nand_manufacturers nand_manuf_ids[] = {
 	{NAND_MFR_XTX, "XTX"},
 	{NAND_MFR_MK, "MK"},
 	{NAND_MFR_GIGA, "Giga Device"},
+	{NAND_MFR_FM, "Fudan Micro"},
 	{0x0, "Unknown"}
 };
 

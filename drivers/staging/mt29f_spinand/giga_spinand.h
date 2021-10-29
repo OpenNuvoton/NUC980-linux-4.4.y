@@ -71,6 +71,9 @@ void micron_write_data(struct spinand_cmd *cmd, u16 column, u32 page_id);
 
 int micron_verify_ecc(u8 status);
 
+int xtx_parse_id_8bit_ecc(struct spi_device *spi_nand, u8 *nand_id, u8 *id);
+int xtx_verify_ecc_8bit(u8 status);
+
 /* Macronix Specfic defines */
 #define MACRONIX_NORM_RW_MASK	0x0F
 #endif /* __GIGA_SPI_NAND_H */

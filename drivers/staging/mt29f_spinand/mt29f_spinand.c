@@ -105,10 +105,34 @@ struct spinand_ops spinand_dev[] = {
 	},
 	{
 		NAND_MFR_XTX,
+		0x12,
+		gigadevice_set_defaults,
+		gigadevice_read_cmd,
+		winbond_read_data,	//XT26G02C
+		gigadevice_write_cmd,
+		macronix_write_data,
+		gigadevice_erase_blk,
+		xtx_parse_id_8bit_ecc,
+		xtx_verify_ecc_8bit,	//XT26G02C
+	},
+	{
+		NAND_MFR_XTX,
+		0x13,
+		gigadevice_set_defaults,
+		gigadevice_read_cmd,
+		winbond_read_data,	//XT26G04C
+		gigadevice_write_cmd,
+		macronix_write_data,
+		gigadevice_erase_blk,
+		xtx_parse_id_8bit_ecc,
+		xtx_verify_ecc_8bit,	//XT26G04C
+	},
+	{
+		NAND_MFR_XTX,
 		0x0b,
 		gigadevice_set_defaults,
 		gigadevice_read_cmd,
-		macronix_read_data,
+		winbond_read_data,
 		gigadevice_write_cmd,
 		macronix_write_data,
 		gigadevice_erase_blk,
@@ -120,7 +144,7 @@ struct spinand_ops spinand_dev[] = {
 		0xd5,
 		gigadevice_set_defaults,
 		gigadevice_read_cmd,
-		macronix_read_data,
+		winbond_read_data,
 		gigadevice_write_cmd,
 		macronix_write_data,
 		gigadevice_erase_blk,
@@ -201,6 +225,32 @@ struct spinand_ops spinand_dev[] = {
 		winbond_write_data,
 		gigadevice_erase_blk,
 		kioxia_parse_id,	//TC58CVG0S3HRAIJ
+		macronix_verify_ecc,
+	},
+	{
+		NAND_MFR_FM,
+		0xe4,
+		gigadevice_set_defaults,
+		gigadevice_read_cmd,
+		winbond_read_data,
+		gigadevice_write_cmd,
+		winbond_write_data,
+		gigadevice_erase_blk,
+		winbond_parse_id,
+		macronix_verify_ecc,
+	},
+	{
+		NAND_MFR_AMD,
+		0x35,
+		gigadevice_set_defaults,
+		gigadevice_read_cmd,
+		//winbond_read_data,
+		macronix_read_data,
+		gigadevice_write_cmd,
+		//winbond_write_data,
+		macronix_write_data,
+		gigadevice_erase_blk,
+		winbond_parse_id,
 		macronix_verify_ecc,
 	},
 	{ },
@@ -839,8 +889,8 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 #ifdef CONFIG_SPI_NUC980_QSPI0_QUAD
 	if (!is_set_spinand_quad) {
 		if ((nand_id[1] == NAND_MFR_MACRONIX) || (nand_id[1] == NAND_MFR_XTX)
-		 || (nand_id[1] == NAND_MFR_MK) || (nand_id[1] == NAND_MFR_GIGA) //GD5FGQ4UExxG QUAD mode SPI
-		 || (nand_id[1] == NAND_MFR_TOSHIBA)) 				 //TC58CVG0S3HRAIJ QUAD mode SPI
+		 || (nand_id[1] == NAND_MFR_MK) || (nand_id[1] == NAND_MFR_GIGA)) //GD5FGQ4UExxG QUAD mode SPI
+		 
 		 {
 			ret = spinand_set_quad_mode(spi_nand, 1);
 			if (ret < 0) {

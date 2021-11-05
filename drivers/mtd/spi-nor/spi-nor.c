@@ -195,6 +195,7 @@ static inline int set_4byte(struct spi_nor *nor, const struct flash_info *info,
 		need_wren = true;
 	case SNOR_MFR_MACRONIX:
 	case SNOR_MFR_WINBOND:
+	case SNOR_MFR_XTX:
 		if (need_wren)
 			write_enable(nor);
 

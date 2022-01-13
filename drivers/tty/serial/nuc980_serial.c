@@ -908,9 +908,11 @@ static int nuc980serial_startup(struct uart_port *port)
 	 */
 
 #if defined(CONFIG_ENABLE_UART_PDMA) || defined(CONFIG_USE_OF)
-	serial_out(up, UART_REG_FCR, serial_in(up, UART_REG_FCR) | 0x0); // Trigger level 1 byte
+	// FIFO trigger level 1 byte
+	serial_out(up, UART_REG_FCR, serial_in(up, UART_REG_FCR) | 0x0);
 #else
-	serial_out(up, UART_REG_FCR, serial_in(up, UART_REG_FCR) | 0x10); // Trigger level 4 byte
+	// FIFO trigger level 4 byte // RTS trigger level 8 bytes
+	serial_out(up, UART_REG_FCR, serial_in(up, UART_REG_FCR) | 0x10 | 0x20000);
 #endif
 
 	serial_out(up, UART_REG_LCR, 0x7); // 8 bit

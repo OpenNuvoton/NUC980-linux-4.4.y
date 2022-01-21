@@ -25,6 +25,7 @@ struct nuc980_spi_info {
 	unsigned int clkpol;
 	int bus_num;
 	unsigned int hz;
+	unsigned int quad;
 };
 
 #endif

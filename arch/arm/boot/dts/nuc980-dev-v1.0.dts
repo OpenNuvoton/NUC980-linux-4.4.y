@@ -87,7 +87,7 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			num_cs  = <2>;
+			num_cs  = <1>;
 			lsb	 = <0>;
 			txneg   = <1>;
 			rxneg   = <0>;
@@ -96,6 +96,7 @@
 			sleep   = <0>;
 			txbitlen = <8>;
 			bus_num	= <0>;
+			quad	= <0>;
 
 			flash: m25p80@0 {
 				compatible = "w25q128";
@@ -103,12 +104,11 @@
 				#size-cells = <1>;
 				reg = <0>;
 				spi-max-frequency = <30000000>;
-
 				partition@0 {
 					label = "kernel";
 					reg = <0x00000000 0x0800000>;
 				};
-				partition@1 {
+				partition@800000 {
 					label = "rootfs";
 					reg = <0x0800000 0x0800000>;
 				};

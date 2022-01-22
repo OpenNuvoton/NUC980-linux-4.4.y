@@ -588,6 +588,19 @@ static int nuc980_qspi0_update_state(struct spi_device *spi,
 		hw->pdata->divider = div;
 	}
 
+#if defined(CONFIG_USE_OF)
+	if (hw->pdata->quad)
+		spi->mode = (SPI_MODE_0 | SPI_TX_QUAD | SPI_RX_QUAD);
+	else
+		spi->mode = (SPI_MODE_0 | SPI_RX_DUAL | SPI_TX_DUAL);
+#else
+#if defined(CONFIG_SPI_NUC980_QSPI0_QUAD)
+		spi->mode = (SPI_MODE_0 | SPI_TX_QUAD | SPI_RX_QUAD);
+#elif defined(CONFIG_SPI_NUC980_QSPI0_NORMAL)
+		spi->mode = (SPI_MODE_0 | SPI_RX_DUAL | SPI_TX_DUAL);
+#endif
+#endif
+
 	//Mode 0: CPOL=0, CPHA=0; active high
 	//Mode 1: CPOL=0, CPHA=1 ;active low
 	//Mode 2: CPOL=1, CPHA=0 ;active low
@@ -744,6 +757,13 @@ static struct nuc980_spi_info *nuc980_qspi0_parse_dt(struct device *dev) {
 		sci->bus_num = temp;
 	}
 
+	if (of_property_read_u32(dev->of_node, "quad", &temp)) {
+		dev_warn(dev, "can't get quad from dt\n");
+		sci->quad = 0;
+	} else {
+		sci->quad = temp;
+	}
+
 	return sci;
 }
 #else
@@ -811,10 +831,17 @@ static int nuc980_qspi0_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, hw);
 	init_completion(&hw->done);
+#if defined(CONFIG_USE_OF)
+        if (hw->pdata->quad)
+                master->mode_bits = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_TX_QUAD | SPI_RX_QUAD | SPI_CS_HIGH | SPI_LSB_FIRST | SPI_CPHA | SPI_CPOL);
+        else
+                master->mode_bits = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_CS_HIGH | SPI_LSB_FIRST | SPI_CPHA | SPI_CPOL);
+#else
 #if defined(CONFIG_SPI_NUC980_QSPI0_NORMAL)
 	master->mode_bits          = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_CS_HIGH | SPI_LSB_FIRST | SPI_CPHA | SPI_CPOL);
 #elif defined(CONFIG_SPI_NUC980_QSPI0_QUAD)
 	master->mode_bits          = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_TX_QUAD | SPI_RX_QUAD | SPI_CS_HIGH | SPI_LSB_FIRST | SPI_CPHA | SPI_CPOL);
+#endif
 #endif
 	master->dev.of_node        = pdev->dev.of_node;
 	master->num_chipselect     = hw->pdata->num_cs;

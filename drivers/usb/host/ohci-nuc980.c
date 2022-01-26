@@ -60,7 +60,7 @@ static int usb_hcd_nuc980_probe(const struct hc_driver *driver,
 #elif defined(CONFIG_LITE0_PB10_PB9)
 		p = devm_pinctrl_get_select(&pdev->dev, "usbh_lite0_pb10_pb9");
 #elif defined(CONFIG_LITE0_PD15_PD14)
-		p = devm_pinctrl_get_select(&pdev->dev, "usbh_lite0_pd15_pd15");
+		p = devm_pinctrl_get_select(&pdev->dev, "usbh_lite0_pd15_pd14");
 #endif
 		if (IS_ERR(p)) {
 			dev_err(&pdev->dev, "unable to reserve usbh_lite0 pin\n");
@@ -101,7 +101,7 @@ static int usb_hcd_nuc980_probe(const struct hc_driver *driver,
 	if (pdev->id == 4) {
 #if defined(CONFIG_LITE3_PE5_PE4)
 		p = devm_pinctrl_get_select(&pdev->dev, "usbh_lite3_pe5_pe4");
-#elif defined(CONFIG_LITE3_PF3_PF2)
+#elif defined(CONFIG_LITE3_PF5_PF4)
 		p = devm_pinctrl_get_select(&pdev->dev, "usbh_lite3_pf5_pf4");
 #endif
 		if (IS_ERR(p)) {

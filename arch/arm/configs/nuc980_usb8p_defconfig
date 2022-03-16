@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 4.4.179 Kernel Configuration
+# Linux/arm 4.4.289 Kernel Configuration
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -282,6 +282,8 @@ CONFIG_MACH_NUC980=y
 # CONFIG_BOARD_NUC980 is not set
 # CONFIG_BOARD_ETH2UART is not set
 # CONFIG_BOARD_IOT is not set
+# CONFIG_BOARD_LORAG is not set
+# CONFIG_BOARD_CHILI is not set
 CONFIG_BOARD_USB8P=y
 # CONFIG_NUC980_FIQ is not set
 
@@ -427,6 +429,7 @@ CONFIG_FPE_NWFPE=y
 # Userspace binary formats
 #
 CONFIG_BINFMT_ELF=y
+CONFIG_ELFCORE=y
 # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
 CONFIG_BINFMT_SCRIPT=y
 # CONFIG_HAVE_AOUT is not set
@@ -449,6 +452,7 @@ CONFIG_NET=y
 CONFIG_PACKET=y
 CONFIG_PACKET_DIAG=y
 CONFIG_UNIX=y
+CONFIG_UNIX_SCM=y
 CONFIG_UNIX_DIAG=y
 # CONFIG_XFRM_USER is not set
 # CONFIG_NET_KEY is not set
@@ -1273,7 +1277,6 @@ CONFIG_USB_STORAGE=y
 # CONFIG_USB_EMI26 is not set
 # CONFIG_USB_ADUTUX is not set
 # CONFIG_USB_SEVSEG is not set
-# CONFIG_USB_RIO500 is not set
 # CONFIG_USB_LEGOTOWER is not set
 # CONFIG_USB_LCD is not set
 # CONFIG_USB_LED is not set
@@ -1643,6 +1646,7 @@ CONFIG_TRACING_SUPPORT=y
 # CONFIG_TEST_KSTRTOX is not set
 # CONFIG_TEST_PRINTF is not set
 # CONFIG_TEST_RHASHTABLE is not set
+# CONFIG_TEST_HASH is not set
 # CONFIG_DMA_API_DEBUG is not set
 # CONFIG_TEST_LKM is not set
 # CONFIG_TEST_USER_COPY is not set

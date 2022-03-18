@@ -309,14 +309,15 @@ static void I2C_SlaveTRx(struct nuc980_i2c *i2c, unsigned long iicstat)
 
 		writel(((readl(i2c->regs+CTL0) &~ (0x3C))|(I2C_CTL_SI | I2C_CTL_AA)), (i2c->regs+CTL0));
 	} else {
-		/* TO DO */
-		//printk("Status 0x%x is NOT processed\n", iicstat);
+		dev_err(i2c->dev, "Status 0x%lx is NOT processed\n", iicstat);
 	}
 }
 #else
 static void i2c_nuc980_irq_master_TRx(struct nuc980_i2c *i2c, unsigned long iicstat)
 {
 	unsigned char byte;
+
+	dev_dbg(i2c->dev, "irq_master: 0x%lx \n", iicstat);
 
 	if (iicstat == M_START)
 	{ /* START has been transmitted and prepare SLA+W */
@@ -363,6 +364,10 @@ static void i2c_nuc980_irq_master_TRx(struct nuc980_i2c *i2c, unsigned long iics
 		{ /* send stop */
 			nuc980_i2c3_stop(i2c, 0);
 		}
+	}
+	else if (iicstat == M_TRAN_DATA_NACK)
+	{
+		nuc980_i2c3_stop(i2c, 0);
 	}
 	else if ((iicstat == M_TRAN_ADDR_NACK) || (iicstat == M_RECE_ADDR_NACK))
 	{	/* Master Transmit Address NACK */
@@ -446,8 +451,7 @@ static void i2c_nuc980_irq_master_TRx(struct nuc980_i2c *i2c, unsigned long iics
 	}
 	else
 	{
-		/* TO DO */
-		//printf("Status 0x%x is NOT processed\n", u32Status);
+		dev_err(i2c->dev, "Status 0x%lx is NOT processed\n", iicstat);
 	}
 
 
@@ -477,7 +481,10 @@ static irqreturn_t nuc980_i2c_irq(int irqno, void *dev_id)
 	}
 
 	if (status == BUS_ERROR) {
-		dev_dbg(i2c->dev, "IRQ: error i2c->state == IDLE\n");
+		dev_err(i2c->dev, "IRQ: error i2c->state == 0x%x \n", readl(i2c->regs + CTL0));
+
+		nuc980_i2c3_disable_irq(i2c);
+		nuc980_i2c3_stop(i2c, 0);
 		goto out;
 	}
 
@@ -548,6 +555,8 @@ static int nuc980_i2c3_doxfer(struct nuc980_i2c *i2c,
 		dev_dbg(i2c->dev, "timeout\n");
 	else if (ret != num)
 		dev_dbg(i2c->dev, "incomplete xfer (%d)\n", ret);
+
+	nuc980_i2c3_disable_irq(i2c);
 
 	/* ensure the stop has been through the bus */
 	dev_dbg(i2c->dev, "waiting for bus idle\n");

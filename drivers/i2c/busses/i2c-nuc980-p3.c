@@ -310,6 +310,8 @@ static void I2C_SlaveTRx(struct nuc980_i2c *i2c, unsigned long iicstat)
 		writel(((readl(i2c->regs+CTL0) &~ (0x3C))|(I2C_CTL_SI | I2C_CTL_AA)), (i2c->regs+CTL0));
 	} else {
 		dev_err(i2c->dev, "Status 0x%lx is NOT processed\n", iicstat);
+		nuc980_i2c3_disable_irq(i2c);
+		writel(((readl(i2c->regs+CTL0) &~ (0x3C))|I2C_CTL_SI), (i2c->regs+CTL0));
 	}
 }
 #else
@@ -452,9 +454,9 @@ static void i2c_nuc980_irq_master_TRx(struct nuc980_i2c *i2c, unsigned long iics
 	else
 	{
 		dev_err(i2c->dev, "Status 0x%lx is NOT processed\n", iicstat);
+		nuc980_i2c3_disable_irq(i2c);
+		nuc980_i2c3_stop(i2c, 0);
 	}
-
-
 }
 #endif
 

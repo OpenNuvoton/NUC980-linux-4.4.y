@@ -766,6 +766,20 @@ static int nuc980_i2c3_probe(struct platform_device *pdev)
 	dev_dbg(&pdev->dev, "registers %p (%p, %p)\n", i2c->regs, i2c->ioarea, res);
 #endif
 
+#if defined(CONFIG_USE_OF)
+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+#else
+ #ifdef CONFIG_NUC980_I2C3_PB
+	pinctrl = devm_pinctrl_get_select(&pdev->dev, "i2c3-PB");
+ #elif defined(CONFIG_NUC980_I2C3_PD)
+	pinctrl = devm_pinctrl_get_select(&pdev->dev, "i2c3-PD");
+ #endif
+#endif
+
+	if (IS_ERR(pinctrl)) {
+		return PTR_ERR(pinctrl);
+	}
+
 	/* setup info block for the i2c core */
 
 	i2c->adap.algo_data = i2c;
@@ -828,20 +842,6 @@ static int nuc980_i2c3_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, i2c);
 
 	dev_info(&pdev->dev, "%s: nuc980 I2C adapter\n", dev_name(&i2c->adap.dev));
-
-#if defined(CONFIG_USE_OF)
-	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-#else
- #ifdef CONFIG_NUC980_I2C3_PB
-	pinctrl = devm_pinctrl_get_select(&pdev->dev, "i2c3-PB");
- #elif defined(CONFIG_NUC980_I2C3_PD)
-	pinctrl = devm_pinctrl_get_select(&pdev->dev, "i2c3-PD");
- #endif
-#endif
-
-	if (IS_ERR(pinctrl)) {
-		return PTR_ERR(pinctrl);
-	}
 
 	return 0;
 

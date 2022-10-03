@@ -107,7 +107,7 @@ choice
 
 	config NUC980_UART2_PA
 		bool "Rx:PA9, Tx:PA10"
-	config NUC980_UART1_PG
+	config NUC980_UART2_PG
 		bool "Rx:PG0, Tx:PG1"
 	config NUC980_UART2_PD
 		bool "Rx:PD7, Tx:PD6"

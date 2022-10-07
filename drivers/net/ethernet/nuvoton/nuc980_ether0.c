@@ -25,6 +25,7 @@
 #include <linux/spinlock.h>
 #include <linux/ctype.h>
 #include <linux/net_tstamp.h>
+#include <linux/ptp_clock_kernel.h>
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
@@ -53,6 +54,15 @@
 #define REG_CTXBSA		(void __iomem *)0xF00120d0
 #define REG_CRXDSA		(void __iomem *)0xF00120d4
 #define REG_CRXBSA		(void __iomem *)0xF00120d8
+#define REG_TSCTL 		(void __iomem *)0xF0012100
+#define REG_TSSEC 		(void __iomem *)0xF0012110 /* [31:0] */
+#define REG_TSSUBSEC 	(void __iomem *)0xF0012114 /* [30:0] */
+#define REG_TSINC 		(void __iomem *)0xF0012118
+#define REG_TSADDEND 	(void __iomem *)0xF001211c
+#define REG_UPDSEC 		(void __iomem *)0xF0012120
+#define REG_UPDSUBSEC 	(void __iomem *)0xF0012124
+#define REG_ALMSEC 		(void __iomem *)0xF0012128
+#define REG_ALMSUBSEC 	(void __iomem *)0xF001211c
 
 /* mac controller bit */
 #define MCMDR_RXON		0x01
@@ -88,6 +98,7 @@
 #define RXDS_RXGD		(0x01 << 20)
 #define RXDS_ALIE		(0x01 << 21)
 #define RXDS_RP			(0x01 << 22)
+#define RXDS_RTSAS		(0x01 << 23)
 
 /* mac interrupt status*/
 #define MISTA_EXDEF		(0x01 << 19)
@@ -120,6 +131,7 @@
 #define TX_OWEN_CPU		(~(0x01 << 31))
 
 /* tx frame desc controller bit */
+#define TTSEN			0x08
 #define MACTXINTEN		0x04
 #define CRCMODE			0x02
 #define PADDINGMODE		0x01
@@ -128,16 +140,23 @@
 #define TXTHD 			(0x03 << 8)
 #define BLENGTH			(0x01 << 20)
 
+/*Time Stamp Control Register*/
+#define TSEN 			0x01
+#define TSIEN 			(0x01 << 1)
+#define TSMODE 			(0x01 << 2)
+#define TSUPDATE 		(0x01 << 3)
+#define TSALMEN 		(0x01 << 5)
+
 /* global setting for driver */
 #define RX_DESC_SIZE	32
 #define TX_DESC_SIZE	32
 #define MAX_RBUFF_SZ	0x600
 #define MAX_TBUFF_SZ	0x600
-#define TX_TIMEOUT	50
-#define DELAY		1000
-#define CAM0		0x0
+#define TX_TIMEOUT		50
+#define DELAY			1000
+#define CAM0			0x0
 
-#define MII_TIMEOUT	100
+#define MII_TIMEOUT		100
 
 #define ETH_TRIGGER_RX	do{__raw_writel(ENSTART, REG_RSDR);}while(0)
 #define ETH_TRIGGER_TX	do{__raw_writel(ENSTART, REG_TSDR);}while(0)
@@ -145,6 +164,9 @@
 #define ETH_ENABLE_RX	do{__raw_writel(__raw_readl( REG_MCMDR) | MCMDR_RXON, REG_MCMDR);}while(0)
 #define ETH_DISABLE_TX	do{__raw_writel(__raw_readl( REG_MCMDR) & ~MCMDR_TXON, REG_MCMDR);}while(0)
 #define ETH_DISABLE_RX	do{__raw_writel(__raw_readl( REG_MCMDR) & ~MCMDR_RXON, REG_MCMDR);}while(0)
+
+#define TS_ACCURACY_NS  20
+#define EMAC_HCLK_FREQ	150000000ULL
 
 struct nuc980_rxbd {
 	unsigned int sl;
@@ -164,6 +186,9 @@ u8 nuc980_mac0[6] = { 0x08, 0x00, 0x27, 0x00, 0x01, 0x92 };
 
 static struct sk_buff *rx_skb[RX_DESC_SIZE];
 static struct sk_buff *tx_skb[TX_DESC_SIZE];
+// backup desp starting addr if ts enabled 
+static unsigned int rxbd_next[RX_DESC_SIZE];
+static unsigned int txbd_next[TX_DESC_SIZE];
 
 struct  nuc980_ether {
 	spinlock_t lock;
@@ -192,8 +217,365 @@ struct  nuc980_ether {
 	int speed;
 	int duplex;
 	int wol;
+	/* timestamp */
+	struct ptp_clock *ptp_clock;
+	struct ptp_clock_info ptp_clock_ops;
+	unsigned int default_addend;
+	int hwts_tx_en;
+	int hwts_rx_en;
+	spinlock_t ptp_lock;
 };
 
+static void nuc980_config_hw_tstamping(u32 data)
+{
+	__raw_writel(data, REG_TSCTL);
+}
+
+static int nuc980_config_addend(u32 addend)
+{
+	int limit;
+
+	__raw_writel(addend, REG_TSADDEND);
+	
+	limit = 10;
+	while (limit--) {
+		if ((__raw_readl(REG_TSADDEND) == addend))
+			break;
+		mdelay(10);
+	}
+	
+	return 0;
+}
+
+static int nuc980_init_systime(struct nuc980_ether *priv, u32 sec, u32 nsec)
+{
+	int limit;
+	u32 value;
+	u64 ns;
+	
+	// Set value to load
+	ns = (u64)sec * 1000000000ULL + nsec;
+	__raw_writel(ns >> 31, REG_UPDSEC);
+	__raw_writel(ns & 0x7FFFFFFF, REG_UPDSUBSEC);
+	
+	/* issue command to initialize the system time value */
+	value = __raw_readl(REG_TSCTL);
+	value |= TSIEN;
+	__raw_writel(value, REG_TSCTL);
+
+	/* wait for present system time initialize to complete */
+	limit = 10;
+	while (limit--) {
+		if (!(__raw_readl(REG_TSCTL) & TSIEN))
+			break;
+		mdelay(10);
+	}
+	__raw_readl(REG_TSSUBSEC); // read subsec to update sec
+	
+	if (limit <= 0)
+		return -EBUSY;
+
+	return 0;
+}
+
+static int nuc980_adjust_freq(struct ptp_clock_info *ptp, s32 ppb)
+{
+	struct nuc980_ether *priv =
+	    container_of(ptp, struct nuc980_ether, ptp_clock_ops);
+	unsigned long flags;
+	u32 diff, addend;
+	int neg_adj = 0;
+	u64 adj;
+
+	if (ppb < 0) {
+		neg_adj = 1;
+		ppb = -ppb;
+	}
+
+	addend = priv->default_addend;
+	adj = addend;
+	adj *= ppb;
+	diff = div_u64(adj, 1000000000ULL);
+	addend = neg_adj ? (addend - diff) : (addend + diff);
+	
+	spin_lock_irqsave(&priv->ptp_lock, flags);
+	nuc980_config_addend(addend);
+	spin_unlock_irqrestore(&priv->lock, flags);
+
+	return 0;
+}
+
+static int nuc980_adjust_time(struct ptp_clock_info *ptp, s64 delta)
+{
+	struct nuc980_ether *priv =
+	    container_of(ptp, struct nuc980_ether, ptp_clock_ops);
+	unsigned long flags;
+	u32 sec, nsec;
+	int limit;
+
+	spin_lock_irqsave(&priv->ptp_lock, flags);
+
+	sec = delta >> 31;
+	nsec = delta & 0x7FFFFFFF;
+
+	/* issue command to adjust system time value */
+	__raw_writel(sec, REG_UPDSEC);
+	__raw_writel(nsec, REG_UPDSUBSEC);
+
+	__raw_writel(__raw_readl(REG_TSCTL)|TSUPDATE, REG_TSCTL);
+
+	limit = 10;
+	while (limit--) {
+		if (!(__raw_readl(REG_TSCTL) & TSUPDATE))
+			break;
+		mdelay(10);
+	}
+	__raw_readl(REG_TSSUBSEC); // read subsec to update sec
+
+	spin_unlock_irqrestore(&priv->lock, flags);
+
+	return 0;
+}
+
+static int nuc980_get_time(struct ptp_clock_info *ptp, struct timespec64 *ts)
+{
+	struct nuc980_ether *priv =
+	    container_of(ptp, struct nuc980_ether, ptp_clock_ops);
+	unsigned long flags;
+	u64 ns;
+	u32 sec, subsec;
+
+	spin_lock_irqsave(&priv->ptp_lock, flags);
+
+	sec = __raw_readl(REG_TSSEC);
+	subsec = __raw_readl(REG_TSSUBSEC);
+	ns = ((u64)sec << 31) | (subsec & 0x7FFFFFFF);
+
+	spin_unlock_irqrestore(&priv->ptp_lock, flags);
+
+	*ts = ns_to_timespec64(ns);
+
+	return 0;
+}
+
+static int nuc980_set_time(struct ptp_clock_info *ptp,
+			   const struct timespec64 *ts)
+{
+	struct nuc980_ether *priv =
+	    container_of(ptp, struct nuc980_ether, ptp_clock_ops);
+	unsigned long flags;
+
+	spin_lock_irqsave(&priv->ptp_lock, flags);
+
+	nuc980_init_systime(priv, ts->tv_sec, ts->tv_nsec);
+
+	spin_unlock_irqrestore(&priv->ptp_lock, flags);
+
+	return 0;
+}
+
+static int nuc980_enable(struct ptp_clock_info *ptp,
+			 struct ptp_clock_request *rq, int on)
+{
+	return -EOPNOTSUPP;
+}
+
+static struct ptp_clock_info nuc980_ptp_clock_ops = {
+	.owner = THIS_MODULE,
+	.name = "nuc980_ptp_clock",
+	.max_adj = 62500000,
+	.n_alarm = 0,
+	.n_ext_ts = 0,
+	.n_per_out = 0,
+	.pps = 0,
+	.adjfreq = nuc980_adjust_freq,
+	.adjtime = nuc980_adjust_time,
+	.gettime64 = nuc980_get_time,
+	.settime64 = nuc980_set_time,
+	.enable = nuc980_enable,
+};
+
+/*----------------------- ptp helper ------------------------*/
+static int nuc980_ptp_register(struct nuc980_ether *priv)
+{
+	spin_lock_init(&priv->ptp_lock);
+	priv->ptp_clock_ops = nuc980_ptp_clock_ops;
+#ifdef CONFIG_PTP_1588_CLOCK
+	priv->ptp_clock = ptp_clock_register(&priv->ptp_clock_ops,
+					     &priv->pdev->dev);
+#endif
+	if (IS_ERR(priv->ptp_clock)) {
+		netdev_err(priv->ndev, "ptp_clock_register failed\n");
+		priv->ptp_clock = NULL;
+		return -1;
+	} 
+	else {
+		//netdev_info(priv->ndev, "registered PTP clock\n");
+		return 0;
+	}
+}
+
+static void nuc980_ptp_unregister(struct nuc980_ether *priv)
+{
+	if (priv->ptp_clock) {
+#ifdef CONFIG_PTP_1588_CLOCK
+		ptp_clock_unregister(priv->ptp_clock);
+#endif
+		//netdev_info(priv->ndev, "unregistered PTP clock\n");
+	}
+}
+
+static int nuc980_init_ptp(struct nuc980_ether *priv)
+{
+	nuc980_config_hw_tstamping(0);//stop HW timestamp
+	priv->hwts_tx_en = 0;
+	priv->hwts_rx_en = 0;
+
+	return nuc980_ptp_register(priv);
+}
+
+static void nuc980_release_ptp(struct nuc980_ether *priv)
+{
+	nuc980_ptp_unregister(priv);
+}
+
+static u64 nuc980_desc_get_timestamp(struct nuc980_ether *priv,void *desc, u32 nTx)
+{
+	u64 ns;
+	u32 tssec, tssubsec;
+	
+	if(nTx) {
+		tssubsec = ((struct nuc980_txbd *)desc)->buffer;
+		tssec = ((struct nuc980_txbd *)desc)->next;
+	}
+	else {
+		tssubsec = ((struct nuc980_rxbd *)desc)->buffer;
+		tssec = ((struct nuc980_rxbd *)desc)->next;
+	}
+	
+	ns = ((u64)tssec << 31) | (tssubsec & 0x7FFFFFFF);
+	
+	return ns;
+}
+
+static void nuc980_get_tx_hwtstamp(struct nuc980_ether *priv, struct nuc980_txbd *txbd, struct sk_buff *skb)
+{
+	struct skb_shared_hwtstamps shhwtstamp;
+	u64 ns;
+	void *desc = NULL;
+
+	/* exit if skb doesn't support hw tstamp */
+	if (likely(!(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
+		return;
+
+	desc = (void*)txbd;
+
+	/* get the valid tstamp */
+	ns = nuc980_desc_get_timestamp(priv, desc, 1);
+
+	memset(&shhwtstamp, 0, sizeof(struct skb_shared_hwtstamps));
+	shhwtstamp.hwtstamp = ns_to_ktime(ns);
+	/* pass tstamp to stack */
+	skb_tstamp_tx(skb, &shhwtstamp);
+
+	return;
+}
+
+static void nuc980_get_rx_hwtstamp(struct nuc980_ether *priv, struct nuc980_rxbd *rxbd, struct sk_buff *skb)
+{
+	struct skb_shared_hwtstamps *shhwtstamp = NULL;
+	u64 ns;
+
+	/* get valid tstamp */
+	ns = nuc980_desc_get_timestamp(priv, (void *)rxbd, 0);
+		
+	shhwtstamp = skb_hwtstamps(skb);
+	memset(shhwtstamp, 0, sizeof(struct skb_shared_hwtstamps));
+	shhwtstamp->hwtstamp = ns_to_ktime(ns);
+}
+
+static int nuc980_hwtstamp_ioctl(struct net_device *dev, struct ifreq *ifr)
+{
+	struct nuc980_ether *priv = netdev_priv(dev);
+	struct hwtstamp_config config;
+	struct timespec64 now;
+	u64 temp = 0;
+	u32 value = 0;
+
+	if (copy_from_user(&config, ifr->ifr_data,
+			   sizeof(struct hwtstamp_config)))
+		return -EFAULT;
+
+	/* reserved for future extensions */
+	if (config.flags)
+		return -EINVAL;
+
+	switch (config.tx_type) {
+		case HWTSTAMP_TX_OFF:
+			priv->hwts_tx_en = 0;
+			break;
+		case HWTSTAMP_TX_ON:
+			priv->hwts_tx_en = 1;
+			break;
+		default:
+			return -ERANGE;
+	}
+
+
+	switch (config.rx_filter) {
+		case HWTSTAMP_FILTER_NONE:
+			config.rx_filter = HWTSTAMP_FILTER_NONE;
+			break;
+		case HWTSTAMP_FILTER_PTP_V2_L4_EVENT:
+			/* PTP v2, UDP, any kind of event packet */
+			config.rx_filter = HWTSTAMP_FILTER_PTP_V2_L4_EVENT;
+			break;
+		case HWTSTAMP_FILTER_PTP_V2_EVENT:
+			/* PTP v2/802.AS1 any layer, any kind of event packet */
+			config.rx_filter = HWTSTAMP_FILTER_PTP_V2_EVENT;
+			break;
+
+		case HWTSTAMP_FILTER_PTP_V2_SYNC:
+			/* PTP v2/802.AS1, any layer, Sync packet */
+			config.rx_filter = HWTSTAMP_FILTER_PTP_V2_SYNC;
+			break;
+
+		case HWTSTAMP_FILTER_PTP_V2_DELAY_REQ:
+			/* PTP v2/802.AS1, any layer, Delay_req packet */
+			config.rx_filter = HWTSTAMP_FILTER_PTP_V2_DELAY_REQ;
+			break;
+
+		default:
+			/* PTP v1, UDP, any kind of event packet */
+			config.rx_filter = HWTSTAMP_FILTER_PTP_V2_EVENT;
+			break;
+	}
+	
+	priv->hwts_rx_en = ((config.rx_filter == HWTSTAMP_FILTER_NONE) ? 0 : 1);
+
+	if (!priv->hwts_tx_en && !priv->hwts_rx_en)
+		nuc980_config_hw_tstamping(0);
+	else {
+		// Target precision is 20ns, means we need 50MHz clk,
+		// if HCLK is 150MHz, addend is 2^32 / (150/50)
+		value = TS_ACCURACY_NS;
+		__raw_writel(value & 0xFF, REG_TSINC);
+		temp = div_u64(EMAC_HCLK_FREQ * value, 1000000000UL);
+		value = div_u64(1ULL << 32, temp);
+		priv->default_addend = value;
+		nuc980_config_addend(value);
+		nuc980_config_hw_tstamping(TSEN|TSMODE);
+		
+		/* initialize system time */
+		ktime_get_real_ts64(&now);
+		
+		nuc980_init_systime(priv, now.tv_sec, now.tv_nsec);
+	}
+
+	return copy_to_user(ifr->ifr_data, &config,
+			    sizeof(struct hwtstamp_config)) ? -EFAULT : 0;
+}
+/*------------------End of ptp helper -----------------------*/
 
 static __init int setup_macaddr(char *str)
 {
@@ -370,6 +752,7 @@ static int nuc980_init_desc(struct net_device *dev)
 		tdesc->buffer = (unsigned int)NULL;
 		tdesc->sl = 0;
 		tdesc->mode = PADDINGMODE | CRCMODE | MACTXINTEN;
+		txbd_next[i]=tdesc->next; // backup
 	}
 
 	ether->start_tx_ptr = ether->tdesc_phys;
@@ -385,6 +768,7 @@ static int nuc980_init_desc(struct net_device *dev)
 			offset = sizeof(struct nuc980_rxbd) * (i + 1);
 
 		rdesc->next = ether->rdesc_phys + offset;
+		rxbd_next[i] = rdesc->next; // backup
 		rdesc->sl = RX_OWEN_DMA;
 		if(get_new_skb(dev, i) == NULL) {
 			dma_free_coherent(&pdev->dev, sizeof(struct nuc980_txbd) * TX_DESC_SIZE,
@@ -533,7 +917,7 @@ static void nuc980_reset_mac(struct net_device *dev)
 	struct nuc980_ether *ether = netdev_priv(dev);
 
 	ETH_DISABLE_TX;
-	ETH_DISABLE_RX;;
+	ETH_DISABLE_RX;
 
 	nuc980_return_default_idle(dev);
 	nuc980_set_fifo_threshold(dev);
@@ -635,6 +1019,8 @@ static int nuc980_ether_close(struct net_device *dev)
 	if (ether->phy_dev)
 		phy_stop(ether->phy_dev);
 
+	nuc980_release_ptp(ether);
+
 	return 0;
 }
 
@@ -668,6 +1054,19 @@ static int nuc980_ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	txbd->mode |= TX_OWEN_DMA;
 	wmb();	// This is dummy function for ARM9
 	tx_skb[ether->cur_tx]  = skb;
+
+	if (unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
+		     ether->hwts_tx_en)) {		     	
+		/* declare that device is doing timestamping */
+		skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
+		txbd->mode |= TTSEN;
+	}
+
+	if (!ether->hwts_tx_en)
+	{
+		skb_tx_timestamp(skb);		
+	}
+
 	ETH_TRIGGER_TX;
 
 	if (++ether->cur_tx >= TX_DESC_SIZE)
@@ -698,6 +1097,11 @@ static irqreturn_t nuc980_tx_interrupt(int irq, void *dev_id)
 	txbd = ether->tdesc + ether->finish_tx;
 	while((txbd->mode & TX_OWEN_DMA) != TX_OWEN_DMA) {
 		if((s = tx_skb[ether->finish_tx]) != NULL) {
+			if(txbd->mode & TTSEN) // get ts & recover next tx addr
+			{
+				nuc980_get_tx_hwtstamp(ether,txbd,s);
+				txbd->next = txbd_next[ether->finish_tx];
+			}
 			dma_unmap_single(&dev->dev, txbd->buffer, s->len, DMA_TO_DEVICE);
 			dev_kfree_skb_irq(s);
 			tx_skb[ether->finish_tx] = NULL;
@@ -763,6 +1167,13 @@ static int nuc980_poll(struct napi_struct *napi, int budget)
 
 			skb_put(s, length);
 			s->protocol = eth_type_trans(s, dev);
+
+			if (status & RXDS_RTSAS) // get ts & recover next rx addr
+			{
+				nuc980_get_rx_hwtstamp(ether, rxbd, s);
+				rxbd->next = rxbd_next[ether->cur_rx];
+			}
+
 			netif_receive_skb(s);
 			ether->stats.rx_packets++;
 			ether->stats.rx_bytes += length;
@@ -859,6 +1270,9 @@ static int nuc980_ether_open(struct net_device *dev)
 		return -EAGAIN;
 	}
 
+	if (nuc980_init_ptp(ether))
+		netdev_warn(dev, "PTP init failed\n");
+
 	phy_start(ether->phy_dev);
 	netif_start_queue(dev);
 	napi_enable(&ether->napi);
@@ -886,6 +1300,8 @@ static void nuc980_ether_set_multicast_list(struct net_device *dev)
 	__raw_writel(rx_mode,  REG_CAMCMR);
 }
 
+
+
 static int nuc980_ether_ioctl(struct net_device *dev,
 						struct ifreq *ifr, int cmd)
 {
@@ -896,7 +1312,10 @@ static int nuc980_ether_ioctl(struct net_device *dev,
 		return -EINVAL;
 
 	if (!phydev)
-		return -ENODEV;;
+		return -ENODEV;
+
+	if(cmd==SIOCSHWTSTAMP)
+		return nuc980_hwtstamp_ioctl(dev, ifr);
 
 	return phy_mii_ioctl(phydev, ifr, cmd);
 }

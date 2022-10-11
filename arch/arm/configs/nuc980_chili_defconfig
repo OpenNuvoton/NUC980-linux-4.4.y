@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 4.4.207 Kernel Configuration
+# Linux/arm 4.4.289 Kernel Configuration
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -430,6 +430,7 @@ CONFIG_FPE_NWFPE=y
 # Userspace binary formats
 #
 CONFIG_BINFMT_ELF=y
+CONFIG_ELFCORE=y
 # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
 CONFIG_BINFMT_SCRIPT=y
 # CONFIG_HAVE_AOUT is not set
@@ -452,6 +453,7 @@ CONFIG_NET=y
 CONFIG_PACKET=y
 CONFIG_PACKET_DIAG=y
 CONFIG_UNIX=y
+CONFIG_UNIX_SCM=y
 CONFIG_UNIX_DIAG=y
 # CONFIG_XFRM_USER is not set
 # CONFIG_NET_KEY is not set
@@ -482,7 +484,7 @@ CONFIG_DEFAULT_TCP_CONG="cubic"
 # CONFIG_TCP_MD5SIG is not set
 # CONFIG_IPV6 is not set
 # CONFIG_NETWORK_SECMARK is not set
-# CONFIG_NET_PTP_CLASSIFY is not set
+CONFIG_NET_PTP_CLASSIFY=y
 # CONFIG_NETWORK_PHY_TIMESTAMPING is not set
 # CONFIG_NETFILTER is not set
 # CONFIG_IP_DCCP is not set
@@ -1239,13 +1241,23 @@ CONFIG_SPI_NUC980_QSPI0_PDMA=y
 #
 CONFIG_SPI_SPIDEV=y
 # CONFIG_SPI_TLE62X0 is not set
+# CONFIG_SPI_DYNAMIC is not set
 # CONFIG_SPMI is not set
 # CONFIG_HSI is not set
 
 #
 # PPS support
 #
-# CONFIG_PPS is not set
+CONFIG_PPS=y
+# CONFIG_PPS_DEBUG is not set
+# CONFIG_NTP_PPS is not set
+
+#
+# PPS clients support
+#
+# CONFIG_PPS_CLIENT_KTIMER is not set
+# CONFIG_PPS_CLIENT_LDISC is not set
+# CONFIG_PPS_CLIENT_GPIO is not set
 
 #
 # PPS generators support
@@ -1254,7 +1266,7 @@ CONFIG_SPI_SPIDEV=y
 #
 # PTP clock support
 #
-# CONFIG_PTP_1588_CLOCK is not set
+CONFIG_PTP_1588_CLOCK=y
 
 #
 # Enable PHYLIB and NETWORK_PHY_TIMESTAMPING to see the additional clocks.
@@ -2129,7 +2141,6 @@ CONFIG_NFS_V2=y
 CONFIG_NFS_V3=y
 # CONFIG_NFS_V3_ACL is not set
 # CONFIG_NFS_V4 is not set
-# CONFIG_NFS_SWAP is not set
 # CONFIG_NFSD is not set
 CONFIG_GRACE_PERIOD=y
 CONFIG_LOCKD=y

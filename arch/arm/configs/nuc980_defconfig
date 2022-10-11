@@ -483,7 +483,7 @@ CONFIG_DEFAULT_TCP_CONG="cubic"
 # CONFIG_TCP_MD5SIG is not set
 # CONFIG_IPV6 is not set
 # CONFIG_NETWORK_SECMARK is not set
-# CONFIG_NET_PTP_CLASSIFY is not set
+CONFIG_NET_PTP_CLASSIFY=y
 # CONFIG_NETWORK_PHY_TIMESTAMPING is not set
 # CONFIG_NETFILTER is not set
 # CONFIG_IP_DCCP is not set
@@ -880,7 +880,16 @@ CONFIG_SERIAL_CORE_CONSOLE=y
 #
 # PPS support
 #
-# CONFIG_PPS is not set
+CONFIG_PPS=y
+# CONFIG_PPS_DEBUG is not set
+# CONFIG_NTP_PPS is not set
+
+#
+# PPS clients support
+#
+# CONFIG_PPS_CLIENT_KTIMER is not set
+# CONFIG_PPS_CLIENT_LDISC is not set
+# CONFIG_PPS_CLIENT_GPIO is not set
 
 #
 # PPS generators support
@@ -889,7 +898,7 @@ CONFIG_SERIAL_CORE_CONSOLE=y
 #
 # PTP clock support
 #
-# CONFIG_PTP_1588_CLOCK is not set
+CONFIG_PTP_1588_CLOCK=y
 
 #
 # Enable PHYLIB and NETWORK_PHY_TIMESTAMPING to see the additional clocks.

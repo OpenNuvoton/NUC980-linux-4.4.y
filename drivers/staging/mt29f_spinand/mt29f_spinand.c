@@ -165,6 +165,18 @@ struct spinand_ops spinand_dev[] = {
 	},
 	{
 		NAND_MFR_WINBOND,
+		0xae,
+		gigadevice_set_defaults,
+		gigadevice_read_cmd,
+		winbond_read_data,
+		gigadevice_write_cmd,
+		winbond_write_data,
+		gigadevice_erase_blk,
+		winbond_parse_id,
+		macronix_verify_ecc,
+	},
+	{
+		NAND_MFR_WINBOND,
 		0xab,
 		gigadevice_set_defaults,
 		gigadevice_read_cmd,

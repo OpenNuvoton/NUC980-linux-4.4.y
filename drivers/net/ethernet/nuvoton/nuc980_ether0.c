@@ -158,6 +158,15 @@
 
 #define MII_TIMEOUT		100
 
+#ifdef CONFIG_VLAN_8021Q
+#define IS_VLAN 1
+#else
+#define IS_VLAN 0
+#endif
+
+// (ETH_FRAME_LEN + (IS_VLAN * VLAN_HLEN) + ETH_FCS_LEN + Align Size) < 0x600
+#define MAX_PACKET_SIZE           1536
+
 #define ETH_TRIGGER_RX	do{__raw_writel(ENSTART, REG_RSDR);}while(0)
 #define ETH_TRIGGER_TX	do{__raw_writel(ENSTART, REG_TSDR);}while(0)
 #define ETH_ENABLE_TX	do{__raw_writel(__raw_readl( REG_MCMDR) | MCMDR_TXON, REG_MCMDR);}while(0)
@@ -691,7 +700,7 @@ static void nuc980_write_cam(struct net_device *dev,
 
 static struct sk_buff * get_new_skb(struct net_device *dev, u32 i) {
 	struct nuc980_ether *ether = netdev_priv(dev);
-	struct sk_buff *skb = dev_alloc_skb(2048);
+	struct sk_buff *skb = dev_alloc_skb(MAX_PACKET_SIZE);
 
 	if (skb == NULL)
 		return NULL;
@@ -700,7 +709,7 @@ static struct sk_buff * get_new_skb(struct net_device *dev, u32 i) {
 	skb->dev = dev;
 
 	(ether->rdesc + i)->buffer = dma_map_single(&dev->dev, skb->data,
-							2048, DMA_FROM_DEVICE);
+							MAX_PACKET_SIZE, DMA_FROM_DEVICE);
 	rx_skb[i] = skb;
 
 	return skb;
@@ -778,7 +787,7 @@ static int nuc980_init_desc(struct net_device *dev)
 
 			for(; i != 0; i--) {
 				dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer),
-							2048, DMA_FROM_DEVICE);
+							MAX_PACKET_SIZE, DMA_FROM_DEVICE);
 				dev_kfree_skb_any(rx_skb[i]);
 			}
 			return -ENOMEM;
@@ -809,7 +818,7 @@ static void nuc980_free_desc(struct net_device *dev)
 	for (i = 0; i < RX_DESC_SIZE; i++) {
 		skb = rx_skb[i];
 		if(skb != NULL) {
-			dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer), 2048, DMA_FROM_DEVICE);
+			dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer), MAX_PACKET_SIZE, DMA_FROM_DEVICE);
 			dev_kfree_skb_any(skb);
 		}
 	}
@@ -860,9 +869,13 @@ static void nuc980_set_global_maccmd(struct net_device *dev)
 {
 	unsigned int val;
 
-	val = __raw_readl( REG_MCMDR);
-	val |= MCMDR_ALP | MCMDR_SPCRC | MCMDR_ACP;
+	val = __raw_readl( REG_MCMDR) | MCMDR_SPCRC | MCMDR_ACP;
+	if (IS_VLAN)
+        {
+		val |= MCMDR_ALP;
+	}
 	__raw_writel(val,  REG_MCMDR);
+	__raw_writel(MAX_PACKET_SIZE,  REG_DMARFC);
 }
 
 static void nuc980_enable_cam(struct net_device *dev)
@@ -893,12 +906,19 @@ static void nuc980_set_curdest(struct net_device *dev)
 	__raw_writel(ether->start_tx_ptr,  REG_TXDLSA);
 }
 
-static void nuc980_enable_alp(struct net_device *dev)
+static void nuc980_set_alp(struct net_device *dev, int bOn)
 {
 	unsigned int val;
 
 	val = __raw_readl(REG_MCMDR);
-	val |= MCMDR_ALP;
+	if (bOn)
+	{
+		val |= MCMDR_ALP;
+	}
+	else
+	{
+		val &= ~(MCMDR_ALP | MCMDR_ARP);
+	}
 	__raw_writel(val, REG_MCMDR);
 }
 #if 0
@@ -1154,16 +1174,20 @@ static int nuc980_poll(struct napi_struct *napi, int budget)
 		status = rxbd->sl;
 		length = status & 0xFFFF;
 
-		if (likely(status & RXDS_RXGD)) {
-
-			skb = dev_alloc_skb(2048);
+		if (likely((status & RXDS_RXGD) && 
+#if (IS_VLAN == 1)
+		(length <= MAX_PACKET_SIZE))) {
+#else
+		(length <= 1514))) {
+#endif
+			skb = dev_alloc_skb(MAX_PACKET_SIZE);
 			if (!skb) {
 				struct platform_device *pdev = ether->pdev;
 				dev_err(&pdev->dev, "get skb buffer error\n");
 				ether->stats.rx_dropped++;
 				goto rx_out;
 			}
-			dma_unmap_single(&dev->dev, (dma_addr_t)rxbd->buffer, 2048, DMA_FROM_DEVICE);
+			dma_unmap_single(&dev->dev, (dma_addr_t)rxbd->buffer, MAX_PACKET_SIZE, DMA_FROM_DEVICE);
 
 			skb_put(s, length);
 			s->protocol = eth_type_trans(s, dev);
@@ -1181,7 +1205,7 @@ static int nuc980_poll(struct napi_struct *napi, int budget)
 			skb->dev = dev;
 
 			rxbd->buffer = dma_map_single(&dev->dev, skb->data,
-							2048, DMA_FROM_DEVICE);
+							MAX_PACKET_SIZE, DMA_FROM_DEVICE);
 
 			rx_skb[ether->cur_rx] = skb;
 			rx_cnt++;
@@ -1428,21 +1452,15 @@ static int nuc980_get_ts_info(struct net_device *dev, struct ethtool_ts_info *in
 
 static int nuc980_change_mtu(struct net_device *dev, int new_mtu)
 {
-	unsigned int val;
-
-	if(new_mtu < 64 || new_mtu > 2048)
+	if(new_mtu < 64 || new_mtu > MAX_PACKET_SIZE)
 		return -EINVAL;
 
-	if(new_mtu < 1500)
-	{
-		val = __raw_readl(REG_MCMDR);
-		val &= ~(MCMDR_ALP | MCMDR_ARP);
-		__raw_writel(val, REG_MCMDR);
-	}
-	else
-		nuc980_enable_alp(dev);
-
 	dev->mtu = new_mtu;
+
+	if(new_mtu < 1518)
+		nuc980_set_alp(dev, false);
+	else
+		nuc980_set_alp(dev, true);
 
 	return 0;
 }

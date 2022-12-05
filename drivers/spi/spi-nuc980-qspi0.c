@@ -247,43 +247,71 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 
 	/* For short length transmission, using CPU instead */
 	if ((t->len < 100)) {
-		unsigned int	i;
+		unsigned int	i,j;
 
 		hw->tx = t->tx_buf;
 		hw->rx = t->rx_buf;
 
-		if(t->rx_nbits & SPI_NBITS_QUAD) {
-			__raw_writel(((__raw_readl(hw->regs + REG_CTL)|0x400000) & ~0x100000), hw->regs + REG_CTL);//Enable Quad mode, direction input
-		}
-
 		if (hw->rx) {
-			for(i = 0; i < t->len; i++) {
-				__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
-				while (((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x100)); //RXEMPTY
-				hw_rx(hw, __raw_readl(hw->regs + REG_RX), i);
+
+			j = 0;
+
+			if (t->rx_nbits & SPI_NBITS_QUAD) {
+				__raw_writel(((__raw_readl(hw->regs + REG_CTL)|0x400000) & ~0x100000),
+					hw->regs + REG_CTL);//Enable Quad mode, direction input
 			}
-		} else {
+
+			for(i = 0; i < t->len; ) {
+				if(((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x00000)) //TX NOT FULL
+				{
+					__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
+					i++;
+				}
+				if(((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) //RX NOT EMPTY
+				{
+					hw_rx(hw, __raw_readl(hw->regs + REG_RX), j);
+					j++;
+				}
+			}
+			while(j < t->len)
+			{
+				if(((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) //RX NOT EMPTY
+				{
+					hw_rx(hw, __raw_readl(hw->regs + REG_RX), j);
+					j++;
+				}
+			}
+		}
+		if (hw->tx) {
+			if (t->tx_nbits & SPI_NBITS_QUAD) {
+				__raw_writel((__raw_readl(hw->regs + REG_CTL)|0x500000),
+					hw->regs + REG_CTL);//Enable Quad mode, direction output
+			}
+
 			for(i = 0; i < t->len; i++) {
 				while (((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x20000)); //TXFULL
 				__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
 			}
 		}
 
-		__raw_writel((__raw_readl(hw->regs + REG_CTL) & ~0x700000), hw->regs + REG_CTL);//Restore to single mode, direction input
-
+		while (__raw_readl(hw->regs + REG_STATUS) & 1); //wait busy
+		__raw_writel((__raw_readl(hw->regs + REG_CTL) & ~0x700000),
+				hw->regs + REG_CTL);//Restore to single mode, direction input
 
 	} else {
 
 		if (t->rx_buf) {
 			if(t->rx_nbits & SPI_NBITS_QUAD) {
-				__raw_writel(((__raw_readl(hw->regs + REG_CTL)|0x400000) & ~0x100000), hw->regs + REG_CTL);//Enable Quad mode, direction input
+				__raw_writel(((__raw_readl(hw->regs + REG_CTL)|0x400000) & ~0x100000),
+					hw->regs + REG_CTL);//Enable Quad mode, direction input
 			}
 
 			/* prepare the RX dma transfer */
 			sg_init_table(&pdma->sgrx, 1);
 			pdma->slave_config.src_addr = SPIx_RX;
 			if (!is_spidev && !(t->len % 4) && !(((int)t->rx_buf) % 4)) {
-				__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
+				__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000),
+						hw->regs + REG_CTL);//32 bits,byte reorder
 				pdma->slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 				pdma->sgrx.length=t->len/4;
 			} else {
@@ -326,12 +354,18 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 			}
 		}
 
+		if(t->tx_nbits & SPI_NBITS_QUAD) {
+			__raw_writel((__raw_readl(hw->regs + REG_CTL)|0x500000),
+					hw->regs + REG_CTL);//Enable Quad mode, direction output
+		}
+
 		/* prepare the TX dma transfer */
 		sg_init_table(&pdma->sgtx, 1);
 		pdma->slave_config.dst_addr = SPIx_TX;
 
 		if (!is_spidev && !(t->len % 4) && !(((int)t->tx_buf) % 4)) {
-			__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000), hw->regs + REG_CTL);//32 bits,byte reorder
+			__raw_writel((__raw_readl(hw->regs + REG_CTL)&~(0x1F00))|(0x80000),
+					hw->regs + REG_CTL);//32 bits,byte reorder
 			pdma->slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 			pdma->sgtx.length=t->len/4;
 		} else {
@@ -421,12 +455,13 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 
 #elif defined(CONFIG_SPI_NUC980_QSPI0_NO_PDMA)
 
-	if(t->rx_nbits & SPI_NBITS_QUAD) {
-		__raw_writel(((__raw_readl(hw->regs + REG_CTL)|0x400000) & ~0x100000), hw->regs + REG_CTL);//Enable Quad mode, direction input
-	}
-
 	if (hw->rx) {
 		j = 0;
+
+		if (t->rx_nbits & SPI_NBITS_QUAD) {
+			__raw_writel((__raw_readl(hw->regs + REG_CTL)|0x500000),
+				hw->regs + REG_CTL);//Enable Quad mode, direction output
+		}
 
 		for(i = 0; i < t->len; ) {
 			if(((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x00000)) //TX NOT FULL
@@ -448,13 +483,20 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 				j++;
 			}
 		}
-	} else {
+	}
+	if (hw->tx) {
+		if (t->tx_nbits & SPI_NBITS_QUAD) {
+			__raw_writel((__raw_readl(hw->regs + REG_CTL)|0x500000),
+				hw->regs + REG_CTL);//Enable Quad mode, direction output
+		}
+
 		for(i = 0; i < t->len; i++) {
 			while (((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x20000)); //TXFULL
 			__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
 		}
 	}
 
+	while (__raw_readl(hw->regs + REG_STATUS) & 1); //wait busy
 	__raw_writel((__raw_readl(hw->regs + REG_CTL) & ~0x700000), hw->regs + REG_CTL);//Restore to single mode, direction input
 #endif
 

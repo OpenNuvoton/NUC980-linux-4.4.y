@@ -538,6 +538,11 @@ static int nuc980_i2c2_doxfer(struct nuc980_i2c *i2c,
 	int spins = 20;
 	int ret;
 
+	if (msgs->flags & I2C_M_NOSTART) {
+		dev_err(i2c->dev, "NUC980 NOT Support I2C_M_NOSTART flag!!\n");
+		ret = -EAGAIN;
+	}
+
 	spin_lock_irq(&i2c->lock);
 
 	nuc980_i2c2_enable_irq(i2c);

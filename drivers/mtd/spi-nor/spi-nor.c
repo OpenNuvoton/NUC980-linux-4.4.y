@@ -847,6 +847,7 @@ static const struct flash_info spi_nor_ids[] = {
 	{ "w25q80bl", INFO(0xef4014, 0, 64 * 1024,  16, SECT_4K) },
 	{ "w25q128", INFO(0xef4018, 0, 64 * 1024, 256, SECT_4K) },
 	{ "w25q256", INFO(0xef4019, 0, 64 * 1024, 512, SECT_4K) },
+	{ "w25q512jvf", INFO(0xef4020, 0, 64 * 1024, 1024, SECT_4K) },
 
 	/* XTX -- XT25x "blocks" are 64K, "sectors" are 4KiB */
 	{ "XT25F08BSSIGU", INFO(0x0b4013, 0, 64 * 1024,  16, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },

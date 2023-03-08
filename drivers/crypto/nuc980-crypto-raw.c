@@ -16,7 +16,6 @@
 #include <linux/of.h>
 #include <linux/of_device.h>
 
-
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/device.h>
@@ -30,9 +29,7 @@
 #include <mach/regs-crypto.h>
 #include <mach/nuc980-crypto.h>
 
-
 extern struct nuc980_crypto_dev  nuc980_crdev;    /* declared in nuc980-crypto.c */
-
 
 /*-----------------------------------------------------------------------------------------------*/
 /*                                                                                               */
@@ -48,7 +45,7 @@ static ssize_t nvt_aes_read(struct file *filp, char __user *buf, size_t count, l
 	u32    t0;
 	int    ret = 0;
 
-	mutex_lock(&nuc980_crdev.aes_lock);
+	//mutex_lock(&nuc980_crdev.aes_lock);
 
 	t0 = jiffies;
 	while (crpt_regs->CRPT_AES_STS & AES_BUSY) {
@@ -64,7 +61,7 @@ static ssize_t nvt_aes_read(struct file *filp, char __user *buf, size_t count, l
 	}
 
 out:
-	mutex_unlock(&nuc980_crdev.aes_lock);
+	//mutex_unlock(&nuc980_crdev.aes_lock);
 	return ret;
 }
 
@@ -74,7 +71,7 @@ static ssize_t nvt_aes_write(struct file *filp, const char __user *buf, size_t c
 	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
 	int   ret = 0;
 
-	mutex_lock(&nuc980_crdev.aes_lock);
+	//mutex_lock(&nuc980_crdev.aes_lock);
 
 	if (copy_from_user((u8 *)nuc980_crdev.aes_inbuf, buf, count)) {
 		ret = -EFAULT;
@@ -82,7 +79,7 @@ static ssize_t nvt_aes_write(struct file *filp, const char __user *buf, size_t c
 		crpt_regs->CRPT_AES_CTL |= AES_START;
 	}
 
-	mutex_unlock(&nuc980_crdev.aes_lock);
+	//mutex_unlock(&nuc980_crdev.aes_lock);
 	return ret;
 }
 
@@ -108,7 +105,7 @@ static long nvt_aes_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
 	u32   t0, param;
 
-	mutex_lock(&nuc980_crdev.aes_lock);
+	//mutex_lock(&nuc980_crdev.aes_lock);
 
 	switch(cmd) {
 	case AES_IOC_SET_MODE:
@@ -143,7 +140,7 @@ static long nvt_aes_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		t0 = jiffies;
 		while (crpt_regs->CRPT_AES_STS & AES_BUSY) {
 			if (jiffies - t0 >= 100) { /* 1s time-out */
-				mutex_unlock(&nuc980_crdev.aes_lock);
+				//mutex_unlock(&nuc980_crdev.aes_lock);
 				return -EFAULT;
 			}
 		}
@@ -154,7 +151,7 @@ static long nvt_aes_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		t0 = jiffies;
 		while (crpt_regs->CRPT_AES_STS & AES_BUSY) {
 			if (jiffies - t0 >= 100) { /* 1s time-out */
-				mutex_unlock(&nuc980_crdev.aes_lock);
+				//mutex_unlock(&nuc980_crdev.aes_lock);
 				return -EFAULT;
 			}
 		}
@@ -165,10 +162,10 @@ static long nvt_aes_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		break;
 
 	default:
-		mutex_unlock(&nuc980_crdev.aes_lock);
+		//mutex_unlock(&nuc980_crdev.aes_lock);
 		return -ENOTTY;
 	}
-	mutex_unlock(&nuc980_crdev.aes_lock);
+	//mutex_unlock(&nuc980_crdev.aes_lock);
 	return 0;
 }
 
@@ -209,7 +206,7 @@ static ssize_t nvt_sha_read(struct file *filp, char __user *buf, size_t count, l
 		return -EFAULT;
 	}
 
-	mutex_lock(&nuc980_crdev.sha_lock);
+	//mutex_lock(&nuc980_crdev.sha_lock);
 
 	t0 = jiffies;
 	while (crpt_regs->CRPT_HMAC_STS & HMAC_BUSY) {
@@ -225,7 +222,7 @@ static ssize_t nvt_sha_read(struct file *filp, char __user *buf, size_t count, l
 	}
 
 out:
-	mutex_unlock(&nuc980_crdev.sha_lock);
+	//mutex_unlock(&nuc980_crdev.sha_lock);
 	return ret;
 }
 
@@ -236,7 +233,7 @@ static ssize_t nvt_sha_write(struct file *filp, const char __user *buf, size_t c
 	u32   *data_ptr;
 	int   rcnt, ret = 0;
 
-	mutex_lock(&nuc980_crdev.sha_lock);
+	//mutex_lock(&nuc980_crdev.sha_lock);
 
 	while (count > 0) {
 		rcnt = SHA_BUFF_SIZE - sha_remaining_cnt;
@@ -266,7 +263,7 @@ static ssize_t nvt_sha_write(struct file *filp, const char __user *buf, size_t c
 			sha_remaining_cnt = 0;
 		}
 	}
-	mutex_unlock(&nuc980_crdev.sha_lock);
+	//mutex_unlock(&nuc980_crdev.sha_lock);
 	return ret;
 }
 
@@ -275,7 +272,7 @@ static long nvt_sha_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 	volatile struct nuc980_crypto_regs  *crpt_regs = nuc980_crdev.regs;
 	u32   *data_ptr;
 
-	mutex_lock(&nuc980_crdev.sha_lock);
+	//mutex_lock(&nuc980_crdev.sha_lock);
 
 	switch(cmd) {
 	case SHA_IOC_INIT:
@@ -306,11 +303,11 @@ static long nvt_sha_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 
 
 	default:
-		mutex_unlock(&nuc980_crdev.sha_lock);
+		//mutex_unlock(&nuc980_crdev.sha_lock);
 		return -ENOTTY;
 	}
 
-	mutex_unlock(&nuc980_crdev.sha_lock);
+	//mutex_unlock(&nuc980_crdev.sha_lock);
 	return 0;
 }
 

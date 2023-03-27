@@ -476,8 +476,11 @@ void paser_irq_cep(struct nuc980_udc *udc, u32 irq)
 	{
 		__raw_writel(USBD_CEPINTEN_SETUPPKIEN, udc->base + REG_USBD_CEPINTEN);
 		udc_isr_update_dev(udc);
-		udc->ep0state=EP0_IDLE;
-		udc->setup_ret = 0;
+		if (udc->setup_ret >= 0)
+		{
+			udc->ep0state=EP0_IDLE;
+			udc->setup_ret = 0;
+		}
 	}
 }
 
@@ -1339,6 +1342,30 @@ static void udc_isr_dma(struct nuc980_udc *udc)
 }
 
 
+static int udc_get_stall(struct usb_ep *_ep)
+{
+	struct nuc980_ep *ep = container_of(_ep, struct nuc980_ep, ep);
+	struct nuc980_udc *udc = ep->dev;
+	int i;
+
+	if (ep->ep_num == 0)
+	{
+		if (__raw_readl(udc->base + REG_USBD_CEPCTL) & 0x2)
+			return 1;
+	}
+	else
+	{
+		for (i=1; i<NUC980_ENDPOINTS; i++)
+		{
+			if (__raw_readl(udc->base + REG_USBD_EPA_EPRSPCTL+0x28*(ep->index-1)) & 0x10)
+				return 1;
+		}
+	}
+
+    return 0;
+}
+
+
 static void udc_isr_ctrl_pkt(struct nuc980_udc *udc)
 {
 	struct nuc980_ep *ep = &udc->ep[0];
@@ -1363,8 +1390,28 @@ static void udc_isr_ctrl_pkt(struct nuc980_udc *udc)
 
 	switch (udc->ep0state) {
 		case EP0_IDLE:
+			if (crq.bRequest == USB_REQ_GET_STATUS) {
+				unsigned char tmp = 0;
+				if ((crq.bRequestType == 0x80) || (crq.bRequestType == 0x81)) {
+					tmp = 0;
+				}
+				else if (crq.bRequestType == 0x82) {
+					tmp = udc_get_stall(&udc->ep[crq.wIndex & 0x7f].ep);
+				}
+				__raw_writeb(tmp, udc->base + REG_USBD_CEPDAT);
+				__raw_writeb(0, udc->base + REG_USBD_CEPDAT);
+				__raw_writel(2, udc->base + REG_USBD_CEPTXCNT);
+				udc->ep0state = EP0_IN_DATA_PHASE;
+				__raw_writel(USBD_CEPINTEN_SETUPPKIEN|USBD_CEPINTEN_INTKIEN, udc->base + REG_USBD_CEPINTEN);
+				return;
+			}
+
 			if (crq.bRequest == USB_REQ_SET_ADDRESS) {
 				udc->usb_address = crq.wValue;
+				__raw_writel(USBD_CEPINTSTS_STSDONEIF, udc->base + REG_USBD_CEPINTSTS);
+				__raw_writel(USB_CEPCTL_NAKCLR, udc->base + REG_USBD_CEPCTL);
+				__raw_writel(USBD_CEPINTEN_SETUPPKIEN|USBD_CEPINTEN_STSDONEIEN, udc->base + REG_USBD_CEPINTEN);
+				return;
 			}
 
 			if (crq.bRequestType & USB_DIR_IN) {
@@ -1379,9 +1426,15 @@ static void udc_isr_ctrl_pkt(struct nuc980_udc *udc)
 			if (udc->gadget.speed == USB_SPEED_FULL)
 				udelay(5);
 
-            ret = udc->driver->setup(&udc->gadget, &crq);
-            udc->setup_ret = ret;
-            if ((ret < 0) || (crq.bRequest == USB_REQ_SET_ADDRESS)) {
+			ret = udc->driver->setup(&udc->gadget, &crq);
+			udc->setup_ret = ret;
+			if ((ret == -EOPNOTSUPP) && (crq.bRequest == USB_REQ_GET_DESCRIPTOR)) {
+				__raw_writel(USBD_CEPINTSTS_STSDONEIF, udc->base + REG_USBD_CEPINTSTS);
+				__raw_writel(USB_CEPCTL_STALL, udc->base + REG_USBD_CEPCTL);
+				udc->ep0state = EP0_STALL;
+				__raw_writel(USBD_CEPINTEN_SETUPPKIEN|USBD_CEPINTEN_STSDONEIEN, udc->base + REG_USBD_CEPINTEN);
+			}
+			else if (ret < 0) {
 				__raw_writel(USBD_CEPINTSTS_STSDONEIF, udc->base + REG_USBD_CEPINTSTS);
 				__raw_writel(USB_CEPCTL_NAKCLR, udc->base + REG_USBD_CEPCTL);
 				__raw_writel(USBD_CEPINTEN_SETUPPKIEN|USBD_CEPINTEN_STSDONEIEN, udc->base + REG_USBD_CEPINTEN);
@@ -1394,6 +1447,7 @@ static void udc_isr_ctrl_pkt(struct nuc980_udc *udc)
 			break;
 
 		case EP0_STALL:
+			udc->ep0state = EP0_IDLE;
 			break;
 
 		default:
@@ -1426,9 +1480,11 @@ void udc_isr_update_dev(struct nuc980_udc *udc)
 					 __raw_writel(pcrq->wIndex >> 8, udc->base + REG_USBD_TEST);
 				}
 			}
+			nuc980_set_halt(&udc->ep[pcrq->wIndex & 0x7f].ep, 1);
 			break;
 
 		case USB_REQ_CLEAR_FEATURE:
+			nuc980_set_halt(&udc->ep[pcrq->wIndex & 0x7f].ep, 0);
 			break;
 
 		default:

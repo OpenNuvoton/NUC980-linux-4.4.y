@@ -106,15 +106,32 @@
 			status = "disabled";
 		};
 
+		pinctrl: pinctrl@b0000000 {
+			qspi0 {
+				pinctrl_qspi0_quad: qspi0_quad {
+					nuvoton,pins =
+						<3 0x2 0x1 0
+						 3 0x3 0x1 0
+						 3 0x4 0x1 0
+						 3 0x5 0x1 0
+						 3 0x6 0x1 0
+						 3 0x7 0x1 0
+						>;
+				};
+			};
+		};
+
 		qspi0: qspi0@b0060000 {
-			status = "disabled";
+			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
-
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_qspi0_quad>;
 			num_cs  = <1>;
 			lsb	 = <0>;
 			txneg   = <1>;
 			rxneg   = <0>;
+			clkpol  = <0>;
 			divider = <4>;
 			sleep   = <0>;
 			txnum   = <0>;
@@ -122,20 +139,29 @@
 			bus_num	= <0>;
 			quad	= <0>;
 
-			flash: m25p80@0 {
-				compatible = "w25q128";
+			flash: mt29f@0 {
+				compatible = "spinand,mt29f";
 				#address-cells = <1>;
 				#size-cells = <1>;
 				reg = <0>;
 				spi-max-frequency = <12000000>;
-
+				spi-rx-bus-width = <4>;
+				spi-tx-bus-width = <4>;
 				partition@0 {
-					label = "kernel";
-					reg = <0x00000000 0x0800000>;
+					label = "u-boot";
+					reg = <0x00000000 0x00200000>;
 				};
-				partition@800000 {
-					label = "rootfs";
-					reg = <0x0800000 0x0800000>;
+				partition@200000 {
+					label = "kernel";
+					reg = <0x00200000 0x01600000>;
+				};
+				partition@1600000 {
+					label = "lighttpd";
+					reg = <0x01600000 0x01800000>;
+				};
+				partition@1600000 {
+					label = "user";
+					reg = <0x01800000 0x06A00000>;
 				};
 			};
 		};

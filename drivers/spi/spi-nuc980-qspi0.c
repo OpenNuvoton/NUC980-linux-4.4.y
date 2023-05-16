@@ -261,34 +261,30 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 					hw->regs + REG_CTL);//Enable Quad mode, direction input
 			}
 
-			for(i = 0; i < t->len; ) {
-				if(((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x00000)) //TX NOT FULL
-				{
+			for (i = 0; i < t->len; ) {
+				if ((unsigned int)(__raw_readl(hw->regs + REG_STATUS) & 0xF0000000)
+					< (unsigned int)0x60000000) { //TXCNT
 					__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
 					i++;
 				}
-				if(((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) //RX NOT EMPTY
-				{
+				if (((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) { //RX NOT EMPTY
 					hw_rx(hw, __raw_readl(hw->regs + REG_RX), j);
 					j++;
 				}
 			}
-			while(j < t->len)
-			{
-				if(((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) //RX NOT EMPTY
-				{
+			while (j < t->len) {
+				if (((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) { //RX NOT EMPTY
 					hw_rx(hw, __raw_readl(hw->regs + REG_RX), j);
 					j++;
 				}
 			}
-		}
-		if (hw->tx) {
+		} else {
 			if (t->tx_nbits & SPI_NBITS_QUAD) {
 				__raw_writel((__raw_readl(hw->regs + REG_CTL)|0x500000),
 					hw->regs + REG_CTL);//Enable Quad mode, direction output
 			}
 
-			for(i = 0; i < t->len; i++) {
+			for (i = 0; i < t->len; i++) {
 				while (((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x20000)); //TXFULL
 				__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
 			}
@@ -428,16 +424,14 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 
 		qspi0_slave_done_state=0;
 
-#if 0 //QUAD + byte reorder issue
 		while (__raw_readl(hw->regs + REG_STATUS) & 1); //wait busy
-#else
+
 		__raw_writel((__raw_readl(hw->regs + REG_CTL) & ~SPIEN), hw->regs + REG_CTL); //Disable SPIEN
 		__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x3), hw->regs + REG_PDMACTL); //Disable SPIx TX/RX PDMA
 		__raw_writel(__raw_readl(hw->regs + REG_FIFOCTL) | 0x3, hw->regs + REG_FIFOCTL); //RXRST & TXRST
 		while (__raw_readl(hw->regs + REG_STATUS) & 0x800000); //TXRXRST
 		__raw_writel(__raw_readl(hw->regs + REG_FIFOCTL) | 0x300, hw->regs + REG_FIFOCTL); //TXFBCLR/RXFBCLR
 		__raw_writel((__raw_readl(hw->regs + REG_CTL) | SPIEN), hw->regs + REG_CTL); //Enable SPIEN
-#endif
 
 		__raw_writel(((__raw_readl(hw->regs + REG_CTL) & ~(0x81F00))|0x800), hw->regs + REG_CTL); //restore to 8 bits, no byte reorder
 		__raw_writel(((__raw_readl(hw->regs + REG_CTL) & ~(0x400000)) & ~0x100000), hw->regs + REG_CTL);//Disable Quad mode, direction input
@@ -456,48 +450,47 @@ static int nuc980_qspi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 #elif defined(CONFIG_SPI_NUC980_QSPI0_NO_PDMA)
 
 	if (hw->rx) {
+
 		j = 0;
 
 		if (t->rx_nbits & SPI_NBITS_QUAD) {
-			__raw_writel((__raw_readl(hw->regs + REG_CTL)|0x500000),
-				hw->regs + REG_CTL);//Enable Quad mode, direction output
+			__raw_writel(((__raw_readl(hw->regs + REG_CTL)|0x400000) & ~0x100000),
+				hw->regs + REG_CTL);//Enable Quad mode, direction input
 		}
 
-		for(i = 0; i < t->len; ) {
-			if(((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x00000)) //TX NOT FULL
-			{
+		for (i = 0; i < t->len; ) {
+			if ((unsigned int)(__raw_readl(hw->regs + REG_STATUS) & 0xF0000000)
+				< (unsigned int)0x60000000) { //TXCNT
 				__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
 				i++;
 			}
-			if(((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) //RX NOT EMPTY
-			{
+			if (((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) { //RX NOT EMPTY
 				hw_rx(hw, __raw_readl(hw->regs + REG_RX), j);
 				j++;
 			}
 		}
-		while(j < t->len)
-		{
-			if(((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) //RX NOT EMPTY
-			{
+		while (j < t->len) {
+			if (((__raw_readl(hw->regs + REG_STATUS) & 0x100) == 0x000)) { //RX NOT EMPTY
 				hw_rx(hw, __raw_readl(hw->regs + REG_RX), j);
 				j++;
 			}
 		}
-	}
-	if (hw->tx) {
+	} else {
 		if (t->tx_nbits & SPI_NBITS_QUAD) {
 			__raw_writel((__raw_readl(hw->regs + REG_CTL)|0x500000),
 				hw->regs + REG_CTL);//Enable Quad mode, direction output
 		}
 
-		for(i = 0; i < t->len; i++) {
+		for (i = 0; i < t->len; i++) {
 			while (((__raw_readl(hw->regs + REG_STATUS) & 0x20000) == 0x20000)); //TXFULL
 			__raw_writel(hw_tx(hw, i), hw->regs + REG_TX);
 		}
 	}
 
 	while (__raw_readl(hw->regs + REG_STATUS) & 1); //wait busy
-	__raw_writel((__raw_readl(hw->regs + REG_CTL) & ~0x700000), hw->regs + REG_CTL);//Restore to single mode, direction input
+	__raw_writel((__raw_readl(hw->regs + REG_CTL) & ~0x700000),
+			hw->regs + REG_CTL);//Restore to single mode, direction input
+
 #endif
 
 	return t->len;

@@ -47,7 +47,7 @@ struct mtd_partition spinand_partitions[] = {
 
 static int is_set_spinand_quad = 0;
 
-static u8 nand_id[3];
+static u8 nand_id[4];
 
 static int spinand_cmd(struct spi_device *spi, struct spinand_cmd *cmd);
 
@@ -497,7 +497,7 @@ static int spinand_read_id(struct spi_device *spi_nand, u8 *id)
 	struct spinand_cmd cmd = {0};
 
 	cmd.cmd = CMD_READ_ID;
-	cmd.n_rx = 3;
+	cmd.n_rx = 4;
 	cmd.rx_buf = &nand_id[0];
 
 	retval = spinand_cmd(spi_nand, &cmd);
@@ -507,6 +507,7 @@ static int spinand_read_id(struct spi_device *spi_nand, u8 *id)
 	}
 	id[0] = nand_id[1];
 	id[1] = nand_id[2];
+	id[2] = nand_id[3];
 	spinand_parse_id(spi_nand, nand_id, id);
 	return retval;
 }

@@ -86,12 +86,12 @@
 			status = "disabled";
 		};
 
-		can2: can@b00a1000 {
+		can2: can@b00a2000 {
 			pinctrl-0 = <&pinctrl_can2_PB_PC>;
 			status = "disabled";
 		};
 
-		can3: can@b00a1000 {
+		can3: can@b00a3000 {
 			pinctrl-0 = <&pinctrl_can3_PA>;
 			status = "disabled";
 		};

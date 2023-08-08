@@ -407,6 +407,17 @@ void paser_irq_cep(struct nuc980_udc *udc, u32 irq)
 	else
 		req = list_entry(ep->queue.next, struct nuc980_request, queue);
 
+	if (irq & USBD_CEPINTSTS_STSDONEIF)
+	{
+		__raw_writel(USBD_CEPINTEN_SETUPPKIEN, udc->base + REG_USBD_CEPINTEN);
+		udc_isr_update_dev(udc);
+		if (udc->setup_ret >= 0)
+		{
+			udc->ep0state=EP0_IDLE;
+			udc->setup_ret = 0;
+		}
+	}
+
 	if (irq & USBD_CEPINTSTS_SETUPPKIF)
 	{
 		udc->ep0state = EP0_IDLE;
@@ -469,17 +480,6 @@ void paser_irq_cep(struct nuc980_udc *udc, u32 irq)
 				else if (udc->ep0state != EP0_IDLE)
 					udc->ep0state=EP0_END_XFER;
 			}
-		}
-	}
-
-	if (irq & USBD_CEPINTSTS_STSDONEIF)
-	{
-		__raw_writel(USBD_CEPINTEN_SETUPPKIEN, udc->base + REG_USBD_CEPINTEN);
-		udc_isr_update_dev(udc);
-		if (udc->setup_ret >= 0)
-		{
-			udc->ep0state=EP0_IDLE;
-			udc->setup_ret = 0;
 		}
 	}
 }

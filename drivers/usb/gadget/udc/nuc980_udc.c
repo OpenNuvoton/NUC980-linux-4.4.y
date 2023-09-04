@@ -329,16 +329,7 @@ static int read_fifo(struct nuc980_ep *ep, struct nuc980_request *req, u16 cnt)
 	if (req->req.length == req->req.actual)
 		done(ep, req, 0);
 	else if (fifo_count && fifo_count < ep->ep.maxpacket)
-	{
 		done(ep, req, 0);
-		/* overflowed this request?  flush extra data */
-//		if (req->req.length != req->req.actual)
-//		{
-//			pr_devel("%s(): EOVERFLOW set\n", __FUNCTION__);
-//			if (req->req.short_not_ok)
-//				req->req.status = -EOVERFLOW;   //device read less then host write
-//		}
-	}
 	else
 		is_last = 0;
 
@@ -380,13 +371,11 @@ void paser_usb_irq(struct nuc980_udc *udc, int irq)
 	{
 		if (__raw_readl(udc->base + REG_USBD_PHYCTL) & USBD_PHYCTL_VBUSDET)
 		{
-//printk("plug-in\n");
 			__raw_writel(__raw_readl(udc->base + REG_USBD_CEPCTL)|USB_CEPCTL_FLUSH, udc->base + REG_USBD_CEPCTL);
 			nuc980_udc_enable(udc);
 		}
 		else
 		{
-//printk("plug-out\n");
 			nuc980_udc_disable(udc);
 			nuke(udc, &udc->ep[0], -ESHUTDOWN);
 		}
@@ -457,7 +446,7 @@ void paser_irq_cep(struct nuc980_udc *udc, u32 irq)
 					break;
 				if (timeout > USBD_TIMEOUT)
 				{
-					printk("timeout!!\n");
+					//printk("timeout!!\n");
 					return;
 				}
 				timeout++;
@@ -616,64 +605,44 @@ static irqreturn_t nuc980_udc_irq(int irq, void *_dev)
 }
 
 
-static s32 sram_data[13][2] = {{0,0x40}};
-
+static s32 sram[13][2] = {0};
 //0-3F for Ctrl pipe
-s32 get_sram_base(struct nuc980_udc *udc, u32 max)
+s32 get_sram_base(u32 idx, u32 max)
 {
-	int i, cnt = 1, j;
-	s32 start, end;
+	u32 i;
+	s32 sram_addr;
 
-	for (i = 1; i < NUC980_ENDPOINTS; i++)
+	if (max >= 512)
 	{
-		struct nuc980_ep *ep = &udc->ep[i];
-
-		start = __raw_readl(udc->base + REG_USBD_EPA_EPBUFSTART+0x28*(ep->index-1));
-		end = __raw_readl(udc->base + REG_USBD_EPA_EPBUFEND+0x28*(ep->index-1));
-		if (end - start > 0)
+		for (i=1; i<7; i++)
 		{
-				sram_data[cnt][0] = start;
-				sram_data[cnt][1] = end + 1;
-				cnt++;
+			if (sram[i][0] == 1)
+				continue;
+			sram[i][0] = 1;
+			sram[i][1] = idx;
+			sram_addr = 0x400 + (i - 1) * 0x200;
+			return sram_addr;
 		}
 	}
-	if (cnt == 1)
-		return 0x40;
-	//sorting from small to big
-	j= 1;
-	while ((j<cnt))
+	else
 	{
-		for (i=0; i<cnt -j; i++)
+		for (i=7; i<13; i++)
 		{
-			if (sram_data[i][0]>sram_data[i+1][0])
-			{
-				start = sram_data[i][0];
-				end = sram_data[i][1];
-				sram_data[i][0] = sram_data[i+1][0];
-				sram_data[i][1] = sram_data[i+1][1];
-				sram_data[i+1][0] = start;
-				sram_data[i+1][1] = end;
-			}
+			if (sram[i][0] == 1)
+				continue;
+			sram[i][0] = 1;
+			sram[i][1] = idx;
+			sram_addr = 0x40 + (i - 7) * 0x40;
+			return sram_addr;
 		}
-		j++;
 	}
-
-	for (i = 0; i< cnt-1; i++)
-	{
-		if (sram_data[i+1][0] - sram_data[i][1] >= max)
-			return sram_data[i][1];
-	}
-
-	if (0x1000 - sram_data[cnt-1][1] >= max)
-		return sram_data[cnt-1][1];
-
 	return -ENOBUFS;
 }
 
 /*
  *  nuc980_ep_enable
  */
-static int nuc980_ep_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+static int nuc980_ep_enable(struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
 {
 	struct nuc980_udc *udc;
 	struct nuc980_ep *ep;
@@ -704,7 +673,7 @@ static int nuc980_ep_enable (struct usb_ep *_ep, const struct usb_endpoint_descr
 		__raw_writel(max, udc->base + REG_USBD_EPA_EPMPS + 0x28*(ep->index-1));
 		ep->ep.maxpacket = max;
 
-		sram_addr = get_sram_base(udc, max);
+		sram_addr = get_sram_base(ep->index, max);
 
 		if (sram_addr < 0)
 			return sram_addr;
@@ -782,16 +751,26 @@ static int nuc980_ep_enable (struct usb_ep *_ep, const struct usb_endpoint_descr
 /*
  * nuc980_ep_disable
  */
-static int nuc980_ep_disable (struct usb_ep *_ep)
+static int nuc980_ep_disable(struct usb_ep *_ep)
 {
 	struct nuc980_ep *ep = container_of(_ep, struct nuc980_ep, ep);
 	unsigned long flags;
+	s32 i = 1;
 
 	if (!_ep || !ep->ep.desc)
 		return -EINVAL;
 
 	spin_lock_irqsave(&ep->dev->lock, flags);
 	ep->ep.desc = 0;
+
+	while(1) {
+		if (sram[i][1] == ep->index) {
+			sram[i][0] = 0;
+			sram[i][1] = 0;
+			break;
+		}
+		i++;
+	}
 
 	__raw_writel(0, ep->dev->base + REG_USBD_EPA_EPCFG+0x28*(ep->index-1));
 	__raw_writel(0, ep->dev->base + REG_USBD_EPA_EPINTEN + 0x28*(ep->index-1));
@@ -1155,7 +1134,6 @@ static const struct usb_gadget_ops nuc980_ops =
 	.udc_stop           = nuc980_udc_stop,
 };
 
-
 static void nuc980_udc_enable(struct nuc980_udc *udc)
 {
 //    udc->gadget.speed = USB_SPEED_HIGH;
@@ -1242,6 +1220,7 @@ static void udc_isr_reset(struct nuc980_udc *udc)
 
 	udc->usb_address = 0;
 	udc->usb_less_mps = 0;
+	memset(sram, 0, sizeof(sram));
 
 	//reset DMA
 	__raw_writel(0x80, udc->base + REG_USBD_DMACTL);
@@ -1390,7 +1369,7 @@ static void udc_isr_ctrl_pkt(struct nuc980_udc *udc)
 
 	switch (udc->ep0state) {
 		case EP0_IDLE:
-			if (crq.bRequest == USB_REQ_GET_STATUS) {
+			if ((crq.bRequest == USB_REQ_GET_STATUS) && ((crq.bRequestType & 0x60) == 0x00)) {
 				unsigned char tmp = 0;
 				if ((crq.bRequestType == 0x80) || (crq.bRequestType == 0x81)) {
 					tmp = 0;

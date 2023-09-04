@@ -92,11 +92,11 @@
 			status = "disabled";
 		};
 
-		pwm0: pwm0@b0058000 {
+		pwm00: pwm00@b0058000 {
 			status = "disabled";
 		};
 
-		pwm1: pwm1@b0059000 {
+		pwm10: pwm10@b0059000 {
 			status = "disabled";
 		};
 		pinctrl: pinctrl@b0000000 {

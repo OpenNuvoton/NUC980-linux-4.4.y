@@ -558,8 +558,10 @@ static int nuc980_i2c3_doxfer(struct nuc980_i2c *i2c,
 	 * noisy when doing an i2cdetect
 	*/
 
-	if (timeout == 0)
+	if (timeout == 0) {
 		dev_dbg(i2c->dev, "timeout\n");
+		nuc980_i2c3_stop(i2c, 0);
+	}
 	else if (ret != num)
 		dev_dbg(i2c->dev, "incomplete xfer (%d)\n", ret);
 

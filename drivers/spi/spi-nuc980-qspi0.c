@@ -625,14 +625,14 @@ static int nuc980_qspi0_update_state(struct spi_device *spi,
 
 #if defined(CONFIG_USE_OF)
 	if (hw->pdata->quad)
-		spi->mode = (SPI_MODE_0 | SPI_TX_QUAD | SPI_RX_QUAD);
+		spi->mode |= (SPI_TX_QUAD | SPI_RX_QUAD);
 	else
-		spi->mode = (SPI_MODE_0 | SPI_RX_DUAL | SPI_TX_DUAL);
+		spi->mode |= (SPI_RX_DUAL | SPI_TX_DUAL);
 #else
 #if defined(CONFIG_SPI_NUC980_QSPI0_QUAD)
-		spi->mode = (SPI_MODE_0 | SPI_TX_QUAD | SPI_RX_QUAD);
+		spi->mode |= (SPI_TX_QUAD | SPI_RX_QUAD);
 #elif defined(CONFIG_SPI_NUC980_QSPI0_NORMAL)
-		spi->mode = (SPI_MODE_0 | SPI_RX_DUAL | SPI_TX_DUAL);
+		spi->mode |= (SPI_RX_DUAL | SPI_TX_DUAL);
 #endif
 #endif
 

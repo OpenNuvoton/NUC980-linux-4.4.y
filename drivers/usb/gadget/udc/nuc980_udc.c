@@ -1686,12 +1686,14 @@ static int nuc980_udc_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int nuc980_udc_suspend (struct platform_device *pdev, pm_message_t state)
 {
+	struct nuc980_udc *udc = platform_get_drvdata (pdev);
 	__raw_writel(__raw_readl(udc->base + REG_USBD_PHYCTL) & ~0x200, udc->base + REG_USBD_PHYCTL);    // phy suspend
 	return 0;
 }
 
 static int nuc980_udc_resume (struct platform_device *pdev)
 {
+	struct nuc980_udc *udc = platform_get_drvdata (pdev);
 	unsigned int reg = __raw_readl(udc->base + REG_USBD_EPA_EPMPS);
 
 	__raw_writel(__raw_readl(udc->base + REG_USBD_PHYCTL) | 0x200, udc->base + REG_USBD_PHYCTL);

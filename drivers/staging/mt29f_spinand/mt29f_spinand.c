@@ -214,7 +214,7 @@ struct spinand_ops spinand_dev[] = {
 		macronix_verify_ecc,
 	},
 	{
-		NAND_MFR_GIGA,		//GD5FGQ5UExxG
+		NAND_MFR_GIGA,		//GD5F1GQ5UExxG
 		0x51,
 		gigadevice_set_defaults,
 		gigadevice_read_cmd,
@@ -224,7 +224,21 @@ struct spinand_ops spinand_dev[] = {
 		//winbond_write_data,
 		macronix_write_data,
 		gigadevice_erase_blk,
-		gigadevice_parse_id_D1,	//GD5FGQ5UExxG
+		gigadevice_parse_id_D1,	//GD5F1GQ5UExxG
+		macronix_verify_ecc,
+	},
+	{
+		NAND_MFR_GIGA,		//GD5F2GQ5UExxG
+		0x52,
+		gigadevice_set_defaults,
+		gigadevice_read_cmd,
+		//winbond_read_data,
+		macronix_read_data,
+		gigadevice_write_cmd,
+		//winbond_write_data,
+		macronix_write_data,
+		gigadevice_erase_blk,
+		gigadevice_parse_id_D1,	//GD5F2GQ5UExxG
 		macronix_verify_ecc,
 	},
 	{

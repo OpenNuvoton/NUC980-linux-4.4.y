@@ -720,7 +720,7 @@ static int nuc980_spi1_probe(struct platform_device *pdev)
 		return -1;
 	}
 	pdma->chan_rx->private=(void *)1;
-	printk("RX %s: %s module removed\n",__func__, dma_chan_name(pdma->chan_rx));
+	pr_debug("RX %s: %s request successfully\n",__func__, dma_chan_name(pdma->chan_rx));
 
 	pdma->chan_tx = dma_request_channel(mask, NULL, NULL);
 	if (!pdma->chan_tx) {
@@ -728,7 +728,7 @@ static int nuc980_spi1_probe(struct platform_device *pdev)
 		return -1;
 	}
 	pdma->chan_tx->private=(void *)1;
-	printk("TX %s: %s module removed\n",__func__, dma_chan_name(pdma->chan_tx));
+	pr_debug("TX %s: %s request successfully\n",__func__, dma_chan_name(pdma->chan_tx));
 #endif
 
 	master = spi_alloc_master(&pdev->dev, sizeof(struct nuc980_spi));

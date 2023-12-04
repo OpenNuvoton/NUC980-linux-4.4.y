@@ -73,7 +73,7 @@
 
 		uart8: serial@b0078000 {
 			pinctrl-names = "default";
-			pinctrl-0 = <&pinctrl_uart8_PA>;
+			pinctrl-0 = <&pinctrl_uart8_PA_PG>;
 			pdma-enable = <1>;
 			status = "okay";
 		};

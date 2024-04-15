@@ -236,6 +236,11 @@ static int usb_nuc980_probe(const struct hc_driver *driver,
 	if (retval != 0)
 		goto err4;
 
+	device_wakeup_enable(hcd->self.controller);
+
+	/* enable USBHWKEN (USB Host Wake System Up Enable Bit) */
+	__raw_writel(__raw_readl(REG_WKUPSER1) | 0x40000, REG_WKUPSER1);
+
 #ifdef PORT_DEBUG
 	kthread_run(port_dump_thread, NULL, "khubd");
 #endif
@@ -336,7 +341,7 @@ static int ehci_nuc980_pm_suspend(struct device *dev)
 
 	ret = ehci_suspend(hcd, do_wakeup);
 
-#if !defined(CONFIG_USB_NUC980_OHCI)
+#if !defined(CONFIG_USB_NUC980_OHCI) && defined(CONFIG_USB_NUC980_PM_VBUS_OFF)
 	/* Suspend PHY0 and PHY1; this will turn off PHY power. */
 	/* If NUC980 OHCI enabled, this job will be left to NUC980 OHCI driver. */
 	__raw_writel(0x60, NUC980_VA_EHCI+0xC4);
@@ -383,9 +388,11 @@ static int ehci_nuc980_pm_resume(struct device *dev)
 
 #endif  /* end of CONFIG_USE_OF */
 
+#if !defined(CONFIG_USB_NUC980_OHCI) && defined(CONFIG_USB_NUC980_PM_VBUS_OFF)
 	/* re-enable PHY0 and PHY1 */
 	__raw_writel(0x160, NUC980_VA_EHCI+0xC4);
 	__raw_writel(0x520, NUC980_VA_EHCI+0xC8);
+#endif
 
 	ehci_resume(hcd, false);
 

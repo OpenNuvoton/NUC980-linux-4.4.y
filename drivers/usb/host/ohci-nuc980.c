@@ -288,6 +288,11 @@ static int usb_hcd_nuc980_probe(const struct hc_driver *driver,
 	if (retval == 0)
 		return retval;
 
+	/* enable USBHWKEN (USB Host Wake System Up Enable Bit) */
+	__raw_writel(__raw_readl(REG_WKUPSER1) | 0x40000, REG_WKUPSER1);
+
+	device_wakeup_enable(hcd->self.controller);
+
 	pr_debug("Removing nuc980 OHCI USB Controller\n");
 
 	iounmap(hcd->regs);
@@ -426,9 +431,11 @@ static int ohci_nuc980_pm_suspend(struct device *dev)
 
 	ret = ohci_suspend(hcd, do_wakeup);
 
+#if defined(CONFIG_USB_NUC980_PM_VBUS_OFF) || defined(CONFIG_USB_NUC980_PM_VBUS_OFF_)
 	/* Suspend PHY0 and PHY1; this will turn off PHY power. */
 	__raw_writel(0x60, NUC980_VA_EHCI+0xC4);
 	__raw_writel(0x20, NUC980_VA_EHCI+0xC8);
+#endif
 
 #if !defined(CONFIG_USB_NUC980_EHCI)
 #ifdef CONFIG_USE_OF
@@ -441,7 +448,7 @@ static int ohci_nuc980_pm_suspend(struct device *dev)
 	}
 #else   /* !CONFIG_USE_OF */
 
-#if defined(CONFIG_USB_NUC980_PM_VBUS_OFF) && defined(CONFIG_NUC980_USBH_PWREN_ON_)
+#if defined(CONFIG_USB_NUC980_PM_VBUS_OFF_) && defined(CONFIG_NUC980_USBH_PWREN_ON_)
 	/* turn off port power */
 	__raw_writel(__raw_readl(REG_GPIOE_DOUT) & ~(1<<12), REG_GPIOE_DOUT);     // PE.12 output low
 	__raw_writel(((__raw_readl(REG_GPIOE_MODE) & 0xFCFFFFFF) | (1<<24)), REG_GPIOE_MODE);   // PE.12 output mode
@@ -483,9 +490,11 @@ static int ohci_nuc980_pm_resume(struct device *dev)
 #endif  /* end of CONFIG_USE_OF */
 #endif  /* !CONFIG_USB_NUC980_EHCI */
 
+#if defined(CONFIG_USB_NUC980_PM_VBUS_OFF) || defined(CONFIG_USB_NUC980_PM_VBUS_OFF_)
 	/* re-enable PHY0 and PHY1 */
 	__raw_writel(0x160, NUC980_VA_EHCI+0xC4);
 	__raw_writel(0x520, NUC980_VA_EHCI+0xC8);
+#endif
 
 	ohci_resume(hcd, false);
 

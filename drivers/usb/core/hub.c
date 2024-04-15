@@ -1989,6 +1989,7 @@ void usb_set_device_state(struct usb_device *udev,
 	} else
 		recursively_mark_NOTATTACHED(udev);
 	spin_unlock_irqrestore(&device_state_lock, flags);
+
 	if (wakeup >= 0)
 		device_set_wakeup_capable(&udev->dev, wakeup);
 }
@@ -2443,6 +2444,20 @@ int usb_new_device(struct usb_device *udev)
 	/* export the usbdev device-node for libusb */
 	udev->dev.devt = MKDEV(USB_DEVICE_MAJOR,
 			(((udev->bus->busnum-1) * 128) + (udev->devnum-1)));
+
+	/*
+	 * 2024.04.15 by Jacky Huang
+	 * Always enable device remote wakeup feature by default if supported.
+	 */
+	if ((udev->parent != NULL) && (udev->config->desc.bmAttributes & (1 << 5))) {
+		dev_dbg(&udev->dev, "Enable remote wakeup\n");
+		usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+				USB_REQ_SET_FEATURE, USB_RECIP_DEVICE,
+				USB_DEVICE_REMOTE_WAKEUP, 0, NULL, 0,
+				USB_CTRL_SET_TIMEOUT);
+	} else {
+		dev_dbg(&udev->dev, "Device not support remote wakeup.\n");
+	}
 
 	/* Tell the world! */
 	announce_device(udev);
@@ -3041,10 +3056,18 @@ static int usb_enable_remote_wakeup(struct usb_device *udev)
 static int usb_disable_remote_wakeup(struct usb_device *udev)
 {
 	if (udev->speed < USB_SPEED_SUPER)
+		/*
+		 * 2024.04.15 by Jacky Huang
+		 * Do not disable USB device remote wakeup.
+		 */
+#if 1
+		return 0;
+#else
 		return usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
 				USB_REQ_CLEAR_FEATURE, USB_RECIP_DEVICE,
 				USB_DEVICE_REMOTE_WAKEUP, 0, NULL, 0,
 				USB_CTRL_SET_TIMEOUT);
+#endif
 	else
 		return usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
 				USB_REQ_CLEAR_FEATURE, USB_RECIP_INTERFACE,

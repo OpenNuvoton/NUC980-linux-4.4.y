@@ -242,7 +242,7 @@ static int write_fifo(struct nuc980_ep *ep, struct nuc980_request *req)
 
 	/* last packet is often short (sometimes a zlp) */
 
-	if (req->req.length == req->req.actual/* && !req->req.zero*/)
+	if (((req->req.length == req->req.actual) && (len % ep->ep.maxpacket)) || (len == 0))
 	{
 		done(ep, req, 0);
 		return 1;
@@ -420,6 +420,8 @@ void paser_irq_cep(struct nuc980_udc *udc, u32 irq)
 		{
 			if (req)
 				is_last = read_fifo(ep, req, __raw_readl(udc->base + REG_USBD_CEPDATCNT));
+			else
+				__raw_writel(USB_CEPCTL_FLUSH, udc->base + REG_USBD_CEPCTL);
 
 			__raw_writel(USBD_CEPINTSTS_STSDONEIF, udc->base + REG_USBD_CEPINTSTS);
 			if (!is_last)

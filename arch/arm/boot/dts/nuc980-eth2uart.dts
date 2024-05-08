@@ -155,13 +155,13 @@
 					label = "kernel";
 					reg = <0x00200000 0x01600000>;
 				};
-				partition@1600000 {
+				partition@1800000 {
 					label = "lighttpd";
-					reg = <0x01600000 0x01800000>;
+					reg = <0x01800000 0x01800000>;
 				};
-				partition@1600000 {
+				partition@3000000 {
 					label = "user";
-					reg = <0x01800000 0x06A00000>;
+					reg = <0x03000000 0x05000000>;
 				};
 			};
 		};

@@ -32,7 +32,7 @@
 
 #include "nuc980_can.h"
 
-#define DISABLE_SIE 1
+//#define DISABLE_SIE 1
 
 /* Number of interface registers */
 #define IF_ENUM_REG_LEN		11
@@ -656,8 +656,8 @@ static void c_can_chip_config(struct net_device *dev)
 		priv->write_reg(priv, C_CAN_TEST_REG, TEST_SILENT);
 	} else {
 		/* normal mode*/
-		//priv->write_reg(priv, C_CAN_CTRL_REG,
-		//		CONTROL_EIE | CONTROL_SIE | CONTROL_IE);
+		priv->write_reg(priv, C_CAN_CTRL_REG,
+				CONTROL_EIE | CONTROL_SIE | CONTROL_IE);
 	}
 
 	/* configure message objects */

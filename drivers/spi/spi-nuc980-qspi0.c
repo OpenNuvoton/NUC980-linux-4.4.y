@@ -123,7 +123,7 @@ static void qspi0_nuc980_slave_dma_callback(void *arg)
 
 	done->done = true;
 	qspi0_slave_done_state = 1;
-	//wake_up_interruptible(&qspi0_slave_done);
+	wake_up_interruptible(&qspi0_slave_done);
 
 	return;
 }

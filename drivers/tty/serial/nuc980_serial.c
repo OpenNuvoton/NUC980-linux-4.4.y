@@ -362,7 +362,7 @@ static void nuc980_prepare_RX_dma(struct uart_nuc980_port *p)
 		// use DDR
 #ifndef USING_SRAM
 		//p->dest_mem_p.size = 256;
-		p->dest_mem_p.size = 4096*2;
+		p->dest_mem_p.size = UART_RX_BUF_SIZE*2;
 		p->dest_mem_p.vir_addr = (unsigned int)dma_alloc_writecombine(NULL,
 		                         PAGE_ALIGN(p->dest_mem_p.size),
 		                         &(p->dest_mem_p.phy_addr),

@@ -241,23 +241,30 @@ static int write_fifo(struct nuc980_ep *ep, struct nuc980_request *req)
 	len = write_packet(ep, req);
 
 	/* last packet is often short (sometimes a zlp) */
-
-	if (((req->req.length == req->req.actual) && (len % ep->ep.maxpacket)) || (len == 0))
+	if (ep->ep_num == 0)
 	{
-		done(ep, req, 0);
-		return 1;
+		if (((req->req.length == req->req.actual) && (req->req.length % ep->ep.maxpacket)) || (len == 0))
+		{
+			done(ep, req, 0);
+			return 1;
+		}
 	}
 	else
 	{
-		return 0;
+		if (req->req.length == req->req.actual)
+		{
+			done(ep, req, 0);
+			return 1;
+		}
 	}
+	return 0;
 }
 
 static inline int read_packet(struct nuc980_ep *ep,u8 *buf, struct nuc980_request *req, u16 cnt)
 {
 	struct nuc980_udc *udc = ep->dev;
 	unsigned int data, i;
-	unsigned int volatile timeout;
+//	unsigned int volatile timeout;
 
 	if (ep->ep_num == 0)
 	{ //ctrl pipe don't use DMA
@@ -271,6 +278,13 @@ static inline int read_packet(struct nuc980_ep *ep,u8 *buf, struct nuc980_reques
 	}
 	else
 	{
+#if 1
+		for (i=0; i<cnt; i++)
+		{
+			*buf++ = __raw_readb(udc->base + REG_USBD_EPA_EPDAT+0x28*(ep->index-1)) & 0xff;
+		}
+		req->req.actual += cnt;
+#else
 		usb_gadget_map_request(&udc->gadget, &req->req, ep->ep_dir);
 
 		__raw_writel((__raw_readl(udc->base + REG_USBD_DMACTL) & 0xe0)|ep->ep_num, udc->base + REG_USBD_DMACTL);   //read
@@ -301,6 +315,7 @@ static inline int read_packet(struct nuc980_ep *ep,u8 *buf, struct nuc980_reques
 		__raw_writel(0x20, udc->base + REG_USBD_BUSINTSTS);
 		memcpy((char *)buf, (char *)usb_vaddr, cnt);
 		req->req.actual += cnt;
+#endif
 	}
 
 	return cnt;
@@ -765,13 +780,12 @@ static int nuc980_ep_disable(struct usb_ep *_ep)
 	spin_lock_irqsave(&ep->dev->lock, flags);
 	ep->ep.desc = 0;
 
-	while(1) {
+	for (i=1; i<13; i++) {
 		if (sram[i][1] == ep->index) {
 			sram[i][0] = 0;
 			sram[i][1] = 0;
 			break;
 		}
-		i++;
 	}
 
 	__raw_writel(0, ep->dev->base + REG_USBD_EPA_EPCFG+0x28*(ep->index-1));

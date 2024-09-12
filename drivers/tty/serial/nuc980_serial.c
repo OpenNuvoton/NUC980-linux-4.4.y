@@ -63,6 +63,7 @@
 #define Time_Out_Frame_Count 2
 #define Time_Out_Low_Baudrate 115200
 
+#define RDA_TOUT_IF (RDA_IF | TOUT_IF)
 
 static struct uart_driver nuc980serial_reg;
 
@@ -667,11 +668,12 @@ receive_chars(struct uart_nuc980_port *up)
 				goto tout_end;
 		}
 
-		if(isr & RDA_IF) {
+		if ((isr & RDA_TOUT_IF) == RDA_IF) {
 			if(dcnt == 1)
 				return; // have remaining data, don't reset max_count
 		}
 		fsr = serial_in(up, UART_REG_FSR);
+		isr = serial_in(up, UART_REG_ISR);
 	}
 
 	spin_lock(&up->port.lock);
@@ -686,7 +688,7 @@ static void transmit_chars(struct uart_nuc980_port *up)
 {
 	struct circ_buf *xmit = &up->port.state->xmit;
 	//int count = 12;
-	int count = 16 -((serial_in(up, UART_REG_FSR)>>16)&0xF);
+	int count = 15 -((serial_in(up, UART_REG_FSR)>>16)&0xF);
 
 	if(serial_in(up, UART_REG_FSR) & TX_FULL){
 		count = 0;

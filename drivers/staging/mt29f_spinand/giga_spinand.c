@@ -123,6 +123,7 @@ int macronix_verify_ecc(u8 status)
 {
 	int ecc_status = (status & STATUS_ECC_MASK_MACRONIX);
 
+#ifndef CONFIG_WINBOND_W25N_KV_KW_JV_JW
 	if ((ecc_status == STATUS_ECC_ERROR_MACRONIX) ||
 	    (ecc_status == STATUS_ECC_MASK_MACRONIX))
 		return SPINAND_ECC_ERROR;
@@ -130,6 +131,14 @@ int macronix_verify_ecc(u8 status)
 		return SPINAND_ECC_CORRECTED;
 	else
 		return 0;
+#else
+	if (ecc_status == STATUS_ECC_ERROR_MACRONIX)
+		return SPINAND_ECC_ERROR;
+	else if (ecc_status == STATUS_ECC_MASK_MACRONIX)
+		return SPINAND_ECC_CORRECTED;
+	else
+		return 0;
+#endif
 }
 
 int micron_verify_ecc(u8 status)

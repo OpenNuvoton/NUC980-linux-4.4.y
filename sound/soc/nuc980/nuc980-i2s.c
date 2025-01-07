@@ -102,24 +102,24 @@ static int nuc980_i2s_set_sysclk(struct snd_soc_dai *cpu_dai, int clk_id, unsign
 	unsigned int mclkdiv, bclkdiv, mclk;
 
 	clkmux = clk_get(NULL, "audio_eclk_mux");
-		if (IS_ERR(clkmux)) {
-			printk(KERN_ERR "nuc980-audio:failed to get audio clock source\n");
-			ret = PTR_ERR(clkmux);
-			return ret;
-		}
-		clkapll = clk_get(NULL, "apll");
-		if (IS_ERR(clkapll)) {
-			printk(KERN_ERR "nuc980-audio:failed to get audio clock source\n");
-			ret = PTR_ERR(clkapll);
-			return ret;
-		}
+	if (IS_ERR(clkmux)) {
+		printk(KERN_ERR "nuc980-audio:failed to get audio clock source\n");
+		ret = PTR_ERR(clkmux);
+		return ret;
+	}
+	clkapll = clk_get(NULL, "apll");
+	if (IS_ERR(clkapll)) {
+		printk(KERN_ERR "nuc980-audio:failed to get audio clock source\n");
+		ret = PTR_ERR(clkapll);
+		return ret;
+	}
 
-		clkaudio = clk_get(NULL, "audio_eclk");
-		if (IS_ERR(clkaudio)) {
-			printk(KERN_ERR "nuc980-audio:failed to get audio clock source\n");
-			ret = PTR_ERR(clkaudio);
-			return ret;
-		}
+	clkaudio = clk_get(NULL, "audio_eclk");
+	if (IS_ERR(clkaudio)) {
+		printk(KERN_ERR "nuc980-audio:failed to get audio clock source\n");
+		ret = PTR_ERR(clkaudio);
+		return ret;
+	}
 
 	if (clk_id == NUC980_AUDIO_SAMPLECLK) {
 		val = AUDIO_READ(nuc980_audio->mmio + ACTL_I2SCON);
@@ -157,6 +157,10 @@ static int nuc980_i2s_set_sysclk(struct snd_soc_dai *cpu_dai, int clk_id, unsign
 			clk_set_rate(clkaudio, 16950000);
 		}
 	}
+	/* free clk structure */
+	clk_put(clkmux);
+	clk_put(clkapll);
+	clk_put(clkaudio);
 
 	return 0;
 }

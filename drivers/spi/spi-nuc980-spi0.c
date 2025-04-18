@@ -464,6 +464,7 @@ static int nuc980_spi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 	return t->len;
 
 err_timeout:
+#if defined(CONFIG_SPI_NUC980_SPI0_PDMA)
 	/* unmap buffers if mapped above */
 	if (t->rx_buf)
 		dma_unmap_single(hw->dev, pdma->sgrx.dma_address, t->len,
@@ -471,6 +472,7 @@ err_timeout:
 	if (t->tx_buf)
 		dma_unmap_single(hw->dev, pdma->sgtx.dma_address, t->len,
 		                 DMA_TO_DEVICE);
+#endif
 
 	__raw_writel((__raw_readl(hw->regs + REG_CTL) & ~SPIEN), hw->regs + REG_CTL); //Disable SPIEN
 	__raw_writel(__raw_readl(hw->regs + REG_PDMACTL)&~(0x3), hw->regs + REG_PDMACTL); //Disable SPIx TX/RX PDMA

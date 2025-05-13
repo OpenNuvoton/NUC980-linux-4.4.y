@@ -707,6 +707,9 @@ static int nuc980_i2c2_probe(struct platform_device *pdev)
 	struct i2c_adapter *adap;
 	int ret;
 	int busnum = 0, busfreq = 0;
+	unsigned int hold_time = 0;
+	unsigned int setup_time = 0;
+	unsigned int i2c_clk = 0;
 	struct device *dev = &pdev->dev;
 
 	struct pinctrl *pinctrl;
@@ -802,7 +805,19 @@ static int nuc980_i2c2_probe(struct platform_device *pdev)
 	} else {
 		of_property_read_u32(pdev->dev.of_node, "bus_freq", &busfreq);
 		of_property_read_u32(pdev->dev.of_node, "bus_num", &busnum);
+		of_property_read_u32(pdev->dev.of_node, "hold_time", &hold_time);
+		of_property_read_u32(pdev->dev.of_node, "setup_time", &setup_time);
 	}
+
+	i2c_clk = clk_get_rate(i2c->clk) / 1000000;
+
+	if (hold_time != 0)
+		hold_time = ((hold_time * i2c_clk) + 500) / 1000;
+
+	if (setup_time != 0)
+		setup_time = ((setup_time * i2c_clk) + 500) / 1000;
+
+	writel(((hold_time << 16) | setup_time), i2c->regs + TMCTL);
 
 	// Set Clock divider
 	ret = ((clk_get_rate(i2c->clk) * 10) / (busfreq * 4) + 5) / 10 - 1;

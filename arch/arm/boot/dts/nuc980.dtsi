@@ -1554,6 +1554,8 @@
 			pinctrl-0 = <&pinctrl_i2c0_PA>;
 			bus_num = <0>;
 			bus_freq = <100000>;
+			hold_time = <0>; //ns
+			setup_time = <0>; //ns
 			status = "disabled";
 
 			#address-cells = <1>;
@@ -1569,6 +1571,8 @@
 			pinctrl-0 = <&pinctrl_i2c1_PB>;
 			bus_num = <1>;
 			bus_freq = <100000>;
+			hold_time = <0>; //ns
+			setup_time = <0>; //ns
 			status = "disabled";
 
 			#address-cells = <1>;
@@ -1610,6 +1614,8 @@
 			pinctrl-0 = <&pinctrl_i2c2_PB>;
 			bus_num = <2>;
 			bus_freq = <100000>;
+			hold_time = <0>; //ns
+			setup_time = <0>; //ns
 			status = "disabled";
 
 			#address-cells = <1>;
@@ -1651,6 +1657,8 @@
 			pinctrl-0 = <&pinctrl_i2c3_PB>;
 			bus_num = <3>;
 			bus_freq = <100000>;
+			hold_time = <0>; //ns
+			setup_time = <0>; //ns
 			status = "disabled";
 		};
 

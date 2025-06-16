@@ -202,7 +202,7 @@ struct spinand_ops spinand_dev[] = {
 	{
 		NAND_MFR_GIGA,		//GD5FGQ4UExxG
 		0xd1,
-		gigadevice_set_defaults,
+		gigadevice_set_defaults_D1,
 		gigadevice_read_cmd,
 		//winbond_read_data,
 		macronix_read_data,
@@ -216,7 +216,7 @@ struct spinand_ops spinand_dev[] = {
 	{
 		NAND_MFR_GIGA,		//GD5F1GQ5UExxG
 		0x51,
-		gigadevice_set_defaults,
+		gigadevice_set_defaults_D1,
 		gigadevice_read_cmd,
 		//winbond_read_data,
 		macronix_read_data,
@@ -355,6 +355,24 @@ int mt29f_verify_ecc(u8 status)
 		return SPINAND_ECC_CORRECTED;
 	else
 		return 0;
+}
+
+static int gd5f1gq5_get_eccse(struct spi_device *spi_nand, u8 *eccse)
+{
+	struct spinand_cmd cmd = {0};
+	int ret;
+
+	cmd.cmd = CMD_READ_REG;
+	cmd.n_addr = 1;
+	cmd.addr[0] = 0xF0;
+	cmd.n_rx = 1;
+	cmd.rx_buf = eccse;
+
+	ret = spinand_cmd(spi_nand, &cmd);
+	if (ret < 0)
+		dev_err(&spi_nand->dev, "err: %d read eccse register\n", ret);
+
+	return ret;
 }
 
 struct spinand_ops mt29f_spinand_ops = {
@@ -866,6 +884,7 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 {
 	int ret, ecc_error = 0, ecc_corrected = 0;
 	u8 status = 0;
+	u8 eccse;
 	struct spinand_ops *dev_ops = get_dev_ops(spi_nand);
 	struct mtd_info *mtd = (struct mtd_info *)
 	                       dev_get_drvdata(&spi_nand->dev);
@@ -906,6 +925,9 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 				mtd->ecc_stats.failed++;
 				ecc_error = 1;
 			} else if (ret == SPINAND_ECC_CORRECTED) {
+				if (nand_id[1] == NAND_MFR_GIGA &&
+				    nand_id[2] == 0x51)
+					gd5f1gq5_get_eccse(spi_nand, &eccse);
 				mtd->ecc_stats.corrected++;
 				ecc_corrected = 1;
 			}
@@ -949,8 +971,13 @@ static int spinand_read_page(struct spi_device *spi_nand, u32 page_id,
 	if (ecc_error)
 		ret = -EBADMSG;
 	else if (ecc_corrected)
-		ret = -EUCLEAN;
-
+		if (nand_id[1] == NAND_MFR_GIGA && nand_id[2] == 0x51)
+			ret = ((eccse & 0x30) >> 4) + 1;
+		else if (nand_id[1] == NAND_MFR_GIGA && nand_id[2] == 0xD1)
+			/*refer to GD5F1GQ4xFxxG spec table14-3*/
+			ret = (status >> 4) >= 2 ? 4 : 1;
+		else
+			ret = -EUCLEAN;
 	return ret;
 }
 
@@ -1234,6 +1261,7 @@ static int spinand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
                                    uint8_t *buf, int oob_required, int page)
 {
 	u8 retval, status = 0;
+	u8 eccse;
 	uint8_t *p = buf;
 	int eccsize = chip->ecc.size;
 	int eccsteps = chip->ecc.steps;
@@ -1256,6 +1284,14 @@ static int spinand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
 				retval = -EBADMSG;
 			} else if (retval == SPINAND_ECC_CORRECTED) {
 				mtd->ecc_stats.corrected++;
+				if (nand_id[1] == NAND_MFR_GIGA &&
+				    nand_id[2] == 0x51){
+					gd5f1gq5_get_eccse(info->spi, &eccse);
+					return ((eccse & 0x30) >> 4) + 1;
+				} else if (nand_id[1] == NAND_MFR_GIGA &&
+					   nand_id[2] == 0xD1)
+				/*refer to GD5F1GQ4xFxxG spec table14-3*/
+					return (status >> 4) >= 2 ? 4 : 1;
 				retval = -EUCLEAN;
 			}
 			break;

@@ -37,6 +37,21 @@ void gigadevice_set_defaults(struct spi_device *spi_nand)
 	chip->ecc.layout = NULL;
 }
 
+void gigadevice_set_defaults_D1(struct spi_device *spi_nand)
+{
+	struct mtd_info *mtd = (struct mtd_info *)dev_get_drvdata
+				(&spi_nand->dev);
+	struct nand_chip *chip = (struct nand_chip *)mtd->priv;
+
+	chip->ecc.size	= 0x800;
+	chip->ecc.bytes	= 0x0;
+	chip->ecc.steps	= 0x0;
+
+	chip->ecc.strength = 4;
+	chip->ecc.total	= 0;
+	chip->ecc.layout = NULL;
+}
+
 void gigadevice_read_cmd(struct spinand_cmd *cmd, u32 page_id)
 {
 	cmd->addr[0] = (u8) (page_id >> 16);
@@ -221,6 +236,13 @@ int gigadevice_parse_id_D1(struct spi_device *spi_nand, u8 *nand_id, u8 *id)
 	if (nand_id[1] != NAND_MFR_GIGA)
 		return -EINVAL;
 
+	/*
+	 * Because in nand_base.c the third byte of the ID
+	 * is used to determine whether it's MLC NAND,
+	 * this flash memory would be mistakenly identified
+	 * as MLC. We need to clear this setting here.
+	 */
+	id[2] = 0;
 	return 0;
 }
 

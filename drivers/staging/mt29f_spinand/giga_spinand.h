@@ -22,6 +22,8 @@
 
 void gigadevice_set_defaults(struct spi_device *spi_nand);
 
+void gigadevice_set_defaults_D1(struct spi_device *spi_nand);
+
 void gigadevice_read_cmd(struct spinand_cmd *cmd, u32 page_id);
 
 void gigadevice_read_data(struct spinand_cmd *cmd, u16 column, u32 page_id);

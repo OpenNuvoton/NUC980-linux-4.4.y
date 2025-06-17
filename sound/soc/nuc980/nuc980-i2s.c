@@ -129,7 +129,7 @@ static int nuc980_i2s_set_sysclk(struct snd_soc_dai *cpu_dai, int clk_id, unsign
 		val &= ~0x000F0000;
 		val |= (mclkdiv-1) << 16;
 
-		bclkdiv = mclk / (freq * cpu_dai->sample_bits * cpu_dai->channels);
+		bclkdiv = mclk / (freq * cpu_dai->sample_bits * 2);
 		bclkdiv = bclkdiv/2 - 1;
 		val &= ~0xf0;
 		val |= (bclkdiv << 5);

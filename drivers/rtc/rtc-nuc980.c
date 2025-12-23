@@ -24,7 +24,6 @@
 #include <mach/map.h>
 #include <mach/regs-gcr.h>
 
-
 /* RTC Control Registers */
 #define REG_RTC_INIR		0x00
 #define REG_RTC_AER		0x04
@@ -41,7 +40,6 @@
 #define REG_RTC_TTR		0x30
 #define REG_RTC_PWRCTL		0x34
 
-
 #define RTCSET			0x01
 #define AERRWENB		0x10000
 #define INIRRESET		0xa5eb1357
@@ -52,6 +50,8 @@
 #define TICKINTENB		0x0002
 #define ALARMINTENB		0x0001
 #define MODE24			0x0001
+
+#define RTC_FCR_REFERENCE	32761UL   /* RTC reference for frequency compensation */
 
 struct clk *rtc_clk;
 
@@ -72,7 +72,7 @@ struct nuc980_bcd_time {
 
 static inline unsigned int rtc_reg_read(struct nuc980_rtc *p, int offset)
 {
-	return(__raw_readl(p->rtc_reg + offset));
+	return __raw_readl(p->rtc_reg + offset);
 }
 
 static inline void rtc_reg_write(struct nuc980_rtc *p, int offset, int value)
@@ -81,8 +81,9 @@ static inline void rtc_reg_write(struct nuc980_rtc *p, int offset, int value)
 
 	__raw_writel(value, p->rtc_reg + offset);
 
-	// wait rtc register write finish
-	while((__raw_readl(p->rtc_reg + REG_RTC_RIIR) & (1 << 31)) && writetimeout--)
+	/* wait rtc register write finish */
+	while ((__raw_readl(p->rtc_reg + REG_RTC_RIIR) & (1 << 31)) &&
+		writetimeout--)
 		udelay(1);
 }
 
@@ -264,10 +265,42 @@ static int nuc980_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 	return 0;
 }
 
+static int nuc980_rtc_32k_calibration(struct nuc980_rtc *rtc, int32_t freq_x100)
+{
+	int32_t reg_int, reg_fra;
+	uint32_t reg;
+	int *err;
+
+	printk("RTC 32K calibration value: %d\n", freq_x100);
+
+	/* Compute integer and fraction (same as bare-metal) */
+	reg_int = (freq_x100 / 100) - RTC_FCR_REFERENCE;
+	reg_fra = ((freq_x100 % 100) * 60) / 100;
+
+	/* Clamp integer part */
+	if (reg_int < 0)
+		reg_int = 0;
+	if (reg_int > 15)
+		reg_int = 15;
+
+	reg = ((uint32_t)reg_int << 8) | (uint32_t)reg_fra;
+
+	err = check_rtc_access_enable(rtc);
+	if (IS_ERR(err))
+		return PTR_ERR(err);
+
+	printk("Update RTC_FREQADJ from 0x%08x to 0x%08x\n", __raw_readl(rtc->rtc_reg + REG_RTC_FCR), reg);
+
+	rtc_reg_write(rtc, REG_RTC_FCR, reg);
+
+	return 0;
+}
+
 static int nuc980_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
 {
 	struct nuc980_rtc *rtc = dev_get_drvdata(dev);
 	unsigned int spare_data[16], i;
+	unsigned int freq_x100;
 	int *err;
 
 	switch(cmd)
@@ -305,6 +338,13 @@ static int nuc980_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
 			}
 
 		break;
+
+		case RTC_32K_CALIBRATION:
+			if (copy_from_user(&freq_x100, (void __user *)arg,
+			    sizeof(freq_x100)))
+				return -EFAULT;
+
+			return nuc980_rtc_32k_calibration(rtc, freq_x100);
 
 		default:
 			return -ENOIOCTLCMD;

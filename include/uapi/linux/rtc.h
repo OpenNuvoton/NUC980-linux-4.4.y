@@ -96,6 +96,7 @@ struct rtc_pll_info {
 
 #define RTC_GET_SPARE_DATA	_IOR('p', 0x20, unsigned long) /* Get spare register data */
 #define RTC_SET_SPARE_DATA	_IOW('p', 0x21, unsigned long) /* Set spare register data */
+#define RTC_32K_CALIBRATION	_IOW('p', 0x22, unsigned long) /* 32K calibration value   */
 
 /* interrupt flags */
 #define RTC_IRQF 0x80	/* Any of the following is active */
